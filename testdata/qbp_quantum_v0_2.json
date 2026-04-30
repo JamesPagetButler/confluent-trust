@@ -1,0 +1,665 @@
+{
+  "programme": "QBP-Q",
+  "version": "0.2",
+  "full_name": "QBP-Quantum: Algebraic Quantum Compute Architecture",
+  "timestamp": "2026-04-30T23:45:00Z",
+  "parent_programmes": [
+    "QBP v3.2",
+    "Conventional Quantum Computing"
+  ],
+  "meta_axiom": {
+    "id": "META-1",
+    "name": "Change is constant",
+    "statement": "No framework is guaranteed complete. All knowledge is provisional within its axiomatic system."
+  },
+  "axioms": [
+    {
+      "id": "AXIOM-1",
+      "name": "Information is preserved",
+      "statement": "No physical process destroys information. Selects division algebras.",
+      "layer": 0,
+      "derivable": false,
+      "inherited_from": "QBP"
+    },
+    {
+      "id": "AXIOM-2",
+      "name": "The encoding is maximal",
+      "statement": "The boundary encoding uses the largest normed division algebra: octonions (dim 8).",
+      "layer": 0,
+      "derivable": false,
+      "inherited_from": "QBP"
+    },
+    {
+      "id": "AXIOM-3",
+      "name": "SU(2) is the universal computational bridge",
+      "statement": "Every physical system that transforms under SU(2) is natively computing in quaternion algebra. Photon polarisation, electron spin, nuclear spin, and the gate operations that couple them are all manifestations of the same algebraic structure.",
+      "layer": 0,
+      "derivable": true,
+      "derived_from_axioms": [
+        "AXIOM-1",
+        "AXIOM-2"
+      ],
+      "notes": "This is derivable from AXIOM-1 + AXIOM-2 via PROOF-su2-lie (Q3-Q4) but stated as an axiom for the merged programme to make the architectural commitment explicit."
+    }
+  ],
+  "derived_principles": [
+    {
+      "id": "DERIV-sense-compute-act",
+      "name": "Sense-Compute-Act algebraic pipeline",
+      "statement": "A pipeline that preserves SU(2) structure from sensor to actuator is performing QBP-native computation regardless of the physical substrate at each stage. The NV centre's spin-photon selection rules provide the interface between domains, preserving the algebra exactly because the interface IS the algebra.",
+      "derived_from": [
+        "AXIOM-3",
+        "PROOF-su2-lie"
+      ],
+      "layer": 1
+    },
+    {
+      "id": "DERIV-algebraic-qec",
+      "name": "Algebraic error protection from Hurwitz norm",
+      "statement": "The Hurwitz property |ab|²=|a|²|b|² in H guarantees that norm-preserving operations cannot introduce errors detectable by norm measurement. Errors that violate the norm are algebraically distinguishable from valid operations. This provides a layer of error protection that is algebraic (free) rather than code-based (costly in qubit overhead).",
+      "derived_from": [
+        "PROOF-hurwitz-quat",
+        "PROOF-z2-cover"
+      ],
+      "layer": 1
+    },
+    {
+      "id": "DERIV-hessian-code",
+      "name": "Hessian eigenspace as natural QEC code structure",
+      "statement": "The Hessian spectrum {0(x16), 4(x4), 8(x8), 12(x4)} at the 42 ZDs provides a natural block structure for quantum error-correcting codes. The λ=8 eigenspace (dim 8) IS the SU(2) computation space. The λ=4 and λ=12 eigenspaces (dim 4 each) are algebraically natural syndrome spaces. The 16 zero eigenvalues are gauge degrees of freedom (decoherence-free subspace).",
+      "derived_from": [
+        "PROOF-hessian",
+        "PROOF-eigenratios",
+        "PROOF-su2-lie"
+      ],
+      "layer": 1
+    },
+    {
+      "id": "DERIV-z2-parity",
+      "name": "Z₂ double cover as built-in parity check",
+      "statement": "SU(2)/Z₂ = SO(3). Every rotation has two quaternion representations (q and -q). Errors that flip the quaternion sign change the representation class without changing the physical rotation, making them detectable without additional code overhead.",
+      "derived_from": [
+        "PROOF-z2-cover"
+      ],
+      "layer": 1
+    }
+  ],
+  "anchors": [
+    {
+      "id": "PROOF-su2-lie",
+      "name": "su(2) Lie algebra from imaginary quaternion commutators",
+      "tier": 1,
+      "provenance": "T",
+      "proof_system": "lean4",
+      "sorry_count": 0,
+      "status": "coherent",
+      "description": "Lean Q3-Q4: [eᵢ,eⱼ] = 2εᵢⱼₖeₖ verified for all cyclic permutations. The Hessian λ=8 eigenspace IS the su(2) algebra. This is the BRIDGE NODE between QBP and quantum computing.",
+      "prediction_chain": [
+        "AXIOM-1",
+        "AXIOM-2"
+      ],
+      "discrepancy_pct": 0.0,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "inherited_from": "QBP",
+      "bridge_role": "This proof establishes that the QBP algebraic structure and the quantum computing gate set are the same mathematical object.",
+      "proof_file": "archive/qbp-lean/QBP/Quaternion.lean",
+      "lean_theorem": "su2_commutation",
+      "lean_companion_theorems": [
+        "su2_casimir"
+      ],
+      "inherited_at": "2026-04-30"
+    },
+    {
+      "id": "PROOF-hurwitz-quat",
+      "name": "Hurwitz norm multiplicativity in H",
+      "tier": 1,
+      "provenance": "T",
+      "proof_system": "lean4",
+      "sorry_count": 0,
+      "status": "coherent",
+      "description": "Lean Q8: |ab|²=|a|²|b|² for ALL quaternion basis sums. Fails for sedenions (Q9). This is the algebraic foundation of error protection: norm-preserving operations form a closed group.",
+      "prediction_chain": [
+        "AXIOM-1",
+        "AXIOM-2"
+      ],
+      "discrepancy_pct": 0.0,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "inherited_from": "QBP",
+      "proof_file": "archive/qbp-lean/QBP/Quaternion.lean",
+      "lean_theorem": "hurwitz_quaternion",
+      "lean_companion_theorems": [
+        "hurwitz_fails_sedenion"
+      ],
+      "inherited_at": "2026-04-30"
+    },
+    {
+      "id": "PROOF-z2-cover",
+      "name": "SU(2)/Z₂ = SO(3) double cover → built-in parity",
+      "tier": 1,
+      "provenance": "T",
+      "proof_system": "lean4",
+      "sorry_count": 0,
+      "status": "coherent",
+      "description": "Lean Q10: Conjugation by u and -u produce the same inner automorphism. Z₂ kernel provides a free parity bit for every quaternion-encoded logical qubit.",
+      "prediction_chain": [
+        "AXIOM-1",
+        "AXIOM-2"
+      ],
+      "discrepancy_pct": 0.0,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "inherited_from": "QBP",
+      "proof_file": "archive/qbp-lean/QBP/Quaternion.lean",
+      "lean_theorem": "double_cover_z2",
+      "inherited_at": "2026-04-30"
+    },
+    {
+      "id": "PROOF-hessian",
+      "name": "Hessian spectrum {0(x16), 4(x4), 8(x8), 12(x4)} at all 42 ZDs",
+      "tier": 1,
+      "provenance": "T",
+      "proof_system": "lean4",
+      "sorry_count": 0,
+      "status": "coherent",
+      "description": "Verified 42/42. Provides natural block structure: 8-dim compute space + 4+4 dim syndrome spaces + 16-dim decoherence-free subspace.",
+      "prediction_chain": [
+        "AXIOM-1",
+        "AXIOM-2"
+      ],
+      "discrepancy_pct": 0.0,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "inherited_from": "QBP",
+      "proof_file": "archive/qbp-lean/QBP/Sedenion.lean",
+      "lean_theorem": "spectrum_unique",
+      "lean_companion_theorems": [
+        "hessian_trace_128_universal",
+        "hessian_traceSq_1152_universal"
+      ],
+      "inherited_at": "2026-04-30"
+    },
+    {
+      "id": "PROOF-eigenratios",
+      "name": "Eigenvalue ratios 3:2:1 (12:8:4) with multiplicities (4,8,4)",
+      "tier": 1,
+      "provenance": "T",
+      "proof_system": "lean4",
+      "sorry_count": 0,
+      "status": "coherent",
+      "description": "Defines the code rate: 8 computation dimensions, 8 syndrome/gauge dimensions. Natural [[16,8,d]] code structure.",
+      "prediction_chain": [
+        "PROOF-hessian"
+      ],
+      "discrepancy_pct": 0.0,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "inherited_from": "QBP",
+      "proof_file": "archive/qbp-lean/QBP/Sedenion.lean",
+      "lean_theorem": "coupling_ratios",
+      "lean_companion_theorems": [
+        "casimir_identification"
+      ],
+      "inherited_at": "2026-04-30"
+    },
+    {
+      "id": "PROOF-kramers",
+      "name": "Kramers theorem: T²=-1, orthogonality, degeneracy",
+      "tier": 1,
+      "provenance": "T",
+      "proof_system": "lean4",
+      "sorry_count": 0,
+      "status": "coherent",
+      "description": "Lean Q5-Q7. Provides time-reversal protection for qubit states encoded in the quaternionic sector.",
+      "prediction_chain": [
+        "PROOF-su2-lie"
+      ],
+      "discrepancy_pct": 0.0,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "inherited_from": "QBP",
+      "proof_file": "archive/qbp-lean/QBP/Quaternion.lean",
+      "lean_theorem": "kramers_degeneracy",
+      "lean_companion_theorems": [
+        "time_reversal_square_minus_one",
+        "kramers_orthogonality"
+      ],
+      "inherited_at": "2026-04-30"
+    },
+    {
+      "id": "PROOF-quat-closure",
+      "name": "Quaternion subalgebra H ⊂ S closed + Hamilton table",
+      "tier": 1,
+      "provenance": "T",
+      "proof_system": "lean4",
+      "sorry_count": 0,
+      "status": "coherent",
+      "description": "Lean Q1-Q2. Foundation node for all materials proofs and the compute architecture.",
+      "prediction_chain": [
+        "AXIOM-1",
+        "AXIOM-2"
+      ],
+      "discrepancy_pct": 0.0,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "inherited_from": "QBP",
+      "proof_file": "archive/qbp-lean/QBP/Quaternion.lean",
+      "lean_theorem": "quaternion_closure",
+      "lean_companion_theorems": [
+        "quaternion_table",
+        "eigenspace_gauge_match"
+      ],
+      "inherited_at": "2026-04-30"
+    },
+    {
+      "id": "MEAS-ammendola-su2",
+      "name": "Ammendola optical SU(2) platform implements arbitrary quaternion rotations",
+      "tier": 2,
+      "provenance": "E",
+      "status": "coherent",
+      "description": "Ammendola et al. (Light: Science & Applications, March 2026). Three-SLM free-space photonic platform implementing arbitrary SU(2) transformations on structured light modes. 7,000+ output modes. Jones matrix = unit quaternion verified. This is the SENSE stage hardware.",
+      "predicted_value": 1.0,
+      "predicted_unit": "SU(2) isomorphism (structural)",
+      "measured_value": 1.0,
+      "measured_error": 0.0,
+      "measured_source": "Ammendola et al. Light: Sci & App (2026)",
+      "discrepancy_pct": 0.0,
+      "prediction_chain": [
+        "PROOF-su2-lie"
+      ],
+      "last_tested_at": "2026-03-15T00:00:00Z",
+      "inherited_from": "external"
+    },
+    {
+      "id": "MEAS-nv-selection-rules",
+      "name": "NV centre spin-photon selection rules preserve SU(2)",
+      "tier": 2,
+      "provenance": "E",
+      "status": "coherent",
+      "description": "A₂ excited state decays: |L⟩ → mₛ=+1, |R⟩ → mₛ=-1. Superposition coefficients preserved exactly. >99% initialisation fidelity demonstrated by Delft and Harvard/Lončar groups.",
+      "predicted_value": 1.0,
+      "predicted_unit": "algebraic identity preservation (structural)",
+      "measured_value": 1.0,
+      "measured_error": 0.0,
+      "measured_source": "Multiple groups: Delft, Harvard/Lončar",
+      "discrepancy_pct": 0.0,
+      "prediction_chain": [
+        "PROOF-su2-lie",
+        "DERIV-sense-compute-act"
+      ],
+      "last_tested_at": "2025-01-01T00:00:00Z",
+      "inherited_from": "external"
+    },
+    {
+      "id": "MEAS-nuclear-register-27",
+      "name": "27 nuclear spin qubits per NV centre demonstrated",
+      "tier": 2,
+      "provenance": "E",
+      "status": "coherent",
+      "description": "¹³C nuclear spins coupled to NV centre via hyperfine interaction. Second-scale coherence times. Each spin is an SU(2) qubit natively. 27 qubits is sufficient for the Hessian-structured code (needs 16).",
+      "predicted_value": 16.0,
+      "predicted_unit": "minimum qubits needed for Hessian code",
+      "measured_value": 27.0,
+      "measured_error": 0.0,
+      "measured_source": "Bradley et al. PRX (2019)",
+      "discrepancy_pct": 0.0,
+      "prediction_chain": [
+        "PROOF-hessian"
+      ],
+      "last_tested_at": "2019-01-01T00:00:00Z",
+      "inherited_from": "external",
+      "notes": "27 > 16: sufficient headroom for Hessian code implementation."
+    },
+    {
+      "id": "MEAS-neutral-atom-6100",
+      "name": "6,100 neutral atoms manipulated (Endres group, Caltech)",
+      "tier": 2,
+      "provenance": "E",
+      "status": "coherent",
+      "description": "Endres group demonstrated manipulation of 6,100 neutral atoms. Each atom is an SU(2) qubit. Not yet used for computation, but the scale demonstrates that thousands of SU(2) systems can be controlled simultaneously.",
+      "predicted_value": 0.0,
+      "predicted_unit": "structural (SU(2) at scale)",
+      "measured_value": 6100.0,
+      "measured_error": 0.0,
+      "measured_source": "Endres group, Nature (2025)",
+      "discrepancy_pct": 0.0,
+      "prediction_chain": [
+        "PROOF-su2-lie"
+      ],
+      "last_tested_at": "2025-01-01T00:00:00Z",
+      "inherited_from": "external"
+    },
+    {
+      "id": "MEAS-shor-10x",
+      "name": "Google 10x Shor's algorithm efficiency improvement",
+      "tier": 2,
+      "provenance": "E",
+      "status": "coherent",
+      "description": "Google announced 10x efficiency improvement in Shor's algorithm implementation, reducing qubit requirements. The improvement comes from better error correction codes — exactly the domain where Hessian-structured codes could provide further improvement.",
+      "predicted_value": 0.0,
+      "predicted_unit": "structural",
+      "measured_value": 0.0,
+      "measured_error": 0.0,
+      "measured_source": "Google Quantum AI (2026)",
+      "discrepancy_pct": 0.0,
+      "prediction_chain": [],
+      "last_tested_at": "2026-04-03T00:00:00Z",
+      "inherited_from": "external"
+    },
+    {
+      "id": "MEAS-oratomic-tens-of-thousands",
+      "name": "Oratomic design: Shor's with tens of thousands of qubits",
+      "tier": 3,
+      "provenance": "E",
+      "status": "coherent",
+      "description": "Bluvstein/Cain (Caltech/Oratomic) designed a neutral-atom quantum computer that could break encryption with tens of thousands of qubits, down from previous estimates of millions. Uses qLDPC codes.",
+      "predicted_value": 0.0,
+      "predicted_unit": "structural",
+      "measured_value": 0.0,
+      "measured_error": 0.0,
+      "measured_source": "Bluvstein et al. arXiv:2603.28627 (2026)",
+      "discrepancy_pct": 0.0,
+      "prediction_chain": [],
+      "last_tested_at": "2026-04-03T00:00:00Z",
+      "inherited_from": "external"
+    },
+    {
+      "id": "MEAS-qw128-precision",
+      "name": "QW128 sustains algebraic integrity for 172 days at 1 GHz",
+      "tier": 2,
+      "provenance": "T",
+      "status": "coherent",
+      "description": "Composition benchmarks on Go implementation. QW64 drifts after ~7 seconds. QW128 (4×float128) sustains integrity for 172 days. This is the classical emulation ceiling — physical SU(2) has infinite precision.",
+      "predicted_value": 172.0,
+      "predicted_unit": "days",
+      "measured_value": 172.0,
+      "measured_error": 10.0,
+      "measured_source": "QBP Compute Unit benchmark (Go 1.22)",
+      "discrepancy_pct": 0.0,
+      "prediction_chain": [
+        "PROOF-hurwitz-quat"
+      ],
+      "last_tested_at": "2026-03-23T00:00:00Z",
+      "inherited_from": "QBP"
+    },
+    {
+      "id": "PRED-glide-fidelity",
+      "name": "Glide phase: SLM → fibre → NV → spin preserves quaternion algebra",
+      "tier": 2,
+      "provenance": "T",
+      "status": "untested",
+      "description": "The Glide experiment: program SLM with quaternion rotation q_test, send horizontally-polarised photon through, couple to NV centre, measure spin state, compare to q_test|H⟩. If measured spin matches prediction, the algebra is preserved across the optical-spin domain boundary.",
+      "prediction_chain": [
+        "PROOF-su2-lie",
+        "MEAS-ammendola-su2",
+        "MEAS-nv-selection-rules"
+      ],
+      "last_tested_at": null,
+      "testable_when": "Glide phase hardware assembly. Components exist commercially. Weeks to months.",
+      "notes": "This is the THRESHOLD TEST for the merged programme, equivalent to topoRet for Möbius."
+    },
+    {
+      "id": "PRED-hessian-code-distance",
+      "name": "Hessian-structured QEC code achieves distance d ≥ 3",
+      "tier": 2,
+      "provenance": "T",
+      "status": "untested",
+      "description": "The Hessian eigenspace decomposition {0(x16), 4(x4), 8(x8), 12(x4)} defines a [[16,k,d]] code. If d ≥ 3, the code can correct single-qubit errors. The algebraic structure (proven in Lean) constrains the code parameters, but the distance must be computed explicitly.",
+      "prediction_chain": [
+        "PROOF-hessian",
+        "PROOF-eigenratios",
+        "DERIV-hessian-code"
+      ],
+      "last_tested_at": null,
+      "testable_when": "Pure computation. Construct stabiliser generators from Hessian eigenvectors. Days.",
+      "notes": "This is the highest-priority COMPUTATION for the merged programme."
+    },
+    {
+      "id": "PRED-algebraic-vs-surface",
+      "name": "Hessian code outperforms surface code at same physical qubit count",
+      "tier": 3,
+      "provenance": "T",
+      "status": "untested",
+      "description": "The Hessian code gets algebraic error protection (Hurwitz norm) FOR FREE — it doesn't cost extra qubits. If this combines with standard stabiliser-based protection, the total code should outperform a surface code of the same size because it has two layers of protection (algebraic + code) instead of one (code only).",
+      "prediction_chain": [
+        "PRED-hessian-code-distance",
+        "DERIV-algebraic-qec",
+        "DERIV-z2-parity"
+      ],
+      "last_tested_at": null,
+      "testable_when": "After Hessian code construction. Simulation on classical computer. Weeks."
+    },
+    {
+      "id": "PRED-optical-better-than-qw128",
+      "name": "Optical SU(2) pipeline has higher fidelity than QW128 classical emulation",
+      "tier": 2,
+      "provenance": "T",
+      "status": "untested",
+      "description": "The optical platform enforces unitarity physically (conservation of energy in lossless optics). QW128 enforces it numerically (floating-point renormalisation). Physical enforcement should produce measurably better fidelity for long computation chains (N > 10^15 operations, where QW128 begins to drift).",
+      "prediction_chain": [
+        "MEAS-ammendola-su2",
+        "MEAS-qw128-precision"
+      ],
+      "last_tested_at": null,
+      "testable_when": "Glide phase. Run same quaternion composition on both platforms, compare."
+    },
+    {
+      "id": "PRED-nuclear-hypergraph",
+      "name": "Nuclear spin register implements hypergraph spreading activation",
+      "tier": 3,
+      "provenance": "T",
+      "status": "untested",
+      "description": "Use the ¹³C nuclear spin register (27 qubits) to store intermediate results as typed hypergraph nodes. Perform spreading activation (sparse matrix-vector multiply) on the nuclear register. Read out via fluorescence and compare to Go software benchmark.",
+      "prediction_chain": [
+        "MEAS-nuclear-register-27",
+        "PROOF-su2-lie"
+      ],
+      "last_tested_at": null,
+      "testable_when": "After Glide phase validation. Requires RF pulse sequence design."
+    },
+    {
+      "id": "PRED-qubit-reduction",
+      "name": "Hessian-structured code reduces physical/logical qubit ratio",
+      "tier": 3,
+      "provenance": "T",
+      "status": "untested",
+      "description": "Current surface codes require ~1000 physical qubits per logical qubit at realistic noise rates. If the Hessian algebraic protection provides even a 2x improvement (500:1), this halves the total qubit count for any quantum algorithm. For Shor's algorithm, this would reduce the Oratomic estimate from tens of thousands to single-digit thousands.",
+      "prediction_chain": [
+        "PRED-hessian-code-distance",
+        "PRED-algebraic-vs-surface",
+        "MEAS-oratomic-tens-of-thousands"
+      ],
+      "last_tested_at": null,
+      "testable_when": "After code construction and simulation. Months."
+    },
+    {
+      "id": "OBS-tenfold-su2",
+      "name": "Altland-Zirnbauer tenfold way uses same SU(2) as qubit gate set",
+      "tier": 2,
+      "provenance": "T",
+      "status": "coherent",
+      "description": "The tenfold way classifies topological phases by the division algebra (R, C, H) controlling time-reversal symmetry. The H (quaternion) class AII is the SAME SU(2) that defines the qubit gate set. Topological protection and quantum computation use the same algebra for the same reason.",
+      "predicted_value": 0.0,
+      "predicted_unit": "structural",
+      "measured_value": 0.0,
+      "measured_error": 0.0,
+      "measured_source": "Schnyder et al. PRB (2008)",
+      "discrepancy_pct": 0.0,
+      "prediction_chain": [
+        "PROOF-su2-lie",
+        "PROOF-kramers"
+      ],
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "inherited_from": "QBP"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "INST-nv-coupling",
+      "name": "NV centre optical coupling efficiency",
+      "type": "input",
+      "status": "measurable",
+      "notes": "Depends on cavity design, fibre alignment. Currently ~10-30% for fibre-coupled cavities. Engineering parameter with known improvement path (better cavities, Purcell enhancement)."
+    },
+    {
+      "id": "INST-nuclear-t2",
+      "name": "¹³C nuclear spin T₂ coherence time",
+      "type": "input",
+      "status": "measurable",
+      "notes": "Demonstrated: ~1 second at 4K (Bradley et al.). Depends on isotopic purity, decoupling sequences. Engineering parameter."
+    },
+    {
+      "id": "INST-slm-loss",
+      "name": "SLM-to-fibre coupling loss",
+      "type": "input",
+      "status": "measurable",
+      "notes": "Currently ~3-5 dB for structured light modes. Improvable with adaptive optics."
+    },
+    {
+      "id": "INST-gate-fidelity",
+      "name": "Single-qubit gate fidelity on nuclear spins",
+      "type": "input",
+      "status": "measurable",
+      "notes": "Demonstrated: >99.9% (Abobeih et al. Nature 2022). Depends on pulse calibration, cross-talk."
+    }
+  ],
+  "chains": [
+    {
+      "id": "CHAIN-axioms-to-su2",
+      "name": "Axioms → CD hierarchy → Hessian → λ=8 eigenspace → SU(2) ≅ unit quaternions",
+      "source_ids": [
+        "AXIOM-1",
+        "AXIOM-2"
+      ],
+      "target_id": "PROOF-su2-lie",
+      "steps": 5,
+      "weakest_link_id": null,
+      "status": "coherent",
+      "notes": "Entirely Tier 1. The algebraic backbone shared with QBP."
+    },
+    {
+      "id": "CHAIN-su2-to-optical",
+      "name": "SU(2) ≅ unit quaternions → Jones matrices → SLM platform",
+      "source_ids": [
+        "PROOF-su2-lie"
+      ],
+      "target_id": "MEAS-ammendola-su2",
+      "steps": 2,
+      "weakest_link_id": null,
+      "status": "coherent",
+      "notes": "Mathematical identity (SU(2) = Jones) + experimental verification (Ammendola)."
+    },
+    {
+      "id": "CHAIN-su2-to-spin",
+      "name": "SU(2) → selection rules → NV centre spin-photon interface",
+      "source_ids": [
+        "PROOF-su2-lie"
+      ],
+      "target_id": "MEAS-nv-selection-rules",
+      "steps": 2,
+      "weakest_link_id": null,
+      "status": "coherent",
+      "notes": "Selection rules are a consequence of SU(2) symmetry. Experimentally verified."
+    },
+    {
+      "id": "CHAIN-optical-to-glide",
+      "name": "Optical SU(2) + NV selection rules → Glide phase pipeline",
+      "source_ids": [
+        "MEAS-ammendola-su2",
+        "MEAS-nv-selection-rules"
+      ],
+      "target_id": "PRED-glide-fidelity",
+      "steps": 3,
+      "weakest_link_id": "INST-nv-coupling",
+      "status": "untested",
+      "notes": "All components exist. Assembly and integration not yet performed."
+    },
+    {
+      "id": "CHAIN-hessian-to-code",
+      "name": "Hessian spectrum → eigenspace decomposition → QEC code",
+      "source_ids": [
+        "PROOF-hessian",
+        "PROOF-eigenratios"
+      ],
+      "target_id": "PRED-hessian-code-distance",
+      "steps": 3,
+      "weakest_link_id": null,
+      "status": "untested",
+      "notes": "The eigenspaces are proven. The code construction is a computation, not a conjecture."
+    },
+    {
+      "id": "CHAIN-code-to-comparison",
+      "name": "Hessian code + Hurwitz protection → comparison with surface code",
+      "source_ids": [
+        "PRED-hessian-code-distance",
+        "PROOF-hurwitz-quat"
+      ],
+      "target_id": "PRED-algebraic-vs-surface",
+      "steps": 2,
+      "weakest_link_id": "PRED-hessian-code-distance",
+      "status": "untested",
+      "notes": "Conditional on Hessian code having d ≥ 3."
+    },
+    {
+      "id": "CHAIN-comparison-to-reduction",
+      "name": "Code advantage + Oratomic estimate → qubit count reduction",
+      "source_ids": [
+        "PRED-algebraic-vs-surface",
+        "MEAS-oratomic-tens-of-thousands"
+      ],
+      "target_id": "PRED-qubit-reduction",
+      "steps": 2,
+      "weakest_link_id": "PRED-algebraic-vs-surface",
+      "status": "untested",
+      "notes": "The practical impact claim. Conditional on all upstream."
+    },
+    {
+      "id": "CHAIN-hurwitz-to-algebraic-qec",
+      "name": "Hurwitz norm + Z₂ cover → algebraic error protection layer",
+      "source_ids": [
+        "PROOF-hurwitz-quat",
+        "PROOF-z2-cover"
+      ],
+      "target_id": "DERIV-algebraic-qec",
+      "steps": 2,
+      "weakest_link_id": null,
+      "status": "coherent",
+      "notes": "The algebraic protection is proven. Whether it translates to measurable QEC improvement is the untested question."
+    }
+  ],
+  "confluence_points": [
+    {
+      "id": "CONFL-su2-bridge",
+      "anchor_id": "PROOF-su2-lie",
+      "path_a": "CHAIN-axioms-to-su2",
+      "path_b": null,
+      "description": "SU(2) is independently discovered as (a) the Hessian λ=8 eigenspace in QBP, (b) the qubit gate set in quantum computing, and (c) the Jones matrix group in photonics. Three independent research traditions arrive at the same algebra. This is the foundational EXTERNAL CONFLUENCE of the merged programme.",
+      "status": "coherent"
+    },
+    {
+      "id": "CONFL-optical-spin",
+      "anchor_id": "PRED-glide-fidelity",
+      "path_a": "CHAIN-su2-to-optical",
+      "path_b": "CHAIN-su2-to-spin",
+      "description": "Two physical domains (optical polarisation and electron spin) both implement SU(2), and the NV centre interface preserves the algebra between them. This is an INTERNAL CONFLUENCE: two paths (optical and spin) converge on the same algebraic structure.",
+      "status": "untested"
+    },
+    {
+      "id": "CONFL-algebraic-plus-code",
+      "anchor_id": "PRED-algebraic-vs-surface",
+      "path_a": "CHAIN-hurwitz-to-algebraic-qec",
+      "path_b": "CHAIN-hessian-to-code",
+      "description": "Two independent error protection mechanisms — algebraic (Hurwitz norm, free) and code-based (Hessian stabiliser, overhead) — converge on the same logical qubits. If both work, they provide two INDEPENDENT layers of protection, analogous to RAID in storage: each layer detects errors the other misses.",
+      "status": "untested"
+    },
+    {
+      "id": "CONFL-tenfold-qec",
+      "anchor_id": "OBS-tenfold-su2",
+      "path_a": null,
+      "path_b": null,
+      "description": "The Altland-Zirnbauer tenfold way (condensed matter), the qubit gate set (quantum computing), and the Hessian eigenspace (QBP) all use the SAME SU(2) for the SAME physical reason: symmetry protection of quantum states. Three-way EXTERNAL CONFLUENCE across three fields.",
+      "status": "coherent"
+    }
+  ],
+  "changelog": [
+    {
+      "version": "0.2",
+      "date": "2026-04-30",
+      "note": "Backfilled proof_file, lean_theorem, lean_companion_theorems, and sorry_count on the 7 anchors inherited from QBP. Values sourced from QBP v5.2 master. Predominantly: 7 anchors gained explicit Lean theorem references."
+    }
+  ]
+}

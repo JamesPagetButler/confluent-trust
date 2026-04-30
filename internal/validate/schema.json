@@ -1,0 +1,288 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/JamesPagetButler/confluent-trust/schema/inventory.schema.json",
+  "title": "CTH Inventory",
+  "description": "Confluent Trust Hypergraph inventory document. Conforms to Theory v0.2 §4.1 plus the §2.9 fork extension. Both v0.1 (path_a/path_b) and v0.2 (paths[]) confluence shapes are accepted; the Go store normalizes to N-ary on load.",
+  "type": "object",
+  "required": ["programme", "version", "axioms", "anchors", "chains"],
+  "additionalProperties": true,
+  "properties": {
+    "programme": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Short programme identifier, e.g. \"QBP\", \"QBP-Q\"."
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Programme version (NOT the CTH schema version)."
+    },
+    "schema_version": {
+      "type": "string",
+      "enum": ["v0.1", "v0.2"],
+      "description": "CTH inventory schema version. Absent or \"v0.1\" enables binary-confluence migration; \"v0.2\" is strict N-ary."
+    },
+    "full_name":         { "type": "string" },
+    "timestamp":         { "type": "string", "format": "date-time" },
+    "parent_programmes": { "type": "array", "items": { "type": "string" } },
+    "meta_axiom": {
+      "type": "object",
+      "required": ["id", "name", "statement"],
+      "properties": {
+        "id":        { "type": "string" },
+        "name":      { "type": "string" },
+        "statement": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "axioms":             { "type": "array", "items": { "$ref": "#/$defs/Axiom" } },
+    "derived_principles": { "type": "array", "items": { "$ref": "#/$defs/DerivedPrinciple" } },
+    "anchors":            { "type": "array", "items": { "$ref": "#/$defs/Anchor" } },
+    "inputs":             { "type": "array", "items": { "$ref": "#/$defs/Input" } },
+    "chains":             { "type": "array", "items": { "$ref": "#/$defs/Chain" } },
+    "confluence_points":  { "type": "array", "items": { "$ref": "#/$defs/ConfluencePoint" } },
+    "fork_points":        { "type": "array", "items": { "$ref": "#/$defs/ForkPoint" } },
+    "health":             { "$ref": "#/$defs/Health" },
+    "changelog":          { "type": "array", "items": { "$ref": "#/$defs/ChangelogEntry" } }
+  },
+  "$defs": {
+    "Status": {
+      "type": "string",
+      "enum": ["coherent", "untested", "incoherent", "contested", "refuted"]
+    },
+    "Provenance": {
+      "type": "string",
+      "enum": ["T", "E", "H"],
+      "description": "T=theoretical, E=experimental, H=hypothesis."
+    },
+    "ChainProvenance": {
+      "type": "string",
+      "enum": ["Internal", "External", "CrossProgramme"]
+    },
+    "Burden": {
+      "type": "string",
+      "enum": ["Minimal", "Extended"]
+    },
+    "Axiom": {
+      "type": "object",
+      "required": ["id", "name", "statement", "derivable"],
+      "properties": {
+        "id":                   { "type": "string", "minLength": 1 },
+        "name":                 { "type": "string" },
+        "statement":            { "type": "string" },
+        "layer":                { "type": "integer", "minimum": 0, "maximum": 0 },
+        "derivable":            { "type": "boolean" },
+        "derived_from_axioms":  { "type": "array", "items": { "type": "string" } },
+        "inherited_from":       { "type": "string" },
+        "notes":                { "type": "string" }
+      },
+      "additionalProperties": true,
+      "allOf": [
+        {
+          "if":   { "properties": { "derivable": { "const": true } }, "required": ["derivable"] },
+          "then": { "required": ["derived_from_axioms"] }
+        }
+      ]
+    },
+    "DerivedPrinciple": {
+      "type": "object",
+      "required": ["id", "name", "statement", "derived_from"],
+      "properties": {
+        "id":           { "type": "string", "pattern": "^DERIV-" },
+        "name":         { "type": "string" },
+        "statement":    { "type": "string" },
+        "derived_from": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "layer":        { "type": "integer", "minimum": 1, "maximum": 1 }
+      },
+      "additionalProperties": true
+    },
+    "Anchor": {
+      "type": "object",
+      "required": ["id", "name", "tier", "provenance", "status", "description", "prediction_chain"],
+      "properties": {
+        "id":                       { "type": "string", "minLength": 1 },
+        "name":                     { "type": "string" },
+        "tier":                     { "type": "integer", "minimum": 1, "maximum": 3 },
+        "provenance":               { "$ref": "#/$defs/Provenance" },
+        "status":                   { "$ref": "#/$defs/Status" },
+        "description":              { "type": "string" },
+        "prediction_chain":         { "type": "array", "items": { "type": "string" } },
+        "predicted_value":          { "type": "number" },
+        "predicted_unit":           { "type": "string" },
+        "measured_value":           { "type": "number" },
+        "measured_error":           { "type": "number" },
+        "measured_source":          { "type": "string" },
+        "discrepancy_pct":          { "type": "number" },
+        "last_tested_at":           { "type": ["string", "null"], "format": "date-time" },
+        "inherited_from":           { "type": "string" },
+        "inherited_at":             { "type": "string" },
+        "proof_system":             { "type": "string" },
+        "sorry_count":              { "type": "integer", "minimum": 0 },
+        "proof_file":               { "type": "string" },
+        "lean_theorem":             { "type": "string" },
+        "lean_companion_theorems":  { "type": "array", "items": { "type": "string" } },
+        "bridge_role":              { "type": "string" },
+        "testable_when":            { "type": "string" },
+        "notes":                    { "type": "string" },
+        "branch_id":                { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "Input": {
+      "type": "object",
+      "required": ["id", "name", "type", "status"],
+      "properties": {
+        "id":                  { "type": "string", "minLength": 1 },
+        "name":                { "type": "string" },
+        "type":                { "type": "string", "const": "input" },
+        "status":              { "type": "string", "enum": ["measurable", "irreducible", "unmeasurable"] },
+        "significant_figures": { "type": "integer", "minimum": 1, "default": 3 },
+        "notes":               { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "DomainBoundary": {
+      "type": "object",
+      "required": ["from_domain", "to_domain", "at_anchor_id", "fidelity"],
+      "properties": {
+        "from_domain":  { "type": "string" },
+        "to_domain":    { "type": "string" },
+        "at_anchor_id": { "type": "string" },
+        "fidelity":     { "type": "number", "minimum": 0, "maximum": 1 },
+        "hypothesis":   { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "Chain": {
+      "type": "object",
+      "required": ["id", "name", "source_ids", "target_id", "steps", "status"],
+      "properties": {
+        "id":                { "type": "string", "minLength": 1 },
+        "name":              { "type": "string" },
+        "source_ids":        { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "target_id":         { "type": "string" },
+        "steps":             { "type": "integer", "minimum": 0 },
+        "step_types":        { "type": "array", "items": { "type": "string" } },
+        "weakest_link_id":   { "type": ["string", "null"] },
+        "fidelity":          { "type": "number", "minimum": 0, "maximum": 1 },
+        "status":            { "$ref": "#/$defs/Status" },
+        "domain_boundaries": { "type": "array", "items": { "$ref": "#/$defs/DomainBoundary" } },
+        "notes":             { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "ChainRef": {
+      "type": "object",
+      "required": ["chain_id"],
+      "properties": {
+        "chain_id":   { "type": "string" },
+        "programme":  { "type": "string" },
+        "provenance": { "$ref": "#/$defs/ChainProvenance" },
+        "fidelity":   { "type": "number", "minimum": 0, "maximum": 1 },
+        "summary":    { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "ConfluencePoint": {
+      "type": "object",
+      "required": ["id", "anchor_id", "status"],
+      "properties": {
+        "id":               { "type": "string", "minLength": 1 },
+        "anchor_id":        { "type": "string" },
+        "description":      { "type": "string" },
+        "status":           { "$ref": "#/$defs/Status" },
+        "paths":            { "type": "array", "items": { "$ref": "#/$defs/ChainRef" } },
+        "path_a":           { "type": ["string", "null"] },
+        "path_b":           { "type": ["string", "null"] },
+        "mutual_info_bits": { "type": "number" }
+      },
+      "additionalProperties": true
+    },
+    "BranchInterpretation": {
+      "type": "object",
+      "required": ["branch_id", "interpretation", "status"],
+      "properties": {
+        "branch_id":        { "type": "string" },
+        "interpretation":   { "type": "string" },
+        "status":           { "$ref": "#/$defs/Status" },
+        "prediction_chain": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "BranchObservation": {
+      "type": "object",
+      "required": ["anchor_id", "interpretations"],
+      "properties": {
+        "anchor_id":       { "type": "string" },
+        "interpretations": { "type": "array", "items": { "$ref": "#/$defs/BranchInterpretation" }, "minItems": 2 }
+      },
+      "additionalProperties": true
+    },
+    "Branch": {
+      "type": "object",
+      "required": ["id", "name", "hypothesis", "burden"],
+      "properties": {
+        "id":          { "type": "string", "minLength": 1 },
+        "name":        { "type": "string" },
+        "hypothesis":  { "type": "string" },
+        "burden":      { "$ref": "#/$defs/Burden" },
+        "anchors":     { "type": "array", "items": { "type": "string" } },
+        "chains":      { "type": "array", "items": { "type": "string" } },
+        "confluences": { "type": "array", "items": { "type": "string" } },
+        "inputs":      { "type": "array", "items": { "type": "string" } },
+        "predictions": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "ForkPoint": {
+      "type": "object",
+      "required": ["id", "branch_node_id", "question", "branches"],
+      "properties": {
+        "id":             { "type": "string", "minLength": 1 },
+        "branch_node_id": { "type": "string" },
+        "question":       { "type": "string" },
+        "shared_prefix":  { "type": "array", "items": { "type": "string" } },
+        "branches":       { "type": "array", "items": { "$ref": "#/$defs/Branch" }, "minItems": 2 },
+        "branch_observations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/BranchObservation" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "Health": {
+      "type": "object",
+      "properties": {
+        "computed_at":         { "type": "string", "format": "date-time" },
+        "engine_version":      { "type": "string" },
+        "rho_net":             { "type": "number" },
+        "rho_net_sensitivity": {
+          "type": "object",
+          "properties": {
+            "half_h":   { "type": "number" },
+            "base_h":   { "type": "number" },
+            "double_h": { "type": "number" }
+          },
+          "additionalProperties": true
+        },
+        "coherence_ratio":      { "type": "number" },
+        "compression_velocity": { "type": "number" },
+        "anchor_count":         { "type": "integer", "minimum": 0 },
+        "tier_breakdown":       { "type": "object", "additionalProperties": { "type": "integer" } },
+        "top_bridge":           { "type": "string" },
+        "highest_value_eddy":   { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "ChangelogEntry": {
+      "type": "object",
+      "required": ["version", "date", "note"],
+      "properties": {
+        "version": { "type": "string" },
+        "date":    { "type": "string" },
+        "note":    { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

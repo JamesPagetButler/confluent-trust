@@ -1,0 +1,45 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: none
+  enable:
+    # Correctness
+    - govet
+    - errcheck
+    - staticcheck
+    - ineffassign
+    - unused
+    # Error handling
+    - errorlint
+    - nilerr
+    # Style
+    - revive
+    - misspell
+    - unconvert
+    - goconst
+    - nakedret
+    # Performance
+    - prealloc
+    # Security
+    - gosec
+
+  settings:
+    govet:
+      enable:
+        - fieldalignment
+    nakedret:
+      max-func-lines: 15
+    revive:
+      rules:
+        - name: exported
+        - name: package-comments
+        - name: var-naming
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
