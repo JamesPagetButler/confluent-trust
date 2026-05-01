@@ -1,0 +1,380 @@
+{
+  "$comment": "QBP dark-matter fork fixture for Issues #23, #24, #25. Shared prefix is QBP-derived algebraic structure; Branch A is conformal gravity (minimal, no DM); Branch B is ΛCDM-extended (DM particle and halo profile). FLAG-rotcurve-B-uses-A is intentionally branch-inconsistent to exercise #25.",
+  "schema_version": "v0.2",
+  "programme": "QBP-DM",
+  "version": "0.1",
+  "full_name": "QBP Dark Matter Fork Analysis",
+  "timestamp": "2026-05-01T00:00:00Z",
+  "parent_programmes": ["QBP v3.2"],
+
+  "axioms": [
+    {
+      "id": "AXIOM-1",
+      "name": "Information is preserved",
+      "statement": "No physical process destroys information; selects division algebras.",
+      "derivable": false,
+      "inherited_from": "QBP"
+    },
+    {
+      "id": "AXIOM-2",
+      "name": "The encoding is maximal",
+      "statement": "Boundary encoding uses the largest normed division algebra (octonions).",
+      "derivable": false,
+      "inherited_from": "QBP"
+    }
+  ],
+
+  "anchors": [
+    {
+      "id": "PROOF-quat-closure",
+      "name": "Quaternion subalgebra closure",
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent",
+      "description": "Lean Q1-Q2: H closed under multiplication; Hamilton table verified.",
+      "prediction_chain": ["AXIOM-1", "AXIOM-2"],
+      "discrepancy_pct": 0.0,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "proof_system": "lean4",
+      "sorry_count": 0,
+      "inherited_from": "QBP"
+    },
+    {
+      "id": "PROOF-hessian",
+      "name": "Hessian spectrum {0(x16), 4(x4), 8(x8), 12(x4)}",
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent",
+      "description": "Verified at all 42 ZDs; provides natural QEC block structure.",
+      "prediction_chain": ["AXIOM-1", "AXIOM-2"],
+      "discrepancy_pct": 0.0,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "proof_system": "lean4",
+      "sorry_count": 0,
+      "inherited_from": "QBP"
+    },
+    {
+      "id": "PROOF-eigenratios",
+      "name": "Eigenvalue ratios 12:8:4 with multiplicities (4,8,4)",
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent",
+      "description": "Defines code rate and gauge-eigenspace decomposition.",
+      "prediction_chain": ["PROOF-hessian"],
+      "discrepancy_pct": 0.0,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "proof_system": "lean4",
+      "sorry_count": 0,
+      "inherited_from": "QBP"
+    },
+    {
+      "id": "PROOF-gauge-group",
+      "name": "Gauge group derivation from spectral action",
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent",
+      "description": "SU(2)×U(1) emerges from the spectral action on the algebraic kernel.",
+      "prediction_chain": ["PROOF-quat-closure"],
+      "discrepancy_pct": 0.0,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "proof_system": "lean4",
+      "sorry_count": 0,
+      "inherited_from": "QBP"
+    },
+    {
+      "id": "MEAS-bi2se3-topo",
+      "name": "Bi2Se3 topological insulator class verified",
+      "tier": 2,
+      "provenance": "E",
+      "status": "coherent",
+      "description": "Materials prediction from gauge group: Z2 invariant correct.",
+      "predicted_value": 1.0,
+      "predicted_unit": "Z2 invariant (structural)",
+      "measured_value": 1.0,
+      "measured_error": 0.0,
+      "discrepancy_pct": 0.0,
+      "prediction_chain": ["PROOF-gauge-group"],
+      "last_tested_at": "2025-09-01T00:00:00Z",
+      "inherited_from": "QBP"
+    },
+
+    {
+      "id": "PRED-no-dm-particle",
+      "name": "No new dark matter particle below 100 TeV",
+      "tier": 3,
+      "provenance": "T",
+      "status": "untested",
+      "description": "Branch A prediction: rotation curves and structure formation explained by α₀=0.846 conformal-gravity correction without an additional particle.",
+      "prediction_chain": ["PROOF-gauge-group", "INPUT-alpha0-correction"],
+      "branch_id": "branch-no-dm",
+      "testable_when": "LHC HL-phase + direct detection null results through 2030"
+    },
+    {
+      "id": "PRED-conformal-cmb-fit",
+      "name": "Conformal gravity matches CMB acoustic peaks within 5% without DM",
+      "tier": 3,
+      "provenance": "T",
+      "status": "untested",
+      "description": "Branch A: Mannheim-style conformal gravity + baryons reproduces first three peaks; needs explicit chi-squared fit.",
+      "prediction_chain": ["INPUT-alpha0-correction", "INPUT-baryon-omega"],
+      "branch_id": "branch-no-dm"
+    },
+
+    {
+      "id": "PRED-dm-particle-mass",
+      "name": "DM particle mass in [10 GeV, 10 TeV]",
+      "tier": 3,
+      "provenance": "H",
+      "status": "untested",
+      "description": "Branch B: standard ΛCDM range subject to direct detection constraints.",
+      "prediction_chain": ["INPUT-omega-dm", "INPUT-nfw-rs"],
+      "branch_id": "branch-dm-exists"
+    },
+    {
+      "id": "PRED-halo-mass-function",
+      "name": "Halo mass function follows Sheth-Tormen with σ8 = 0.81",
+      "tier": 3,
+      "provenance": "T",
+      "status": "untested",
+      "description": "Branch B prediction from NFW-profiled simulations.",
+      "prediction_chain": ["INPUT-omega-dm", "INPUT-nfw-rs", "INPUT-sigma8"],
+      "branch_id": "branch-dm-exists"
+    },
+
+    {
+      "id": "FLAG-rotcurve-B-uses-A",
+      "name": "Branch-inconsistent: B-side rotation curve fit referencing α₀ correction",
+      "tier": 2,
+      "provenance": "T",
+      "status": "incoherent",
+      "description": "Intentionally planted branch inconsistency: a Branch B anchor whose prediction_chain pulls INPUT-alpha0-correction (a Branch A input). Issue #25's CheckBranchConsistency must flag this.",
+      "prediction_chain": ["INPUT-alpha0-correction", "INPUT-omega-dm"],
+      "branch_id": "branch-dm-exists",
+      "notes": "Do not fix. This anchor is the regression target for #25."
+    }
+  ],
+
+  "inputs": [
+    {
+      "id": "INPUT-alpha0-correction",
+      "name": "Conformal gravity correction α₀ = 0.846",
+      "type": "input",
+      "status": "measurable",
+      "significant_figures": 3,
+      "notes": "Branch A input. Drawn from Mannheim's spherically symmetric solutions."
+    },
+    {
+      "id": "INPUT-baryon-omega",
+      "name": "Baryon density Ω_b = 0.0493",
+      "type": "input",
+      "status": "measurable",
+      "significant_figures": 3,
+      "notes": "Shared input — used by both branches; lives in shared prefix."
+    },
+    {
+      "id": "INPUT-omega-dm",
+      "name": "Dark matter density Ω_DM = 0.26",
+      "type": "input",
+      "status": "measurable",
+      "significant_figures": 2,
+      "notes": "Branch B input. ΛCDM cold dark matter density."
+    },
+    {
+      "id": "INPUT-nfw-rs",
+      "name": "NFW scale radius rs",
+      "type": "input",
+      "status": "measurable",
+      "significant_figures": 2,
+      "notes": "Branch B input. Halo profile parameter."
+    },
+    {
+      "id": "INPUT-sigma8",
+      "name": "Linear matter perturbation amplitude σ8 = 0.81",
+      "type": "input",
+      "status": "measurable",
+      "significant_figures": 2,
+      "notes": "Branch B input."
+    }
+  ],
+
+  "chains": [
+    {
+      "id": "CHAIN-axioms-to-quat",
+      "name": "Axioms → quaternion closure",
+      "source_ids": ["AXIOM-1", "AXIOM-2"],
+      "target_id": "PROOF-quat-closure",
+      "steps": 2,
+      "status": "coherent",
+      "fidelity": 1.0
+    },
+    {
+      "id": "CHAIN-quat-to-hessian",
+      "name": "Quaternion closure → Hessian spectrum",
+      "source_ids": ["PROOF-quat-closure"],
+      "target_id": "PROOF-hessian",
+      "steps": 3,
+      "status": "coherent",
+      "fidelity": 1.0
+    },
+    {
+      "id": "CHAIN-hessian-to-eigenratios",
+      "name": "Hessian spectrum → eigen-ratio code structure",
+      "source_ids": ["PROOF-hessian"],
+      "target_id": "PROOF-eigenratios",
+      "steps": 1,
+      "status": "coherent",
+      "fidelity": 1.0
+    },
+    {
+      "id": "CHAIN-quat-to-gauge",
+      "name": "Quaternion closure + spectral action → gauge group",
+      "source_ids": ["PROOF-quat-closure"],
+      "target_id": "PROOF-gauge-group",
+      "steps": 4,
+      "status": "coherent",
+      "fidelity": 0.95
+    },
+    {
+      "id": "CHAIN-gauge-to-bi2se3",
+      "name": "Gauge group → Bi2Se3 prediction",
+      "source_ids": ["PROOF-gauge-group"],
+      "target_id": "MEAS-bi2se3-topo",
+      "steps": 2,
+      "status": "coherent",
+      "fidelity": 0.97
+    },
+
+    {
+      "id": "CHAIN-no-dm-rotcurves",
+      "name": "α₀ correction → rotation curves without DM",
+      "source_ids": ["PROOF-gauge-group"],
+      "target_id": "PRED-no-dm-particle",
+      "steps": 3,
+      "status": "untested",
+      "fidelity": 0.85
+    },
+    {
+      "id": "CHAIN-conformal-cmb",
+      "name": "α₀ + Ω_b → CMB peak fit",
+      "source_ids": ["PROOF-gauge-group"],
+      "target_id": "PRED-conformal-cmb-fit",
+      "steps": 4,
+      "status": "untested",
+      "fidelity": 0.80
+    },
+    {
+      "id": "CHAIN-dm-mass",
+      "name": "Ω_DM + relic abundance → mass range",
+      "source_ids": ["PROOF-gauge-group"],
+      "target_id": "PRED-dm-particle-mass",
+      "steps": 3,
+      "status": "untested",
+      "fidelity": 0.75
+    },
+    {
+      "id": "CHAIN-halo-function",
+      "name": "Ω_DM + NFW + σ8 → halo mass function",
+      "source_ids": ["PROOF-gauge-group"],
+      "target_id": "PRED-halo-mass-function",
+      "steps": 3,
+      "status": "untested",
+      "fidelity": 0.85
+    }
+  ],
+
+  "confluence_points": [
+    {
+      "id": "CONFL-bi2se3",
+      "anchor_id": "MEAS-bi2se3-topo",
+      "description": "Materials prediction confirmed by experiment.",
+      "status": "coherent",
+      "paths": [
+        {
+          "chain_id": "CHAIN-gauge-to-bi2se3",
+          "programme": "QBP-DM",
+          "provenance": "Internal",
+          "fidelity": 0.97,
+          "summary": "Theoretical path"
+        }
+      ]
+    }
+  ],
+
+  "fork_points": [
+    {
+      "id": "FORK-dm",
+      "branch_node_id": "PROOF-gauge-group",
+      "question": "Does cosmological structure require an additional dark-matter particle, or is it explained by a conformal-gravity correction?",
+      "shared_prefix": [
+        "AXIOM-1",
+        "AXIOM-2",
+        "PROOF-quat-closure",
+        "PROOF-hessian",
+        "PROOF-eigenratios",
+        "PROOF-gauge-group",
+        "MEAS-bi2se3-topo",
+        "INPUT-baryon-omega"
+      ],
+      "branches": [
+        {
+          "id": "branch-no-dm",
+          "name": "No DM (conformal gravity)",
+          "hypothesis": "Galactic and cosmological observations are explained by an α₀=0.846 conformal-gravity correction; no new particle required.",
+          "burden": "Minimal",
+          "anchors": ["PRED-no-dm-particle", "PRED-conformal-cmb-fit"],
+          "chains": ["CHAIN-no-dm-rotcurves", "CHAIN-conformal-cmb"],
+          "inputs": ["INPUT-alpha0-correction"],
+          "predictions": ["PRED-no-dm-particle", "PRED-conformal-cmb-fit"]
+        },
+        {
+          "id": "branch-dm-exists",
+          "name": "DM exists (ΛCDM)",
+          "hypothesis": "A weakly-interacting massive particle with Ω_DM=0.26 and an NFW halo profile explains observations.",
+          "burden": "Extended",
+          "anchors": ["PRED-dm-particle-mass", "PRED-halo-mass-function", "FLAG-rotcurve-B-uses-A"],
+          "chains": ["CHAIN-dm-mass", "CHAIN-halo-function"],
+          "inputs": ["INPUT-omega-dm", "INPUT-nfw-rs", "INPUT-sigma8"],
+          "predictions": ["PRED-dm-particle-mass", "PRED-halo-mass-function"]
+        }
+      ],
+      "branch_observations": [
+        {
+          "anchor_id": "OBS-rotation-curves",
+          "interpretations": [
+            { "branch_id": "branch-no-dm",     "interpretation": "Flat rotation curves emerge from α₀ correction at galactic radii.",     "status": "untested" },
+            { "branch_id": "branch-dm-exists", "interpretation": "Flat rotation curves require an NFW halo with rs and Ω_DM.",            "status": "untested" }
+          ]
+        },
+        {
+          "anchor_id": "OBS-bullet-cluster",
+          "interpretations": [
+            { "branch_id": "branch-no-dm",     "interpretation": "Conformal gravity reproduces lensing offset only with auxiliary baryonic gas physics.", "status": "contested" },
+            { "branch_id": "branch-dm-exists", "interpretation": "Lensing peak offset from gas peak is direct evidence of collisionless DM.",             "status": "coherent" }
+          ]
+        },
+        {
+          "anchor_id": "OBS-cmb-peaks",
+          "interpretations": [
+            { "branch_id": "branch-no-dm",     "interpretation": "Three-peak structure achievable with α₀ correction; pending explicit fit.", "status": "untested" },
+            { "branch_id": "branch-dm-exists", "interpretation": "Peak ratios determine Ω_DM/Ω_b; fits with Ω_DM=0.26.",                       "status": "coherent" }
+          ]
+        },
+        {
+          "anchor_id": "OBS-jwst-early-galaxies",
+          "interpretations": [
+            { "branch_id": "branch-no-dm",     "interpretation": "Early massive galaxies easier in conformal-gravity structure formation.", "status": "coherent" },
+            { "branch_id": "branch-dm-exists", "interpretation": "Tension with ΛCDM σ8 normalization; under active investigation.",         "status": "contested" }
+          ]
+        }
+      ]
+    }
+  ],
+
+  "changelog": [
+    {
+      "version": "0.1",
+      "date": "2026-05-01",
+      "note": "Initial DM fork fixture seeded for Issues #23, #24, #25, #27. FLAG-rotcurve-B-uses-A is intentionally branch-inconsistent."
+    }
+  ]
+}

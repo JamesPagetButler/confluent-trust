@@ -27,6 +27,7 @@ func TestInventory_RoundTrip(t *testing.T) {
 	fixtures := []string{
 		"minimal.json",
 		"qbp_quantum_v0_2.json",
+		"qbp_dm_fork.json",
 	}
 	for _, name := range fixtures {
 		t.Run(name, func(t *testing.T) {
@@ -64,6 +65,68 @@ func TestInventory_Validate_QBPQuantumV02(t *testing.T) {
 	}
 	if err := inv.Validate(); err != nil {
 		t.Fatalf("validate: %v", err)
+	}
+}
+
+func TestInventory_Validate_DMFork(t *testing.T) {
+	raw := loadFixture(t, "qbp_dm_fork.json")
+	var inv Inventory
+	if err := json.Unmarshal(raw, &inv); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if err := inv.Validate(); err != nil {
+		t.Fatalf("validate: %v", err)
+	}
+
+	// Issue #23 acceptance: round-trip a forked inventory with deep equality.
+	// Already exercised by TestInventory_RoundTrip; here we add fork-specific
+	// structural assertions against the canonical fixture.
+	if got, want := len(inv.ForkPoints), 1; got != want {
+		t.Fatalf("fork_points: got %d, want %d", got, want)
+	}
+	fork := inv.ForkPoints[0]
+	if got, want := len(fork.Branches), 2; got != want {
+		t.Fatalf("fork %s: branches: got %d, want %d", fork.ID, got, want)
+	}
+	var minimalCount, extendedCount int
+	for _, b := range fork.Branches {
+		switch b.Burden {
+		case BurdenMinimal:
+			minimalCount++
+		case BurdenExtended:
+			extendedCount++
+		}
+	}
+	if minimalCount != 1 || extendedCount != 1 {
+		t.Errorf("fork %s: expected 1 Minimal + 1 Extended, got %d Minimal + %d Extended",
+			fork.ID, minimalCount, extendedCount)
+	}
+
+	// The intentionally branch-inconsistent anchor must be present and tagged
+	// to the wrong branch's input — the structural prerequisite Issue #25
+	// will rely on.
+	var flag *Anchor
+	for i := range inv.Anchors {
+		if inv.Anchors[i].ID == "FLAG-rotcurve-B-uses-A" {
+			flag = &inv.Anchors[i]
+			break
+		}
+	}
+	if flag == nil {
+		t.Fatal("FLAG-rotcurve-B-uses-A anchor missing")
+	}
+	if flag.BranchID != "branch-dm-exists" {
+		t.Errorf("FLAG anchor branch_id = %q, want %q", flag.BranchID, "branch-dm-exists")
+	}
+	var pullsAlpha0 bool
+	for _, dep := range flag.PredictionChain {
+		if dep == "INPUT-alpha0-correction" {
+			pullsAlpha0 = true
+			break
+		}
+	}
+	if !pullsAlpha0 {
+		t.Error("FLAG anchor must depend on INPUT-alpha0-correction (a Branch A input) to exercise #25")
 	}
 }
 
