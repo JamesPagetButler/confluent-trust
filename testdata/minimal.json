@@ -1,0 +1,106 @@
+{
+  "$comment": "5-anchor synthetic fixture for unit-test baselines. All values hand-computed.",
+  "schema_version": "v0.2",
+  "programme": "MINIMAL",
+  "version": "0.1",
+  "full_name": "Minimal CTH baseline fixture",
+  "timestamp": "2026-04-30T00:00:00Z",
+  "axioms": [
+    {
+      "id": "AXIOM-1",
+      "name": "Energy conservation",
+      "statement": "Total energy of an isolated system is constant.",
+      "derivable": false
+    }
+  ],
+  "anchors": [
+    {
+      "id": "PROOF-newton-2nd",
+      "name": "F = ma from energy conservation + Galilean invariance",
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent",
+      "description": "Stated for the unit-test baseline; not a real proof.",
+      "prediction_chain": ["AXIOM-1"]
+    },
+    {
+      "id": "PROOF-falling-rate",
+      "name": "Mass-independent free-fall rate",
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent",
+      "description": "F=ma + uniform gravity yields a = g.",
+      "prediction_chain": ["PROOF-newton-2nd"]
+    },
+    {
+      "id": "MEAS-galileo-tower",
+      "name": "Tower drop result",
+      "tier": 2,
+      "provenance": "E",
+      "status": "coherent",
+      "description": "Two masses fall together within precision.",
+      "predicted_value": 9.81,
+      "predicted_unit": "m/s^2",
+      "measured_value": 9.79,
+      "measured_error": 0.05,
+      "discrepancy_pct": 0.2,
+      "prediction_chain": ["PROOF-falling-rate"],
+      "last_tested_at": "1589-01-01T00:00:00Z"
+    },
+    {
+      "id": "PRED-eotvos-equivalence",
+      "name": "Equivalence-principle bound",
+      "tier": 2,
+      "provenance": "T",
+      "status": "untested",
+      "description": "Predicts η < 1e-15 by current limits.",
+      "prediction_chain": ["PROOF-falling-rate"]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "INST-air-resistance",
+      "name": "Air resistance coefficient at tower altitude",
+      "type": "input",
+      "status": "measurable",
+      "significant_figures": 2
+    }
+  ],
+  "chains": [
+    {
+      "id": "CHAIN-axiom-to-newton",
+      "name": "Energy conservation -> F=ma",
+      "source_ids": ["AXIOM-1"],
+      "target_id": "PROOF-newton-2nd",
+      "steps": 2,
+      "status": "coherent",
+      "fidelity": 0.99
+    },
+    {
+      "id": "CHAIN-newton-to-fall",
+      "name": "F=ma -> falling rate",
+      "source_ids": ["PROOF-newton-2nd"],
+      "target_id": "PROOF-falling-rate",
+      "steps": 1,
+      "status": "coherent",
+      "fidelity": 0.99
+    }
+  ],
+  "confluence_points": [
+    {
+      "id": "CONFL-tower",
+      "anchor_id": "MEAS-galileo-tower",
+      "description": "Tower-drop measurement reached via the theoretical chain.",
+      "status": "coherent",
+      "paths": [
+        {
+          "chain_id": "CHAIN-newton-to-fall",
+          "programme": "MINIMAL",
+          "provenance": "Internal",
+          "fidelity": 0.99,
+          "summary": "Theoretical path"
+        }
+      ]
+    }
+  ]
+}

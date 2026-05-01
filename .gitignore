@@ -1,0 +1,30 @@
+# Binaries
+/bin/
+*.exe
+*.dll
+*.so
+*.dylib
+cth
+
+# Test artefacts
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Profiles
+*.prof
+cpu.prof
+mem.prof
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Local override
+.env
+.env.local
+/tmp/
