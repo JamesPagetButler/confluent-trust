@@ -7,12 +7,12 @@ import "fmt"
 // every branch's metrics; branch-specific items contribute only to their
 // own branch.
 type ForkPoint struct {
-	ID            string              `json:"id"`
-	BranchNodeID  string              `json:"branch_node_id"`
-	Question      string              `json:"question"`
-	SharedPrefix  []string            `json:"shared_prefix,omitempty"`
-	Branches      []Branch            `json:"branches"`
-	Observations  []BranchObservation `json:"branch_observations,omitempty"`
+	ID           string              `json:"id"`
+	BranchNodeID string              `json:"branch_node_id"`
+	Question     string              `json:"question"`
+	SharedPrefix []string            `json:"shared_prefix,omitempty"`
+	Branches     []Branch            `json:"branches"`
+	Observations []BranchObservation `json:"branch_observations,omitempty"`
 }
 
 // Branch is one of the alternative interpretations under a ForkPoint.
@@ -20,12 +20,12 @@ type Branch struct {
 	ID          string   `json:"id"`
 	Name        string   `json:"name"`
 	Hypothesis  string   `json:"hypothesis"`
-	Burden      Burden   `json:"burden"`
 	Anchors     []string `json:"anchors,omitempty"`
 	Chains      []string `json:"chains,omitempty"`
 	Confluences []string `json:"confluences,omitempty"`
 	Inputs      []string `json:"inputs,omitempty"`
 	Predictions []string `json:"predictions,omitempty"`
+	Burden      Burden   `json:"burden"`
 }
 
 // BranchObservation tags an observation anchor with its per-branch
@@ -39,8 +39,8 @@ type BranchObservation struct {
 type BranchInterpretation struct {
 	BranchID        string   `json:"branch_id"`
 	Interpretation  string   `json:"interpretation"`
-	Status          Status   `json:"status"`
 	PredictionChain []string `json:"prediction_chain,omitempty"`
+	Status          Status   `json:"status"`
 }
 
 // Validate enforces fork-level invariants:

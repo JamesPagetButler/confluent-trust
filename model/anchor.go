@@ -10,11 +10,11 @@ type Axiom struct {
 	ID                string   `json:"id"`
 	Name              string   `json:"name"`
 	Statement         string   `json:"statement"`
-	Layer             int      `json:"layer,omitempty"`
-	Derivable         bool     `json:"derivable"`
-	DerivedFromAxioms []string `json:"derived_from_axioms,omitempty"`
 	InheritedFrom     string   `json:"inherited_from,omitempty"`
 	Notes             string   `json:"notes,omitempty"`
+	DerivedFromAxioms []string `json:"derived_from_axioms,omitempty"`
+	Layer             int      `json:"layer,omitempty"`
+	Derivable         bool     `json:"derivable"`
 }
 
 // Validate enforces the Tier 0 derivability invariant: an axiom marked
@@ -33,47 +33,42 @@ func (a Axiom) Validate() error {
 // It is a high-level corollary of axioms and proofs that gets a stable name
 // rather than being buried in a chain.
 type DerivedPrinciple struct {
-	ID           string   `json:"id"`
-	Name         string   `json:"name"`
-	Statement    string   `json:"statement"`
-	DerivedFrom  []string `json:"derived_from"`
-	Layer        int      `json:"layer,omitempty"`
+	ID          string   `json:"id"`
+	Name        string   `json:"name"`
+	Statement   string   `json:"statement"`
+	DerivedFrom []string `json:"derived_from"`
+	Layer       int      `json:"layer,omitempty"`
 }
 
 // Anchor is a Tier 1–3 node: a proof, measurement, prediction, or observation.
 // Computed quantities (Domain, ResidualEntropy, ConfirmatoryInfo) are not
 // stored here; package compute produces them on demand.
 type Anchor struct {
-	ID                    string  `json:"id"`
-	Name                  string  `json:"name"`
-	Description           string  `json:"description"`
-	Tier                  Tier    `json:"tier"`
+	PredictedValue        *float64   `json:"predicted_value,omitempty"`
+	SorryCount            *int       `json:"sorry_count,omitempty"`
+	LastTestedAt          *string    `json:"last_tested_at,omitempty"`
+	DiscrepancyPct        *float64   `json:"discrepancy_pct,omitempty"`
+	MeasuredError         *float64   `json:"measured_error,omitempty"`
+	MeasuredValue         *float64   `json:"measured_value,omitempty"`
+	ProofFile             string     `json:"proof_file,omitempty"`
+	InheritedAt           string     `json:"inherited_at,omitempty"`
+	PredictedUnit         string     `json:"predicted_unit,omitempty"`
+	BranchID              string     `json:"branch_id,omitempty"`
+	Notes                 string     `json:"notes,omitempty"`
+	MeasuredSource        string     `json:"measured_source,omitempty"`
+	TestableWhen          string     `json:"testable_when,omitempty"`
+	Description           string     `json:"description"`
+	InheritedFrom         string     `json:"inherited_from,omitempty"`
+	BridgeRole            string     `json:"bridge_role,omitempty"`
+	ProofSystem           string     `json:"proof_system,omitempty"`
+	Name                  string     `json:"name"`
+	ID                    string     `json:"id"`
+	LeanTheorem           string     `json:"lean_theorem,omitempty"`
+	LeanCompanionTheorems []string   `json:"lean_companion_theorems,omitempty"`
+	PredictionChain       []string   `json:"prediction_chain"`
+	Tier                  Tier       `json:"tier"`
 	Provenance            Provenance `json:"provenance"`
-	Status                Status  `json:"status"`
-	PredictionChain       []string `json:"prediction_chain"`
-
-	PredictedValue        *float64 `json:"predicted_value,omitempty"`
-	PredictedUnit         string   `json:"predicted_unit,omitempty"`
-	MeasuredValue         *float64 `json:"measured_value,omitempty"`
-	MeasuredError         *float64 `json:"measured_error,omitempty"`
-	MeasuredSource        string   `json:"measured_source,omitempty"`
-	DiscrepancyPct        *float64 `json:"discrepancy_pct,omitempty"`
-
-	LastTestedAt          *string  `json:"last_tested_at,omitempty"`
-	InheritedFrom         string   `json:"inherited_from,omitempty"`
-	InheritedAt           string   `json:"inherited_at,omitempty"`
-
-	ProofSystem           string   `json:"proof_system,omitempty"`
-	SorryCount            *int     `json:"sorry_count,omitempty"`
-	ProofFile             string   `json:"proof_file,omitempty"`
-	LeanTheorem           string   `json:"lean_theorem,omitempty"`
-	LeanCompanionTheorems []string `json:"lean_companion_theorems,omitempty"`
-
-	BridgeRole            string   `json:"bridge_role,omitempty"`
-	TestableWhen          string   `json:"testable_when,omitempty"`
-	Notes                 string   `json:"notes,omitempty"`
-
-	BranchID              string   `json:"branch_id,omitempty"`
+	Status                Status     `json:"status"`
 }
 
 // Validate enforces anchor-level invariants.
@@ -94,8 +89,8 @@ type Input struct {
 	Name               string `json:"name"`
 	Type               string `json:"type"`
 	Status             string `json:"status"`
-	SignificantFigures int    `json:"significant_figures,omitempty"`
 	Notes              string `json:"notes,omitempty"`
+	SignificantFigures int    `json:"significant_figures,omitempty"`
 }
 
 // Validate enforces input-level invariants.

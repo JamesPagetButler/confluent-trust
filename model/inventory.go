@@ -6,22 +6,22 @@ import "fmt"
 // state at a point in time. It is the unit consumed and produced by the
 // JSON store and the unit on which package compute operates.
 type Inventory struct {
-	Programme        string             `json:"programme"`
-	Version          string             `json:"version"`
-	SchemaVersion    string             `json:"schema_version,omitempty"`
-	FullName         string             `json:"full_name,omitempty"`
-	Timestamp        string             `json:"timestamp,omitempty"`
-	ParentProgrammes []string           `json:"parent_programmes,omitempty"`
-	MetaAxiom        *MetaAxiom         `json:"meta_axiom,omitempty"`
-	Axioms           []Axiom            `json:"axioms"`
+	Programme         string             `json:"programme"`
+	Version           string             `json:"version"`
+	SchemaVersion     string             `json:"schema_version,omitempty"`
+	FullName          string             `json:"full_name,omitempty"`
+	Timestamp         string             `json:"timestamp,omitempty"`
+	ParentProgrammes  []string           `json:"parent_programmes,omitempty"`
+	MetaAxiom         *MetaAxiom         `json:"meta_axiom,omitempty"`
+	Axioms            []Axiom            `json:"axioms"`
 	DerivedPrinciples []DerivedPrinciple `json:"derived_principles,omitempty"`
-	Anchors          []Anchor           `json:"anchors"`
-	Inputs           []Input            `json:"inputs,omitempty"`
-	Chains           []Chain            `json:"chains"`
-	ConfluencePoints []ConfluencePoint  `json:"confluence_points,omitempty"`
-	ForkPoints       []ForkPoint        `json:"fork_points,omitempty"`
-	Health           *Health            `json:"health,omitempty"`
-	Changelog        []ChangelogEntry   `json:"changelog,omitempty"`
+	Anchors           []Anchor           `json:"anchors"`
+	Inputs            []Input            `json:"inputs,omitempty"`
+	Chains            []Chain            `json:"chains"`
+	ConfluencePoints  []ConfluencePoint  `json:"confluence_points,omitempty"`
+	ForkPoints        []ForkPoint        `json:"fork_points,omitempty"`
+	Health            *Health            `json:"health,omitempty"`
+	Changelog         []ChangelogEntry   `json:"changelog,omitempty"`
 }
 
 // MetaAxiom is the optional "axiom about axioms" — e.g. "all knowledge is
@@ -43,16 +43,16 @@ type ChangelogEntry struct {
 // for inspection but not authoritative — the source of truth is
 // recomputation by package compute.
 type Health struct {
-	ComputedAt          string             `json:"computed_at,omitempty"`
-	EngineVersion       string             `json:"engine_version,omitempty"`
-	RhoNet              *float64           `json:"rho_net,omitempty"`
-	RhoNetSensitivity   *Sensitivity       `json:"rho_net_sensitivity,omitempty"`
-	CoherenceRatio      *float64           `json:"coherence_ratio,omitempty"`
-	CompressionVelocity *float64           `json:"compression_velocity,omitempty"`
-	AnchorCount         int                `json:"anchor_count,omitempty"`
-	TierBreakdown       map[string]int     `json:"tier_breakdown,omitempty"`
-	TopBridge           string             `json:"top_bridge,omitempty"`
-	HighestValueEddy    string             `json:"highest_value_eddy,omitempty"`
+	RhoNet              *float64       `json:"rho_net,omitempty"`
+	RhoNetSensitivity   *Sensitivity   `json:"rho_net_sensitivity,omitempty"`
+	CoherenceRatio      *float64       `json:"coherence_ratio,omitempty"`
+	CompressionVelocity *float64       `json:"compression_velocity,omitempty"`
+	TierBreakdown       map[string]int `json:"tier_breakdown,omitempty"`
+	ComputedAt          string         `json:"computed_at,omitempty"`
+	EngineVersion       string         `json:"engine_version,omitempty"`
+	TopBridge           string         `json:"top_bridge,omitempty"`
+	HighestValueEddy    string         `json:"highest_value_eddy,omitempty"`
+	AnchorCount         int            `json:"anchor_count,omitempty"`
 }
 
 // Sensitivity is the half/base/double bracket from Definition 15.

@@ -10,11 +10,11 @@ import (
 // each tagged with whether it is internal to the programme, external,
 // or cross-programme.
 type ChainRef struct {
+	Fidelity   *float64        `json:"fidelity,omitempty"`
 	ChainID    string          `json:"chain_id"`
 	Programme  string          `json:"programme,omitempty"`
-	Provenance ChainProvenance `json:"provenance,omitempty"`
-	Fidelity   *float64        `json:"fidelity,omitempty"`
 	Summary    string          `json:"summary,omitempty"`
+	Provenance ChainProvenance `json:"provenance,omitempty"`
 }
 
 // ConfluencePoint is the parity-check of the framework: an anchor reached
@@ -22,18 +22,14 @@ type ChainRef struct {
 // pre-v0.2 inventories use binary path_a / path_b which the JSON store
 // migrates to the Paths field on load.
 type ConfluencePoint struct {
+	LegacyPathA    *string    `json:"path_a,omitempty"`
+	LegacyPathB    *string    `json:"path_b,omitempty"`
 	ID             string     `json:"id"`
 	AnchorID       string     `json:"anchor_id"`
 	Description    string     `json:"description,omitempty"`
-	Status         Status     `json:"status"`
 	Paths          []ChainRef `json:"paths,omitempty"`
 	MutualInfoBits float64    `json:"mutual_info_bits,omitempty"`
-
-	// LegacyPathA / LegacyPathB capture the pre-v0.2 binary shape so
-	// the JSON store can migrate them into Paths. They are not exposed
-	// in user-facing output.
-	LegacyPathA *string `json:"path_a,omitempty"`
-	LegacyPathB *string `json:"path_b,omitempty"`
+	Status         Status     `json:"status"`
 }
 
 // Validate enforces confluence-level invariants. A confluence with zero

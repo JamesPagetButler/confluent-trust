@@ -43,7 +43,7 @@ func TestValidate_AllFixtures(t *testing.T) {
 		name := e.Name()
 		t.Run(name, func(t *testing.T) {
 			path := filepath.Join(fixturesDir, name)
-			data, err := os.ReadFile(path)
+			data, err := os.ReadFile(path) // #nosec G304 -- test reads a fixed-prefix testdata path
 			if err != nil {
 				t.Fatalf("read %s: %v", path, err)
 			}

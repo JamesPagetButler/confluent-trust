@@ -8,8 +8,8 @@ type DomainBoundary struct {
 	FromDomain string  `json:"from_domain"`
 	ToDomain   string  `json:"to_domain"`
 	AtAnchorID string  `json:"at_anchor_id"`
-	Fidelity   float64 `json:"fidelity"`
 	Hypothesis string  `json:"hypothesis,omitempty"`
+	Fidelity   float64 `json:"fidelity"`
 }
 
 // Chain is a derivation hyperedge from one or more sources to a target.
@@ -17,17 +17,17 @@ type DomainBoundary struct {
 // computes from StepTypes (preferred) or falls back to the legacy
 // WeakestLinkID heuristic.
 type Chain struct {
-	ID               string           `json:"id"`
-	Name             string           `json:"name"`
-	SourceIDs        []string         `json:"source_ids"`
-	TargetID         string           `json:"target_id"`
-	Steps            int              `json:"steps"`
-	StepTypes        []string         `json:"step_types,omitempty"`
 	WeakestLinkID    *string          `json:"weakest_link_id,omitempty"`
 	Fidelity         *float64         `json:"fidelity,omitempty"`
-	Status           Status           `json:"status"`
-	DomainBoundaries []DomainBoundary `json:"domain_boundaries,omitempty"`
+	ID               string           `json:"id"`
+	Name             string           `json:"name"`
+	TargetID         string           `json:"target_id"`
 	Notes            string           `json:"notes,omitempty"`
+	SourceIDs        []string         `json:"source_ids"`
+	StepTypes        []string         `json:"step_types,omitempty"`
+	DomainBoundaries []DomainBoundary `json:"domain_boundaries,omitempty"`
+	Steps            int              `json:"steps"`
+	Status           Status           `json:"status"`
 }
 
 // Validate enforces chain-level invariants.

@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+// jsonNull is the JSON literal for a null value, used in the enum
+// MarshalJSON / UnmarshalJSON fast paths.
+const jsonNull = "null"
+
 // Tier is an anchor's position in the derivation hierarchy.
 //
 //	Tier 0: axioms (underivable assumptions)
@@ -13,6 +17,7 @@ import (
 //	Tier 3: predictions awaiting evidence
 type Tier int8
 
+// Tier values per Theory v0.2 §4.1.
 const (
 	TierAxiom       Tier = 0
 	TierProof       Tier = 1
@@ -23,6 +28,8 @@ const (
 // Status classifies an anchor or chain's epistemic state.
 type Status uint8
 
+// Status values per Theory v0.2 §4.1. StatusUnknown is the zero value
+// for anchors that have not yet been classified.
 const (
 	StatusUnknown Status = iota
 	StatusCoherent
@@ -35,6 +42,7 @@ const (
 // Provenance distinguishes theoretical, experimental, and hypothesis anchors.
 type Provenance uint8
 
+// Provenance values: T = theoretical, E = experimental, H = hypothesis.
 const (
 	ProvenanceUnknown Provenance = iota
 	ProvenanceTheoretical
@@ -45,6 +53,8 @@ const (
 // ChainProvenance distinguishes how a chain participates in a confluence.
 type ChainProvenance uint8
 
+// ChainProvenance values: Internal (within programme), External (different
+// research community), CrossProgramme (different HE programme).
 const (
 	ChainProvenanceUnknown ChainProvenance = iota
 	ChainProvenanceInternal
@@ -55,6 +65,8 @@ const (
 // Burden is the assumption load of a fork branch (Theory §2.8 Def 19a).
 type Burden uint8
 
+// Burden values: Minimal adds no assumptions beyond the shared prefix;
+// Extended carries the burden of justifying additional assumptions.
 const (
 	BurdenUnknown Burden = iota
 	BurdenMinimal
@@ -63,6 +75,7 @@ const (
 
 // ---- Status ----
 
+// String returns the canonical string form of a Status.
 func (s Status) String() string {
 	switch s {
 	case StatusCoherent:
@@ -80,6 +93,7 @@ func (s Status) String() string {
 	}
 }
 
+// MarshalJSON encodes a Status as its canonical string, or null when unknown.
 func (s Status) MarshalJSON() ([]byte, error) {
 	v := s.String()
 	if v == "" {
@@ -88,8 +102,10 @@ func (s Status) MarshalJSON() ([]byte, error) {
 	return json.Marshal(v)
 }
 
+// UnmarshalJSON decodes a Status from its canonical string. Unknown values
+// produce a wrapped error; null and the empty string become StatusUnknown.
 func (s *Status) UnmarshalJSON(b []byte) error {
-	if string(b) == "null" {
+	if string(b) == jsonNull {
 		*s = StatusUnknown
 		return nil
 	}
@@ -118,6 +134,7 @@ func (s *Status) UnmarshalJSON(b []byte) error {
 
 // ---- Provenance ----
 
+// String returns the canonical string form of a Provenance.
 func (p Provenance) String() string {
 	switch p {
 	case ProvenanceTheoretical:
@@ -131,6 +148,7 @@ func (p Provenance) String() string {
 	}
 }
 
+// MarshalJSON encodes a Provenance as T / E / H, or null when unknown.
 func (p Provenance) MarshalJSON() ([]byte, error) {
 	v := p.String()
 	if v == "" {
@@ -139,8 +157,10 @@ func (p Provenance) MarshalJSON() ([]byte, error) {
 	return json.Marshal(v)
 }
 
+// UnmarshalJSON decodes a Provenance from T / E / H. Unknown values produce
+// a wrapped error; null and the empty string become ProvenanceUnknown.
 func (p *Provenance) UnmarshalJSON(b []byte) error {
-	if string(b) == "null" {
+	if string(b) == jsonNull {
 		*p = ProvenanceUnknown
 		return nil
 	}
@@ -165,6 +185,7 @@ func (p *Provenance) UnmarshalJSON(b []byte) error {
 
 // ---- ChainProvenance ----
 
+// String returns the canonical string form of a ChainProvenance.
 func (c ChainProvenance) String() string {
 	switch c {
 	case ChainProvenanceInternal:
@@ -178,6 +199,8 @@ func (c ChainProvenance) String() string {
 	}
 }
 
+// MarshalJSON encodes a ChainProvenance as Internal / External /
+// CrossProgramme, or null when unknown.
 func (c ChainProvenance) MarshalJSON() ([]byte, error) {
 	v := c.String()
 	if v == "" {
@@ -186,8 +209,10 @@ func (c ChainProvenance) MarshalJSON() ([]byte, error) {
 	return json.Marshal(v)
 }
 
+// UnmarshalJSON decodes a ChainProvenance from its canonical string.
+// Unknown values produce a wrapped error.
 func (c *ChainProvenance) UnmarshalJSON(b []byte) error {
-	if string(b) == "null" {
+	if string(b) == jsonNull {
 		*c = ChainProvenanceUnknown
 		return nil
 	}
@@ -212,6 +237,7 @@ func (c *ChainProvenance) UnmarshalJSON(b []byte) error {
 
 // ---- Burden ----
 
+// String returns the canonical string form of a Burden.
 func (b Burden) String() string {
 	switch b {
 	case BurdenMinimal:
@@ -223,6 +249,7 @@ func (b Burden) String() string {
 	}
 }
 
+// MarshalJSON encodes a Burden as Minimal / Extended, or null when unknown.
 func (b Burden) MarshalJSON() ([]byte, error) {
 	v := b.String()
 	if v == "" {
@@ -231,8 +258,10 @@ func (b Burden) MarshalJSON() ([]byte, error) {
 	return json.Marshal(v)
 }
 
+// UnmarshalJSON decodes a Burden from Minimal / Extended. Unknown values
+// produce a wrapped error.
 func (b *Burden) UnmarshalJSON(data []byte) error {
-	if string(data) == "null" {
+	if string(data) == jsonNull {
 		*b = BurdenUnknown
 		return nil
 	}
