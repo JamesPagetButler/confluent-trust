@@ -178,6 +178,11 @@ func TestAxiom_DerivableInvariant(t *testing.T) {
 }
 
 func TestForkPoint_Invariants(t *testing.T) {
+	const (
+		testForkBranchNodeID = "PROOF-X"
+		testBranchNameMin    = "minimal"
+	)
+
 	tests := []struct {
 		name string
 		fork ForkPoint
@@ -186,9 +191,9 @@ func TestForkPoint_Invariants(t *testing.T) {
 		{
 			name: "valid two-branch fork",
 			fork: ForkPoint{
-				ID: "FORK-1", BranchNodeID: "PROOF-X", Question: "?",
+				ID: "FORK-1", BranchNodeID: testForkBranchNodeID, Question: "?",
 				Branches: []Branch{
-					{ID: "A", Name: "minimal", Hypothesis: "no x", Burden: BurdenMinimal},
+					{ID: "A", Name: testBranchNameMin, Hypothesis: "no x", Burden: BurdenMinimal},
 					{ID: "B", Name: "extended", Hypothesis: "x exists", Burden: BurdenExtended},
 				},
 			},
@@ -197,9 +202,9 @@ func TestForkPoint_Invariants(t *testing.T) {
 		{
 			name: "rejects single branch",
 			fork: ForkPoint{
-				ID: "FORK-2", BranchNodeID: "PROOF-X", Question: "?",
+				ID: "FORK-2", BranchNodeID: testForkBranchNodeID, Question: "?",
 				Branches: []Branch{
-					{ID: "A", Name: "minimal", Hypothesis: "no x", Burden: BurdenMinimal},
+					{ID: "A", Name: testBranchNameMin, Hypothesis: "no x", Burden: BurdenMinimal},
 				},
 			},
 			ok: false,
@@ -207,7 +212,7 @@ func TestForkPoint_Invariants(t *testing.T) {
 		{
 			name: "rejects no minimal",
 			fork: ForkPoint{
-				ID: "FORK-3", BranchNodeID: "PROOF-X", Question: "?",
+				ID: "FORK-3", BranchNodeID: testForkBranchNodeID, Question: "?",
 				Branches: []Branch{
 					{ID: "A", Name: "extended-1", Hypothesis: "x", Burden: BurdenExtended},
 					{ID: "B", Name: "extended-2", Hypothesis: "y", Burden: BurdenExtended},
@@ -218,9 +223,9 @@ func TestForkPoint_Invariants(t *testing.T) {
 		{
 			name: "rejects duplicate branch id",
 			fork: ForkPoint{
-				ID: "FORK-4", BranchNodeID: "PROOF-X", Question: "?",
+				ID: "FORK-4", BranchNodeID: testForkBranchNodeID, Question: "?",
 				Branches: []Branch{
-					{ID: "A", Name: "minimal", Hypothesis: "no x", Burden: BurdenMinimal},
+					{ID: "A", Name: testBranchNameMin, Hypothesis: "no x", Burden: BurdenMinimal},
 					{ID: "A", Name: "extended", Hypothesis: "x", Burden: BurdenExtended},
 				},
 			},
