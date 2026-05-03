@@ -10,7 +10,10 @@ import (
 func ptrFloat(v float64) *float64 { return &v }
 func ptrInt(v int) *int           { return &v }
 
-const eps = 1e-6
+const (
+	eps         = 1e-6
+	testAxiomID = "AX-1"
+)
 
 func approxEqual(a, b float64) bool {
 	return math.Abs(a-b) <= eps
@@ -34,7 +37,7 @@ func TestAxiomEntropy(t *testing.T) {
 }
 
 func TestResidualEntropy(t *testing.T) {
-	tab := map[string]float64{"AX-1": 3.0}
+	tab := map[string]float64{testAxiomID: 3.0}
 
 	tests := []struct {
 		name   string
@@ -43,7 +46,7 @@ func TestResidualEntropy(t *testing.T) {
 	}{
 		{
 			name:   "tier 0 axiom from table",
-			anchor: model.Anchor{ID: "AX-1", Tier: model.TierAxiom},
+			anchor: model.Anchor{ID: testAxiomID, Tier: model.TierAxiom},
 			want:   3.0,
 		},
 		{
@@ -114,7 +117,7 @@ func TestConfirmatoryInfo(t *testing.T) {
 	}{
 		{
 			name:   "tier 0 axiom carries no confirmation",
-			anchor: model.Anchor{ID: "AX-1", Tier: model.TierAxiom},
+			anchor: model.Anchor{ID: testAxiomID, Tier: model.TierAxiom},
 			want:   0.0,
 		},
 		{
