@@ -25,8 +25,8 @@ func TestInformationDeficit_Empty(t *testing.T) {
 func TestInformationDeficit_FromInputs(t *testing.T) {
 	inv := model.Inventory{
 		Inputs: []model.Input{
-			{ID: "INST-A", Type: "input", Status: "measurable", SignificantFigures: 3},
-			{ID: "INST-B", Type: "input", Status: "measurable", SignificantFigures: 2},
+			{ID: "INST-A", Type: testInputType, Status: "measurable", SignificantFigures: 3},
+			{ID: "INST-B", Type: testInputType, Status: "measurable", SignificantFigures: 2},
 		},
 	}
 	want := InputEntropy(3) + InputEntropy(2)
@@ -38,14 +38,14 @@ func TestInformationDeficit_FromInputs(t *testing.T) {
 func TestAxiomEntropySum(t *testing.T) {
 	inv := model.Inventory{
 		Axioms: []model.Axiom{
-			{ID: "AX-1"}, {ID: "AX-2"}, {ID: "AX-3"},
+			{ID: testAxiomID}, {ID: "AX-2"}, {ID: "AX-3"},
 		},
 	}
 	if got := AxiomEntropySum(inv, nil); got != 3.0*DefaultAxiomEntropyBits {
 		t.Errorf("got %v, want %v", got, 3.0*DefaultAxiomEntropyBits)
 	}
 
-	tab := map[string]float64{"AX-1": 0.5, "AX-2": 1.5}
+	tab := map[string]float64{testAxiomID: 0.5, "AX-2": 1.5}
 	if got := AxiomEntropySum(inv, tab); got != 0.5+1.5+DefaultAxiomEntropyBits {
 		t.Errorf("got %v, want %v", got, 0.5+1.5+DefaultAxiomEntropyBits)
 	}
@@ -60,10 +60,10 @@ func TestGrossCompression_DenomZeroReturnsZero(t *testing.T) {
 func TestGrossCompression_StructuralAnchorsContribute(t *testing.T) {
 	delta := 0.0
 	inv := model.Inventory{
-		Axioms: []model.Axiom{{ID: "AX-1"}},
+		Axioms: []model.Axiom{{ID: testAxiomID}},
 		Anchors: []model.Anchor{
-			{ID: "M-1", Tier: model.TierMeasurement, Status: model.StatusCoherent, DiscrepancyPct: &delta},
-			{ID: "M-2", Tier: model.TierMeasurement, Status: model.StatusCoherent, DiscrepancyPct: &delta},
+			{ID: testAnchorM1, Tier: model.TierMeasurement, Status: model.StatusCoherent, DiscrepancyPct: &delta},
+			{ID: testAnchorM2, Tier: model.TierMeasurement, Status: model.StatusCoherent, DiscrepancyPct: &delta},
 		},
 	}
 	// Each structural match contributes 1 bit; 2 anchors → I_confirmed = 2.
@@ -76,16 +76,16 @@ func TestGrossCompression_StructuralAnchorsContribute(t *testing.T) {
 func TestNetCompression_FractionalInputCostAllocation(t *testing.T) {
 	delta := 0.0
 	inv := model.Inventory{
-		Axioms: []model.Axiom{{ID: "AX-1"}},
+		Axioms: []model.Axiom{{ID: testAxiomID}},
 		Inputs: []model.Input{
-			{ID: "INST-shared", Type: "input", Status: "measurable", SignificantFigures: 1},
-			{ID: "INST-solo", Type: "input", Status: "measurable", SignificantFigures: 1},
+			{ID: testInputShared, Type: testInputType, Status: "measurable", SignificantFigures: 1},
+			{ID: "INST-solo", Type: testInputType, Status: "measurable", SignificantFigures: 1},
 		},
 		Anchors: []model.Anchor{
-			{ID: "M-1", Tier: model.TierMeasurement, Status: model.StatusCoherent, DiscrepancyPct: &delta,
-				PredictionChain: []string{"INST-shared", "INST-solo"}},
-			{ID: "M-2", Tier: model.TierMeasurement, Status: model.StatusCoherent, DiscrepancyPct: &delta,
-				PredictionChain: []string{"INST-shared"}},
+			{ID: testAnchorM1, Tier: model.TierMeasurement, Status: model.StatusCoherent, DiscrepancyPct: &delta,
+				PredictionChain: []string{testInputShared, "INST-solo"}},
+			{ID: testAnchorM2, Tier: model.TierMeasurement, Status: model.StatusCoherent, DiscrepancyPct: &delta,
+				PredictionChain: []string{testInputShared}},
 		},
 	}
 
@@ -122,7 +122,7 @@ func TestNetCompression_FractionalInputCostAllocation(t *testing.T) {
 	}
 	for _, row := range detail.PerAnchor {
 		switch row.AnchorID {
-		case "M-1":
+		case testAnchorM1:
 			want := inputBitsPerSigFig + inputBitsPerSigFig/2
 			if math.Abs(row.InputCost-want) > 1e-9 {
 				t.Errorf("M-1 cost: got %v, want %v", row.InputCost, want)
@@ -130,7 +130,7 @@ func TestNetCompression_FractionalInputCostAllocation(t *testing.T) {
 			if len(row.InputsUsed) != 2 {
 				t.Errorf("M-1 InputsUsed len: got %d, want 2", len(row.InputsUsed))
 			}
-		case "M-2":
+		case testAnchorM2:
 			want := inputBitsPerSigFig / 2
 			if math.Abs(row.InputCost-want) > 1e-9 {
 				t.Errorf("M-2 cost: got %v, want %v", row.InputCost, want)
@@ -142,9 +142,9 @@ func TestNetCompression_FractionalInputCostAllocation(t *testing.T) {
 func TestNetCompression_NetEqualsGrossWithNoInputs(t *testing.T) {
 	delta := 0.0
 	inv := model.Inventory{
-		Axioms: []model.Axiom{{ID: "AX-1"}},
+		Axioms: []model.Axiom{{ID: testAxiomID}},
 		Anchors: []model.Anchor{
-			{ID: "M-1", Tier: model.TierMeasurement, Status: model.StatusCoherent, DiscrepancyPct: &delta},
+			{ID: testAnchorM1, Tier: model.TierMeasurement, Status: model.StatusCoherent, DiscrepancyPct: &delta},
 		},
 	}
 	netRho, detail := NetCompression(inv, nil)

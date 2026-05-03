@@ -10,10 +10,7 @@ import (
 func ptrFloat(v float64) *float64 { return &v }
 func ptrInt(v int) *int           { return &v }
 
-const (
-	eps         = 1e-6
-	testAxiomID = "AX-1"
-)
+const eps = 1e-6
 
 func approxEqual(a, b float64) bool {
 	return math.Abs(a-b) <= eps
@@ -66,12 +63,12 @@ func TestResidualEntropy(t *testing.T) {
 		},
 		{
 			name:   "tier 2 exact match",
-			anchor: model.Anchor{ID: "M-1", Tier: model.TierMeasurement, DiscrepancyPct: ptrFloat(0.0)},
+			anchor: model.Anchor{ID: testAnchorM1, Tier: model.TierMeasurement, DiscrepancyPct: ptrFloat(0.0)},
 			want:   0.0,
 		},
 		{
 			name:   "tier 2 with delta 0.01 (1%)",
-			anchor: model.Anchor{ID: "M-2", Tier: model.TierMeasurement, DiscrepancyPct: ptrFloat(1.0)},
+			anchor: model.Anchor{ID: testAnchorM2, Tier: model.TierMeasurement, DiscrepancyPct: ptrFloat(1.0)},
 			want:   -math.Log2(1 - 0.01),
 		},
 		{
@@ -127,12 +124,12 @@ func TestConfirmatoryInfo(t *testing.T) {
 		},
 		{
 			name:   "tier 2 structural match = 1 bit",
-			anchor: model.Anchor{ID: "M-1", Tier: model.TierMeasurement, DiscrepancyPct: ptrFloat(0.0)},
+			anchor: model.Anchor{ID: testAnchorM1, Tier: model.TierMeasurement, DiscrepancyPct: ptrFloat(0.0)},
 			want:   1.0,
 		},
 		{
 			name:   "tier 2 missing discrepancy = 0 bits",
-			anchor: model.Anchor{ID: "M-2", Tier: model.TierMeasurement},
+			anchor: model.Anchor{ID: testAnchorM2, Tier: model.TierMeasurement},
 			want:   0.0,
 		},
 		{
