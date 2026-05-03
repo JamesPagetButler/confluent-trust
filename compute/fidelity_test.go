@@ -9,13 +9,13 @@ import (
 
 func TestStepFidelity_Table(t *testing.T) {
 	cases := map[string]float64{
-		"lean4_proof":         1.000,
-		"established_math":    1.000,
-		"standard_physics":    0.999,
-		"numerical_verified":  0.999,
-		"domain_boundary":     0.95,
-		"semi_empirical":      0.95,
-		"unproven_conjecture": 0.50,
+		StepLean4Proof:         1.000,
+		StepEstablishedMath:    1.000,
+		StepStandardPhysics:    0.999,
+		StepNumericalVerified:  0.999,
+		StepDomainBoundary:     0.95,
+		StepSemiEmpirical:      0.95,
+		StepUnprovenConjecture: 0.50,
 	}
 	for label, want := range cases {
 		t.Run(label, func(t *testing.T) {
@@ -43,7 +43,7 @@ func TestChainFidelity_ExplicitOverride(t *testing.T) {
 	c := model.Chain{
 		ID: "C-1", Fidelity: &f,
 		// StepTypes intentionally set; Fidelity must win.
-		StepTypes: []string{"unproven_conjecture", "unproven_conjecture"},
+		StepTypes: []string{StepUnprovenConjecture, StepUnprovenConjecture},
 	}
 	if got := ChainFidelity(c); got != 0.85 {
 		t.Errorf("got %v, want 0.85 (explicit Fidelity wins)", got)
@@ -53,7 +53,7 @@ func TestChainFidelity_ExplicitOverride(t *testing.T) {
 func TestChainFidelity_FromStepTypes(t *testing.T) {
 	c := model.Chain{
 		ID:        "C-2",
-		StepTypes: []string{"standard_physics", "domain_boundary", "established_math"},
+		StepTypes: []string{StepStandardPhysics, StepDomainBoundary, StepEstablishedMath},
 	}
 	want := 0.999 * 0.95 * 1.0
 	if got := ChainFidelity(c); math.Abs(got-want) > 1e-9 {
@@ -82,16 +82,16 @@ func TestClassifyFidelityRegime(t *testing.T) {
 		want string
 		mu   float64
 	}{
-		{"laminar", 1.000},
-		{"laminar", 0.999},
-		{"low_sediment", 0.998},
-		{"low_sediment", 0.95},
-		{"low_sediment", 0.90},
-		{"moderate", 0.899},
-		{"moderate", 0.70},
-		{"heavy", 0.699},
-		{"heavy", 0.50},
-		{"heavy", math.NaN()},
+		{RegimeLaminar, 1.000},
+		{RegimeLaminar, 0.999},
+		{RegimeLowSediment, 0.998},
+		{RegimeLowSediment, 0.95},
+		{RegimeLowSediment, 0.90},
+		{RegimeModerate, 0.899},
+		{RegimeModerate, 0.70},
+		{RegimeHeavy, 0.699},
+		{RegimeHeavy, 0.50},
+		{RegimeHeavy, math.NaN()},
 	}
 	for _, tt := range tests {
 		t.Run("", func(t *testing.T) {

@@ -14,17 +14,39 @@ const (
 	FidelityModerate    = 0.70
 )
 
+// Fidelity regime labels returned by ClassifyFidelityRegime. Exported so
+// callers can match on them without string literals.
+const (
+	RegimeLaminar     = "laminar"
+	RegimeLowSediment = "low_sediment"
+	RegimeModerate    = "moderate"
+	RegimeHeavy       = "heavy"
+)
+
+// Step-type labels recognized by the §4.4 fidelity table. Exported so
+// inventory authors can reference them rather than embedding string
+// literals in their data.
+const (
+	StepLean4Proof         = "lean4_proof"
+	StepEstablishedMath    = "established_math"
+	StepStandardPhysics    = "standard_physics"
+	StepNumericalVerified  = "numerical_verified"
+	StepDomainBoundary     = "domain_boundary"
+	StepSemiEmpirical      = "semi_empirical"
+	StepUnprovenConjecture = "unproven_conjecture"
+)
+
 // stepFidelityTable maps a normalized step-type label to its fidelity per
 // the §4.4 table. Lookup is case-insensitive; unknown labels return 1.0 so
 // the caller can decide whether to flag them.
 var stepFidelityTable = map[string]float64{
-	"lean4_proof":         1.000,
-	"established_math":    1.000,
-	"standard_physics":    0.999,
-	"numerical_verified":  0.999,
-	"domain_boundary":     0.95,
-	"semi_empirical":      0.95,
-	"unproven_conjecture": 0.50,
+	StepLean4Proof:         1.000,
+	StepEstablishedMath:    1.000,
+	StepStandardPhysics:    0.999,
+	StepNumericalVerified:  0.999,
+	StepDomainBoundary:     0.95,
+	StepSemiEmpirical:      0.95,
+	StepUnprovenConjecture: 0.50,
 }
 
 // StepFidelity returns the fidelity μ(e) for a derivation step type per the
@@ -67,15 +89,15 @@ func ChainFidelity(c model.Chain) float64 {
 func ClassifyFidelityRegime(mu float64) string {
 	switch {
 	case math.IsNaN(mu):
-		return "heavy"
+		return RegimeHeavy
 	case mu >= FidelityLaminar:
-		return "laminar"
+		return RegimeLaminar
 	case mu >= FidelityLowSediment:
-		return "low_sediment"
+		return RegimeLowSediment
 	case mu >= FidelityModerate:
-		return "moderate"
+		return RegimeModerate
 	default:
-		return "heavy"
+		return RegimeHeavy
 	}
 }
 
