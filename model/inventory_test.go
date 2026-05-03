@@ -181,6 +181,7 @@ func TestForkPoint_Invariants(t *testing.T) {
 	const (
 		testForkBranchNodeID = "PROOF-X"
 		testBranchNameMin    = "minimal"
+		testHypNoX           = "no x"
 	)
 
 	tests := []struct {
@@ -193,7 +194,7 @@ func TestForkPoint_Invariants(t *testing.T) {
 			fork: ForkPoint{
 				ID: "FORK-1", BranchNodeID: testForkBranchNodeID, Question: "?",
 				Branches: []Branch{
-					{ID: "A", Name: testBranchNameMin, Hypothesis: "no x", Burden: BurdenMinimal},
+					{ID: "A", Name: testBranchNameMin, Hypothesis: testHypNoX, Burden: BurdenMinimal},
 					{ID: "B", Name: "extended", Hypothesis: "x exists", Burden: BurdenExtended},
 				},
 			},
@@ -204,7 +205,7 @@ func TestForkPoint_Invariants(t *testing.T) {
 			fork: ForkPoint{
 				ID: "FORK-2", BranchNodeID: testForkBranchNodeID, Question: "?",
 				Branches: []Branch{
-					{ID: "A", Name: testBranchNameMin, Hypothesis: "no x", Burden: BurdenMinimal},
+					{ID: "A", Name: testBranchNameMin, Hypothesis: testHypNoX, Burden: BurdenMinimal},
 				},
 			},
 			ok: false,
@@ -225,7 +226,7 @@ func TestForkPoint_Invariants(t *testing.T) {
 			fork: ForkPoint{
 				ID: "FORK-4", BranchNodeID: testForkBranchNodeID, Question: "?",
 				Branches: []Branch{
-					{ID: "A", Name: testBranchNameMin, Hypothesis: "no x", Burden: BurdenMinimal},
+					{ID: "A", Name: testBranchNameMin, Hypothesis: testHypNoX, Burden: BurdenMinimal},
 					{ID: "A", Name: "extended", Hypothesis: "x", Burden: BurdenExtended},
 				},
 			},
