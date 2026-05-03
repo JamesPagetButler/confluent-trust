@@ -25,8 +25,8 @@ func TestInformationDeficit_Empty(t *testing.T) {
 func TestInformationDeficit_FromInputs(t *testing.T) {
 	inv := model.Inventory{
 		Inputs: []model.Input{
-			{ID: "INST-A", Type: testInputType, Status: "measurable", SignificantFigures: 3},
-			{ID: "INST-B", Type: testInputType, Status: "measurable", SignificantFigures: 2},
+			{ID: "INST-A", Type: testInputType, Status: testInputStatus, SignificantFigures: 3},
+			{ID: "INST-B", Type: testInputType, Status: testInputStatus, SignificantFigures: 2},
 		},
 	}
 	want := InputEntropy(3) + InputEntropy(2)
@@ -78,8 +78,8 @@ func TestNetCompression_FractionalInputCostAllocation(t *testing.T) {
 	inv := model.Inventory{
 		Axioms: []model.Axiom{{ID: testAxiomID}},
 		Inputs: []model.Input{
-			{ID: testInputShared, Type: testInputType, Status: "measurable", SignificantFigures: 1},
-			{ID: "INST-solo", Type: testInputType, Status: "measurable", SignificantFigures: 1},
+			{ID: testInputShared, Type: testInputType, Status: testInputStatus, SignificantFigures: 1},
+			{ID: "INST-solo", Type: testInputType, Status: testInputStatus, SignificantFigures: 1},
 		},
 		Anchors: []model.Anchor{
 			{ID: testAnchorM1, Tier: model.TierMeasurement, Status: model.StatusCoherent, DiscrepancyPct: &delta,
