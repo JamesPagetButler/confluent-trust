@@ -46,8 +46,8 @@ func buildLocaliseFixture() model.Inventory {
 	fidBad := 0.99
 
 	return model.Inventory{
-		Programme: "synthetic",
-		Version:   "0.0.1",
+		Programme: testProgramme,
+		Version:   testVersion,
 		Axioms:    []model.Axiom{{ID: testAxiomID}},
 		Anchors: []model.Anchor{
 			{ID: locP1, Tier: model.TierProof, Status: model.StatusCoherent, SorryCount: &zero,
@@ -110,8 +110,8 @@ func TestLocaliseIncoherence_NoCheckpoint(t *testing.T) {
 	zero := 0
 	fid70 := 0.70
 	inv := model.Inventory{
-		Programme: "synthetic",
-		Version:   "0.0.1",
+		Programme: testProgramme,
+		Version:   testVersion,
 		Axioms:    []model.Axiom{{ID: testAxiomID}},
 		Anchors: []model.Anchor{
 			{ID: locP1, Tier: model.TierProof, Status: model.StatusCoherent, SorryCount: &zero,
@@ -152,8 +152,8 @@ func TestLocaliseIncoherence_OrphanAnchorIsSingletonSegment(t *testing.T) {
 	// Anchor with no prediction_chain at all — the only "ancestor" is
 	// itself. SegmentLength must be 0 and WeakestLinkID = anchor ID.
 	inv := model.Inventory{
-		Programme: "synthetic",
-		Version:   "0.0.1",
+		Programme: testProgramme,
+		Version:   testVersion,
 		Anchors: []model.Anchor{
 			{ID: locBad, Tier: model.TierProof, Status: model.StatusIncoherent},
 		},
@@ -183,8 +183,8 @@ func TestLocaliseIncoherence_TiebreakAlphabetical(t *testing.T) {
 	fid70 := 0.70
 
 	inv := model.Inventory{
-		Programme: "synthetic",
-		Version:   "0.0.1",
+		Programme: testProgramme,
+		Version:   testVersion,
 		Anchors: []model.Anchor{
 			{ID: locP1, Tier: model.TierProof, Status: model.StatusCoherent, SorryCount: &zero},
 			{ID: locP2, Tier: model.TierProof, Status: model.StatusCoherent, SorryCount: &zero,
