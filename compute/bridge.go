@@ -6,6 +6,16 @@ import (
 	"github.com/JamesPagetButler/confluent-trust/model"
 )
 
+// Domain labels returned by ClassifyDomain. Exported so callers can
+// match on them rather than against bare string literals.
+const (
+	DomainMath       = "math"
+	DomainLean       = "lean"
+	DomainLab        = "lab"
+	DomainPrediction = "prediction"
+	DomainMeta       = "meta"
+)
+
 // DomainPrefixMap maps an ID-prefix (e.g. "AXIOM-") to the verification
 // domain a node with that prefix belongs to. The defaults are seeded from
 // the QBP-Compute-Unit v3.2 reference fixture: AXIOM- → math, PROOF- →
@@ -18,15 +28,15 @@ import (
 // independent classifications in the same process should not race on it;
 // configuration is expected at init time.
 var DomainPrefixMap = map[string]string{
-	"AXIOM-": "math",
-	"PROOF-": "lean",
-	"DERIV-": "lean",
-	"MEAS-":  "lab",
-	"OBS-":   "lab",
-	"INST-":  "lab",
-	"INPUT-": "lab",
-	"PRED-":  "prediction",
-	"FLAG-":  "meta",
+	"AXIOM-": DomainMath,
+	"PROOF-": DomainLean,
+	"DERIV-": DomainLean,
+	"MEAS-":  DomainLab,
+	"OBS-":   DomainLab,
+	"INST-":  DomainLab,
+	"INPUT-": DomainLab,
+	"PRED-":  DomainPrediction,
+	"FLAG-":  DomainMeta,
 }
 
 // ClassifyDomain returns the verification domain for an ID by looking it up

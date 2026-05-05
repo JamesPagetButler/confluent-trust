@@ -31,17 +31,24 @@ func loadFixture(t *testing.T, name string) model.Inventory {
 // testdata/. The structural tests below verify the algebra on the
 // fixtures we have, plus a hand-built three-domain inventory.
 
+// Test fixture IDs used across multiple tests in this file. CI's
+// goconst threshold of 3 occurrences trips on these otherwise.
+const (
+	testBridgeAxiomA = "AXIOM-1"
+	testBridgeProofX = "PROOF-x"
+)
+
 func TestClassifyDomain_Defaults(t *testing.T) {
 	cases := map[string]string{
-		"AXIOM-1":        "math",
-		"PROOF-foo":      "lean",
-		"DERIV-bar":      "lean",
-		"MEAS-baz":       "lab",
-		"OBS-something":  "lab",
-		"INST-coupling":  "lab",
-		"INPUT-omega":    "lab",
-		"PRED-future":    "prediction",
-		"FLAG-rotcurve":  "meta",
+		testBridgeAxiomA: DomainMath,
+		"PROOF-foo":      DomainLean,
+		"DERIV-bar":      DomainLean,
+		"MEAS-baz":       DomainLab,
+		"OBS-something":  DomainLab,
+		"INST-coupling":  DomainLab,
+		"INPUT-omega":    DomainLab,
+		"PRED-future":    DomainPrediction,
+		"FLAG-rotcurve":  DomainMeta,
 		"NOPREFIX-thing": "",
 		"":               "",
 	}
@@ -55,9 +62,12 @@ func TestClassifyDomain_Defaults(t *testing.T) {
 func TestClassifyDomain_LongestPrefixWins(t *testing.T) {
 	// Register a longer, more specific prefix; ensure it wins over the
 	// short default for a node whose ID matches both.
-	const pfx = "MEAS-special-"
+	const (
+		pfx          = "MEAS-special-"
+		domSpecialty = "specialty"
+	)
 	prev, hadPrev := DomainPrefixMap[pfx]
-	DomainPrefixMap[pfx] = "specialty"
+	DomainPrefixMap[pfx] = domSpecialty
 	t.Cleanup(func() {
 		if hadPrev {
 			DomainPrefixMap[pfx] = prev
@@ -65,11 +75,11 @@ func TestClassifyDomain_LongestPrefixWins(t *testing.T) {
 			delete(DomainPrefixMap, pfx)
 		}
 	})
-	if got := ClassifyDomain("MEAS-special-anchor"); got != "specialty" {
-		t.Errorf("longest-prefix-wins: got %q, want %q", got, "specialty")
+	if got := ClassifyDomain("MEAS-special-anchor"); got != domSpecialty {
+		t.Errorf("longest-prefix-wins: got %q, want %q", got, domSpecialty)
 	}
-	if got := ClassifyDomain("MEAS-other-anchor"); got != "lab" {
-		t.Errorf("default should still apply: got %q, want %q", got, "lab")
+	if got := ClassifyDomain("MEAS-other-anchor"); got != DomainLab {
+		t.Errorf("default should still apply: got %q, want %q", got, DomainLab)
 	}
 }
 
@@ -90,14 +100,14 @@ func TestBridgeCentrality_HandBuilt3Domains(t *testing.T) {
 		},
 		Anchors: []model.Anchor{
 			{ID: hubID, Tier: model.TierMeasurement},
-			{ID: "PROOF-x", Tier: model.TierProof},
+			{ID: testBridgeProofX, Tier: model.TierProof},
 			{ID: "PRED-y", Tier: model.TierPrediction},
 		},
 		Chains: []model.Chain{
 			// AXIOM-info (math) → PROOF-x: hub appears as source; pulls in math+lean.
-			{ID: "C-1", SourceIDs: []string{"AXIOM-info", hubID}, TargetID: "PROOF-x"},
+			{ID: "C-1", SourceIDs: []string{"AXIOM-info", hubID}, TargetID: testBridgeProofX},
 			// PROOF-x (lean) → MEAS-hub (lab): pulls in lean+lab.
-			{ID: "C-2", SourceIDs: []string{"PROOF-x"}, TargetID: hubID},
+			{ID: "C-2", SourceIDs: []string{testBridgeProofX}, TargetID: hubID},
 			// MEAS-hub → PRED-y: pulls in lab+prediction.
 			{ID: "C-3", SourceIDs: []string{hubID}, TargetID: "PRED-y"},
 		},
@@ -117,7 +127,7 @@ func TestBridgeCentrality_HandBuilt3Domains(t *testing.T) {
 	}
 
 	// Expect math + lean + lab + prediction = 4 distinct domains.
-	wantDoms := []string{"lab", "lean", "math", "prediction"}
+	wantDoms := []string{DomainLab, DomainLean, DomainMath, DomainPrediction}
 	if hub.DomainCount != len(wantDoms) {
 		t.Errorf("hub DomainCount: got %d, want %d (%v)", hub.DomainCount, len(wantDoms), hub.Domains)
 	}
@@ -146,10 +156,10 @@ func TestBridgeCentrality_ExcludeAxioms(t *testing.T) {
 			// the BridgeCentrality contract drops it via Tier check, not
 			// via axiom-id lookup, so this is the surface to exercise.
 			{ID: "AXIOM-shadow", Tier: model.TierAxiom},
-			{ID: "PROOF-x", Tier: model.TierProof},
+			{ID: testBridgeProofX, Tier: model.TierProof},
 		},
 		Chains: []model.Chain{
-			{ID: "C-1", SourceIDs: []string{"AXIOM-shadow"}, TargetID: "PROOF-x"},
+			{ID: "C-1", SourceIDs: []string{"AXIOM-shadow"}, TargetID: testBridgeProofX},
 		},
 	}
 	all := BridgeCentrality(inv, false)
@@ -175,7 +185,7 @@ func TestBridgeCentrality_QBPQuantumV02(t *testing.T) {
 		t.Fatal("expected non-empty result on qbp_quantum_v0_2 fixture")
 	}
 	for _, n := range nodes {
-		if got := ClassifyDomain(n.ID); got == "math" && n.DomainCount > 0 {
+		if got := ClassifyDomain(n.ID); got == DomainMath && n.DomainCount > 0 {
 			// Axiom domain leaks should already be excluded; if any survive
 			// the Tier filter in the fixture, that's a fixture bug, not ours.
 			// Continue: only the Tier-0 filter is contractually guaranteed.
