@@ -12,4 +12,7 @@ const (
 	testAnchorM2 = "M-2"
 
 	testInputShared = "INST-shared"
+
+	testProgramme = "synthetic"
+	testVersion   = "0.0.1"
 )
