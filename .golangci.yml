@@ -31,6 +31,12 @@ linters:
     govet:
       enable:
         - fieldalignment
+    goconst:
+      # Test fixtures want consistent IDs ("AX-1", "M-1", "C-1" etc.)
+      # repeated across many test cases for clarity; the default
+      # min-occurrences of 3 generates more noise than signal.
+      min-occurrences: 5
+      min-len: 4
     nakedret:
       max-func-lines: 15
     revive:
