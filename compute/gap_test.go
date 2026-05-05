@@ -57,8 +57,8 @@ func buildGapFixture() model.Inventory {
 		SorryCount: &zero,
 	}
 	return model.Inventory{
-		Programme: "synthetic",
-		Version:   "0.0.1",
+		Programme: testProgramme,
+		Version:   testVersion,
 		Axioms:    []model.Axiom{{ID: testAxiomID}},
 		Anchors:   []model.Anchor{provenAnchor, provenAlt},
 		Inputs: []model.Input{
@@ -349,7 +349,7 @@ func TestRankEddies_WeightedDiffersFromUnweighted(t *testing.T) {
 func TestWeightedGap_NoChainsReturnsInf(t *testing.T) {
 	inv := model.Inventory{
 		Programme: "lonely",
-		Version:   "0.0.1",
+		Version:   testVersion,
 		Inputs:    []model.Input{{ID: "INST-orphan", Type: testInputType, Status: testInputStatus, SignificantFigures: 3}},
 	}
 	gap, nearest := WeightedGap("INST-orphan", inv)
