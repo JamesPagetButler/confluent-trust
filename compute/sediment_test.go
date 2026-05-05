@@ -127,11 +127,11 @@ func TestDetectSedimentPartitions_NoSharpWhenAllClean(t *testing.T) {
 	inv := model.Inventory{
 		Chains: []model.Chain{
 			{
-				ID: "C-1", TargetID: sedDomainClean + "-a",
+				ID: testChainC1, TargetID: sedDomainClean + "-a",
 				SourceIDs: []string{testAxiomID}, Fidelity: &clean,
 			},
 			{
-				ID: "C-2", TargetID: sedDomainClean + "-b",
+				ID: testChainC2, TargetID: sedDomainClean + "-b",
 				SourceIDs: []string{testAxiomID}, Fidelity: &clean,
 			},
 		},

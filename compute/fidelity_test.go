@@ -41,7 +41,7 @@ func TestStepFidelity_UnknownReturns1(t *testing.T) {
 func TestChainFidelity_ExplicitOverride(t *testing.T) {
 	f := 0.85
 	c := model.Chain{
-		ID: "C-1", Fidelity: &f,
+		ID: testChainC1, Fidelity: &f,
 		// StepTypes intentionally set; Fidelity must win.
 		StepTypes: []string{StepUnprovenConjecture, StepUnprovenConjecture},
 	}
@@ -52,7 +52,7 @@ func TestChainFidelity_ExplicitOverride(t *testing.T) {
 
 func TestChainFidelity_FromStepTypes(t *testing.T) {
 	c := model.Chain{
-		ID:        "C-2",
+		ID:        testChainC2,
 		StepTypes: []string{StepStandardPhysics, StepDomainBoundary, StepEstablishedMath},
 	}
 	want := 0.999 * 0.95 * 1.0
