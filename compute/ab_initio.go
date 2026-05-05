@@ -31,9 +31,9 @@ type AbInitioCandidate struct {
 // when even input counts tie, the chain with the lower ID wins so the
 // output is reproducible).
 type AbInitioResult struct {
-	Candidates  []AbInitioCandidate
 	TargetID    string
 	BestChainID string
+	Candidates  []AbInitioCandidate
 	BestScore   float64
 }
 
