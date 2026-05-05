@@ -35,15 +35,15 @@ func TestAbInitioScore_LowerInputWinsWhenFidelitiesComparable(t *testing.T) {
 	// upstream, the other 3. The cheaper one wins.
 	mu := 0.90
 	inv := model.Inventory{
-		Inputs: []model.Input{abInitInput("INST-a"), abInitInput("INST-b"), abInitInput("INST-c")},
+		Inputs: []model.Input{abInitInput(testInputA), abInitInput(testInputB), abInitInput("INST-c")},
 		Chains: []model.Chain{
 			{
-				ID: "C-cheap", TargetID: testAnchorM1, Fidelity: &mu,
-				SourceIDs: []string{"INST-a"},
+				ID: testChainCheap, TargetID: testAnchorM1, Fidelity: &mu,
+				SourceIDs: []string{testInputA},
 			},
 			{
 				ID: "C-deficit", TargetID: testAnchorM1, Fidelity: &mu,
-				SourceIDs: []string{"INST-a", "INST-b", "INST-c"},
+				SourceIDs: []string{testInputA, testInputB, "INST-c"},
 			},
 		},
 	}
@@ -52,7 +52,7 @@ func TestAbInitioScore_LowerInputWinsWhenFidelitiesComparable(t *testing.T) {
 	if len(got) != 1 {
 		t.Fatalf("got %d results, want 1", len(got))
 	}
-	if got[0].BestChainID != "C-cheap" {
+	if got[0].BestChainID != testChainCheap {
 		t.Errorf("best chain = %q, want C-cheap (lower input count under comparable fidelities)",
 			got[0].BestChainID)
 	}
@@ -67,7 +67,7 @@ func TestAbInitioScore_HigherFidelityWinsWhenNotComparable(t *testing.T) {
 	// high-fidelity wins on raw score even though it carries more inputs.
 	low, high := 0.50, 0.95
 	inv := model.Inventory{
-		Inputs: []model.Input{abInitInput("INST-a"), abInitInput("INST-b")},
+		Inputs: []model.Input{abInitInput(testInputA), abInitInput(testInputB)},
 		Chains: []model.Chain{
 			{
 				ID: "C-low", TargetID: testAnchorM1, Fidelity: &low,
@@ -75,7 +75,7 @@ func TestAbInitioScore_HigherFidelityWinsWhenNotComparable(t *testing.T) {
 			},
 			{
 				ID: "C-high", TargetID: testAnchorM1, Fidelity: &high,
-				SourceIDs: []string{"INST-a", "INST-b"},
+				SourceIDs: []string{testInputA, testInputB},
 			},
 		},
 	}
@@ -95,15 +95,15 @@ func TestAbInitioScore_DeterministicTiebreak(t *testing.T) {
 	// chain ID wins so the function is reproducible.
 	mu := 0.95
 	inv := model.Inventory{
-		Inputs: []model.Input{abInitInput("INST-a")},
+		Inputs: []model.Input{abInitInput(testInputA)},
 		Chains: []model.Chain{
 			{
 				ID: "C-z", TargetID: testAnchorM1, Fidelity: &mu,
-				SourceIDs: []string{"INST-a"},
+				SourceIDs: []string{testInputA},
 			},
 			{
 				ID: "C-a", TargetID: testAnchorM1, Fidelity: &mu,
-				SourceIDs: []string{"INST-a"},
+				SourceIDs: []string{testInputA},
 			},
 		},
 	}
@@ -125,7 +125,7 @@ func TestAbInitioScore_CountsUpstreamInputsTransitively(t *testing.T) {
 		Inputs: []model.Input{abInitInput("INST-x"), abInitInput("INST-y")},
 		Chains: []model.Chain{
 			{
-				ID: "C-direct", TargetID: testAnchorM1, Fidelity: &mu1,
+				ID: testChainDirect, TargetID: testAnchorM1, Fidelity: &mu1,
 				SourceIDs: []string{"INST-x"},
 			},
 			{
@@ -144,14 +144,14 @@ func TestAbInitioScore_CountsUpstreamInputsTransitively(t *testing.T) {
 	}
 	// Within tolerance (Δμ = 0.01) → fall back to lower input count.
 	// C-direct: 1 input. C-indirect: 2 inputs (transitively). C-direct wins.
-	if got[0].BestChainID != "C-direct" {
+	if got[0].BestChainID != testChainDirect {
 		t.Errorf("best = %q, want C-direct (lower input count under comparable fidelities)",
 			got[0].BestChainID)
 	}
 	// Verify the candidates record the right input counts.
 	for _, cand := range got[0].Candidates {
 		switch cand.ChainID {
-		case "C-direct":
+		case testChainDirect:
 			if cand.InputCount != 1 {
 				t.Errorf("C-direct InputCount = %d, want 1", cand.InputCount)
 			}
@@ -166,12 +166,12 @@ func TestAbInitioScore_CountsUpstreamInputsTransitively(t *testing.T) {
 func TestAbInitioScore_ResultsSortedByTargetID(t *testing.T) {
 	mu := 0.9
 	inv := model.Inventory{
-		Inputs: []model.Input{abInitInput("INST-a")},
+		Inputs: []model.Input{abInitInput(testInputA)},
 		Chains: []model.Chain{
-			{ID: "C-zT-1", TargetID: "TGT-z", Fidelity: &mu, SourceIDs: []string{"INST-a"}},
-			{ID: "C-zT-2", TargetID: "TGT-z", Fidelity: &mu, SourceIDs: []string{"INST-a"}},
-			{ID: "C-aT-1", TargetID: "TGT-a", Fidelity: &mu, SourceIDs: []string{"INST-a"}},
-			{ID: "C-aT-2", TargetID: "TGT-a", Fidelity: &mu, SourceIDs: []string{"INST-a"}},
+			{ID: "C-zT-1", TargetID: "TGT-z", Fidelity: &mu, SourceIDs: []string{testInputA}},
+			{ID: "C-zT-2", TargetID: "TGT-z", Fidelity: &mu, SourceIDs: []string{testInputA}},
+			{ID: "C-aT-1", TargetID: "TGT-a", Fidelity: &mu, SourceIDs: []string{testInputA}},
+			{ID: "C-aT-2", TargetID: "TGT-a", Fidelity: &mu, SourceIDs: []string{testInputA}},
 		},
 	}
 	got := AbInitioScore(inv)

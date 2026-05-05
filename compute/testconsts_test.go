@@ -12,6 +12,11 @@ const (
 	testAnchorM2 = "M-2"
 
 	testInputShared = "INST-shared"
+	testInputA      = "INST-a"
+	testInputB      = "INST-b"
+
+	testChainCheap  = "C-cheap"
+	testChainDirect = "C-direct"
 
 	testProgramme = "synthetic"
 	testVersion   = "0.0.1"

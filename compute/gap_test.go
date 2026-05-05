@@ -69,7 +69,7 @@ func buildGapFixture() model.Inventory {
 		},
 		Chains: []model.Chain{
 			{
-				ID:        "C-cheap",
+				ID:        testChainCheap,
 				Name:      "cheap",
 				SourceIDs: []string{gapInputCheap},
 				TargetID:  gapAnchorProven,
