@@ -105,9 +105,9 @@ func TestBridgeCentrality_HandBuilt3Domains(t *testing.T) {
 		},
 		Chains: []model.Chain{
 			// AXIOM-info (math) → PROOF-x: hub appears as source; pulls in math+lean.
-			{ID: "C-1", SourceIDs: []string{"AXIOM-info", hubID}, TargetID: testBridgeProofX},
+			{ID: testChainC1, SourceIDs: []string{"AXIOM-info", hubID}, TargetID: testBridgeProofX},
 			// PROOF-x (lean) → MEAS-hub (lab): pulls in lean+lab.
-			{ID: "C-2", SourceIDs: []string{testBridgeProofX}, TargetID: hubID},
+			{ID: testChainC2, SourceIDs: []string{testBridgeProofX}, TargetID: hubID},
 			// MEAS-hub → PRED-y: pulls in lab+prediction.
 			{ID: "C-3", SourceIDs: []string{hubID}, TargetID: "PRED-y"},
 		},
@@ -155,11 +155,11 @@ func TestBridgeCentrality_ExcludeAxioms(t *testing.T) {
 			// One Tier-0 anchor disguised as an axiom row in Anchors —
 			// the BridgeCentrality contract drops it via Tier check, not
 			// via axiom-id lookup, so this is the surface to exercise.
-			{ID: "AXIOM-shadow", Tier: model.TierAxiom},
+			{ID: testAxiomShadow, Tier: model.TierAxiom},
 			{ID: testBridgeProofX, Tier: model.TierProof},
 		},
 		Chains: []model.Chain{
-			{ID: "C-1", SourceIDs: []string{"AXIOM-shadow"}, TargetID: testBridgeProofX},
+			{ID: testChainC1, SourceIDs: []string{testAxiomShadow}, TargetID: testBridgeProofX},
 		},
 	}
 	all := BridgeCentrality(inv, false)
@@ -168,7 +168,7 @@ func TestBridgeCentrality_ExcludeAxioms(t *testing.T) {
 		t.Errorf("excluding axioms should reduce result: all=%d, noAx=%d", len(all), len(noAx))
 	}
 	for _, n := range noAx {
-		if n.ID == "AXIOM-shadow" {
+		if n.ID == testAxiomShadow {
 			t.Errorf("Tier-0 anchor still present with excludeAxioms=true: %v", n)
 		}
 	}

@@ -17,6 +17,9 @@ const (
 
 	testChainCheap  = "C-cheap"
 	testChainDirect = "C-direct"
+	testChainC1     = "C-1"
+	testChainC2     = "C-2"
+	testAxiomShadow = "AXIOM-shadow"
 
 	testProgramme = "synthetic"
 	testVersion   = "0.0.1"
