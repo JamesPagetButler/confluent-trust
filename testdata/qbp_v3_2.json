@@ -1,0 +1,1537 @@
+{
+  "programme": "QBP",
+  "version": "3.2",
+  "schema_version": "v0.2",
+  "timestamp": "2026-04-08T06:00:00Z",
+  "meta_axiom": {
+    "id": "META-1",
+    "name": "Change is constant",
+    "statement": "No framework is guaranteed complete. All knowledge is provisional within its axiomatic system."
+  },
+  "axioms": [
+    {
+      "id": "AXIOM-1",
+      "name": "Information is preserved",
+      "statement": "No physical process destroys information. Selects division algebras (no zero divisors: ab=0 implies a=0 or b=0).",
+      "derivable": false
+    },
+    {
+      "id": "AXIOM-2",
+      "name": "The encoding is maximal",
+      "statement": "The boundary encoding uses the largest normed division algebra: octonions (dim 8).",
+      "derivable": false
+    }
+  ],
+  "derived_principles": [
+    {
+      "id": "DERIV-holographic",
+      "name": "Holographic principle",
+      "statement": "Observers require associativity. The largest associative subalgebra of O is H (dim 4). The 4D gap is the holographic boundary.",
+      "derived_from": [
+        "AXIOM-1",
+        "AXIOM-2"
+      ],
+      "layer": 1
+    },
+    {
+      "id": "DERIV-observation",
+      "name": "Observation is C-projected",
+      "statement": "Electromagnetic observation accesses the C subalgebra of H. Measurement projects H -> C -> R.",
+      "derived_from": [
+        "DERIV-holographic"
+      ],
+      "layer": 1
+    },
+    {
+      "id": "DERIV-arrow",
+      "name": "Arrow of time",
+      "statement": "Information preservation + lossy projection implies irreversibility in the bulk. Gamma counter is monotonic.",
+      "derived_from": [
+        "AXIOM-1",
+        "DERIV-holographic"
+      ],
+      "layer": 1
+    },
+    {
+      "id": "DERIV-3plus1",
+      "name": "3+1 dimensions",
+      "statement": "Quaternion structure: 1 scalar (time) + 3 vector (space) components.",
+      "derived_from": [
+        "AXIOM-2",
+        "DERIV-holographic"
+      ],
+      "layer": 1
+    },
+    {
+      "id": "DERIV-sedenion",
+      "name": "Sedenion inter-cell topology",
+      "statement": "Inter-cell boundary structure is S (sedenion, dim 16). Zero divisors provide flexible topology: seams where information CAN be destroyed.",
+      "derived_from": [
+        "AXIOM-2"
+      ],
+      "layer": 1
+    },
+    {
+      "id": "DERIV-born",
+      "name": "Born rule",
+      "statement": "The quaternion norm qq* is the unique multiplicative positive-definite norm on H (Hurwitz). P=|psi|^2 follows.",
+      "derived_from": [
+        "AXIOM-1"
+      ],
+      "layer": 1
+    },
+    {
+      "id": "DERIV-constants",
+      "name": "hbar, k, c are conversion factors",
+      "statement": "Not fundamental constants. hbar = information per Gamma-step. k = information per DOF per Gamma-rate. c = max displacement per Gamma-step.",
+      "derived_from": [
+        "DERIV-holographic"
+      ],
+      "layer": 1
+    },
+    {
+      "id": "DERIV-pati-salam",
+      "name": "NCG gives Pati-Salam, not SU(5)",
+      "statement": "The spectral action on A_F = C+H+M3(C) with left-right extension naturally produces G_422 = SU(4)xSU(2)_LxSU(2)_R. Proton decay d=6 and d=5 operators are forbidden by NCG scalar constraints.",
+      "derived_from": [
+        "AXIOM-1",
+        "AXIOM-2",
+        "DERIV-holographic"
+      ],
+      "layer": 1
+    },
+    {
+      "id": "DERIV-topo-protection",
+      "name": "Topological protection from quaternion norm",
+      "statement": "The Hurwitz property (|ab|²=|a|²|b|² in ℍ) guarantees exact Berry phase π for surface states and exact Z₂ classification for band insulators. Topology is protected within ℍ but breaks at 𝕊 boundary (ZDs). This connects Born rule, Berry phase, and topological protection as a single algebraic fact.",
+      "derived_from": [
+        "PROOF-hurwitz-quat",
+        "PROOF-kramers",
+        "PROOF-z2-cover"
+      ],
+      "layer": 1
+    }
+  ],
+  "anchors": [
+    {
+      "sorry_count": 0,
+      "last_tested_at": "1898-01-01T00:00:00Z",
+      "proof_file": "Hurwitz 1898",
+      "notes": "Cannot be overturned by experiment. Could be extended by discovering the axiom system is a subset of something larger.",
+      "description": "Only R, C, H, O are normed division algebras. Proven 1898. Foundational to entire framework.",
+      "proof_system": "established_mathematics",
+      "name": "Hurwitz theorem: only 4 normed division algebras",
+      "id": "PROOF-hurwitz",
+      "prediction_chain": [
+        "AXIOM-1"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "sorry_count": 0,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "proof_file": "lean4/QBP/Sedenion.lean",
+      "description": "Exhaustive enumeration of all 14,400 basis-sum pairs. 42 have product norm = 0.",
+      "proof_system": "lean4",
+      "name": "Exactly 42 basis-sum zero divisors in sedenions",
+      "id": "PROOF-42zd",
+      "prediction_chain": [
+        "AXIOM-2",
+        "DERIV-sedenion"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "sorry_count": 0,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "proof_file": "lean4/QBP/Sedenion.lean",
+      "description": "The 32x32 Hessian of the product norm at each ZD has identical eigenvalue spectrum. Verified 42/42.",
+      "proof_system": "lean4",
+      "name": "Hessian spectrum {0(x16), 4(x4), 8(x8), 12(x4)} at all 42 ZDs",
+      "id": "PROOF-hessian",
+      "prediction_chain": [
+        "PROOF-42zd"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "sorry_count": 0,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "proof_file": "lean4/QBP/GaugeBosons.lean",
+      "description": "Three non-zero eigenspaces with dimensions 4, 8, 4 and eigenvalues 12, 8, 4 in ratio 3:2:1.",
+      "proof_system": "lean4",
+      "name": "Eigenvalue ratios 3:2:1 (12:8:4)",
+      "id": "PROOF-eigenratios",
+      "prediction_chain": [
+        "PROOF-hessian"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "sorry_count": 0,
+      "last_tested_at": "2026-03-26T00:00:00Z",
+      "proof_file": "QBP-boundary-cell-model.py",
+      "description": "All 7 quaternionic subalgebras of O are equivalent under G2 automorphisms. Computationally confirmed.",
+      "proof_system": "python_exhaustive",
+      "name": "G2 acts transitively on ZD locus",
+      "id": "PROOF-g2",
+      "prediction_chain": [
+        "AXIOM-2"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "sorry_count": 0,
+      "last_tested_at": "2026-03-27T00:00:00Z",
+      "proof_file": "lean4/QBP/Sedenion.lean",
+      "description": "The Fano plane structure governs octonion multiplication and the ZD topology.",
+      "proof_system": "lean4",
+      "name": "Fano mediator theorem",
+      "id": "PROOF-fano",
+      "prediction_chain": [
+        "AXIOM-2"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "sorry_count": 0,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "proof_file": "lean4/QBP/GaugeBosons.lean",
+      "description": "Cl(6) acting on C tensor O gives charge quantisation matching SM. After Furey 2015.",
+      "proof_system": "lean4",
+      "name": "Cl(6) charge quantisation in 1/3",
+      "id": "PROOF-cl6",
+      "prediction_chain": [
+        "AXIOM-2",
+        "DERIV-observation"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "sorry_count": 0,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "proof_file": "lean4/QBP/GaugeBosons.lean",
+      "description": "dim(Im H) = 3 gives exactly three fermion generations.",
+      "proof_system": "lean4",
+      "name": "Exactly three generations",
+      "id": "PROOF-3gen",
+      "prediction_chain": [
+        "AXIOM-2",
+        "DERIV-holographic"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "sorry_count": 0,
+      "last_tested_at": "2026-03-26T00:00:00Z",
+      "proof_file": "Hurwitz corollary",
+      "description": "qq* is the unique multiplicative positive-definite norm on H. P=|psi|^2 is not a postulate but a theorem.",
+      "proof_system": "established_mathematics",
+      "name": "Born rule from unique quaternion norm",
+      "id": "PROOF-born",
+      "prediction_chain": [
+        "AXIOM-1",
+        "PROOF-hurwitz"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "sorry_count": 0,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "proof_file": "lean4/QBP/Elements.lean",
+      "description": "Electron shell capacity = 2n^2 follows from dim of SU(2) fundamental rep = 2.",
+      "proof_system": "lean4",
+      "name": "2n^2 shell capacity from SU(2) fundamental dimension",
+      "id": "PROOF-shells",
+      "prediction_chain": [
+        "PROOF-eigenratios"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "predicted_value": 128.05,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "discrepancy_pct": 0.08,
+      "measured_error": 0.02,
+      "measured_value": 127.95,
+      "predicted_unit": "1/alpha_em at M_Z",
+      "measured_source": "PDG 2024",
+      "description": "From crystallisation profile f(0) = a2/sqrt(2) - 7.",
+      "name": "Electromagnetic coupling at M_Z",
+      "id": "MEAS-alpha",
+      "prediction_chain": [
+        "AXIOM-1",
+        "AXIOM-2",
+        "PROOF-eigenratios",
+        "INST-f0"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "predicted_value": 0.2347,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "discrepancy_pct": 1.5,
+      "measured_error": 0.0002,
+      "measured_value": 0.23122,
+      "predicted_unit": "sin^2(theta_W) MS-bar at M_Z",
+      "measured_source": "PDG 2024",
+      "description": "sin^2(theta_W) from eigenvalue ratio and RGE running.",
+      "name": "Weak mixing angle at M_Z",
+      "id": "MEAS-sin2tw",
+      "prediction_chain": [
+        "PROOF-eigenratios",
+        "INST-f0",
+        "DERIV-rge"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "predicted_value": 0.114,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "discrepancy_pct": -3.3,
+      "measured_error": 0.0009,
+      "measured_value": 0.1179,
+      "predicted_unit": "alpha_s MS-bar at M_Z",
+      "measured_source": "PDG 2024",
+      "description": "alpha_s from eigenvalue ratio and RGE running.",
+      "name": "Strong coupling at M_Z",
+      "id": "MEAS-alphas",
+      "prediction_chain": [
+        "PROOF-eigenratios",
+        "INST-f0",
+        "DERIV-rge"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "predicted_value": 0.666667,
+      "last_tested_at": "2026-03-27T00:00:00Z",
+      "discrepancy_pct": 0.0009,
+      "measured_error": 1e-05,
+      "measured_value": 0.666661,
+      "predicted_unit": "dimensionless",
+      "notes": "theta = 2/9 is an INPUT [I], so this anchor is partially dependent. Q = 2/3 follows from Z3 symmetry [T].",
+      "measured_source": "PDG 2024 pole masses",
+      "description": "Q = (me + mmu + mtau)^2 / (sqrt(me) + sqrt(mmu) + sqrt(mtau))^2. Uses theta = 2/9 as INPUT.",
+      "name": "Koide formula Q = 2/3",
+      "id": "MEAS-koide",
+      "prediction_chain": [
+        "PROOF-3gen",
+        "INST-theta"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "predicted_value": 7.6,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "discrepancy_pct": 1.3,
+      "measured_error": 0.3,
+      "measured_value": 7.5,
+      "predicted_unit": "eV",
+      "measured_source": "XPS/EELS literature",
+      "description": "U_dd from IE difference + local O screening (Clausius-Mossotti).",
+      "name": "Cu on-site Coulomb repulsion U_dd",
+      "id": "MEAS-udd",
+      "prediction_chain": [
+        "MEAS-alpha",
+        "DERIV-slater",
+        "DERIV-ie",
+        "DERIV-screening"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "predicted_value": 1.53,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "discrepancy_pct": -12.6,
+      "measured_error": 0.2,
+      "measured_value": 1.75,
+      "predicted_unit": "eV",
+      "measured_source": "Optical spectroscopy",
+      "description": "Delta from Mulliken electronegativity / sqrt(z) for coordination.",
+      "name": "Charge transfer gap Delta_CT",
+      "id": "MEAS-delta",
+      "prediction_chain": [
+        "MEAS-alpha",
+        "DERIV-slater",
+        "DERIV-ie",
+        "DERIV-electronegativity"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "contested"
+    },
+    {
+      "predicted_value": 46,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "discrepancy_pct": 2.2,
+      "measured_error": 5,
+      "measured_value": 45,
+      "predicted_unit": "MA/cm^2",
+      "measured_source": "REBCO literature",
+      "description": "Jd from GL theory using Phi_0, lambda, xi. Error cancellation in GL formula.",
+      "name": "Depairing current density Jd",
+      "id": "MEAS-jd",
+      "prediction_chain": [
+        "PROOF-cl6",
+        "MEAS-udd",
+        "MEAS-delta",
+        "DERIV-tpd",
+        "DERIV-teff",
+        "DERIV-lambda",
+        "DERIV-xi"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "predicted_value": 11,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "discrepancy_pct": 0,
+      "measured_error": 0,
+      "measured_value": 11,
+      "predicted_unit": "correct out of 11",
+      "measured_source": "REBCO synthesis literature",
+      "description": "Goldschmidt tolerance factor + ionic radius window correctly predicts stable/unstable for all 11 rare earth REBCO compositions.",
+      "name": "REBCO tolerance factor predictions",
+      "id": "MEAS-tolfac",
+      "prediction_chain": [
+        "MEAS-alpha",
+        "DERIV-slater",
+        "DERIV-ionic-radii",
+        "DERIV-tolerance"
+      ],
+      "tier": 3,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "predicted_value": 76,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "discrepancy_pct": -41.5,
+      "measured_error": 10,
+      "measured_value": 130,
+      "predicted_unit": "meV",
+      "measured_source": "Neutron scattering",
+      "description": "J from superexchange 4t_eff^2/U. 4th-order perturbation theory may be insufficient.",
+      "name": "Exchange coupling J",
+      "id": "FLAG-J",
+      "prediction_chain": [
+        "MEAS-udd",
+        "MEAS-delta",
+        "DERIV-tpd",
+        "DERIV-teff"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "incoherent"
+    },
+    {
+      "predicted_value": 53,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "discrepancy_pct": -42.4,
+      "measured_error": 1,
+      "measured_value": 92,
+      "predicted_unit": "K",
+      "measured_source": "Resistivity measurement",
+      "description": "Tc from Tc/J ratio (INPUT) times derived J.",
+      "name": "Critical temperature Tc",
+      "id": "FLAG-Tc",
+      "prediction_chain": [
+        "FLAG-J",
+        "INST-TcJ-ratio"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "incoherent"
+    },
+    {
+      "predicted_value": 6.7,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "discrepancy_pct": 123.3,
+      "measured_error": 0.5,
+      "measured_value": 3,
+      "predicted_unit": "nm",
+      "measured_source": "Hc2 measurement",
+      "description": "xi from hbar*v_F/(pi*Delta). Uses t_eff which is off.",
+      "name": "Coherence length xi",
+      "id": "FLAG-xi",
+      "prediction_chain": [
+        "MEAS-delta",
+        "DERIV-teff"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "incoherent"
+    },
+    {
+      "predicted_value": 28,
+      "last_tested_at": "2026-03-28T00:00:00Z",
+      "discrepancy_pct": -76.7,
+      "measured_error": 20,
+      "measured_value": 120,
+      "predicted_unit": "T",
+      "measured_source": "Magnetoresistance",
+      "description": "Hc2 = Phi_0/(2*pi*xi^2). xi error squares.",
+      "name": "Upper critical field Hc2",
+      "id": "FLAG-Hc2",
+      "prediction_chain": [
+        "FLAG-xi"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "incoherent"
+    },
+    {
+      "predicted_value": 0,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "discrepancy_pct": 100,
+      "measured_error": 0,
+      "measured_value": 0,
+      "predicted_unit": "various (eV)",
+      "measured_source": "NIST ASD",
+      "description": "IE predictions for Ga-Kr are ~450% off even with corrected sigma_3d=1.30. Slater model hits hard ceiling at Z>30. MODEL LIMITATION, not framework failure. Extension to Z=37-54 gives 843% median error. Needs Hartree-Fock or DFT replacement.",
+      "name": "Post-3d p-block ionisation energies",
+      "id": "FLAG-postd-IE",
+      "prediction_chain": [
+        "MEAS-alpha",
+        "DERIV-slater"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "incoherent"
+    },
+    {
+      "testable_when": "EXP-11 (now), IR1 (2026), O5 (2028-2031), LISA (2035+)",
+      "description": "For consumption events, GW and EM signals share internal temporal structure because both are projections of the same seam formation dynamics.",
+      "name": "GW-EM temporal correlation pulse-for-pulse",
+      "id": "PRED-gw-em",
+      "prediction_chain": [
+        "DERIV-sedenion",
+        "DERIV-holographic"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "untested"
+    },
+    {
+      "testable_when": "Adelle Goodwin VLA data (months)",
+      "description": "Radio afterglow should show 3 episodes matching the 3 gamma-ray pulses, from layered stellar consumption.",
+      "name": "GRB 250702B radio afterglow has 3-episode structure",
+      "id": "PRED-3episode",
+      "prediction_chain": [
+        "DERIV-sedenion",
+        "PRED-gw-em"
+      ],
+      "tier": 3,
+      "provenance": "T",
+      "status": "untested"
+    },
+    {
+      "testable_when": "Willow proposal (deadline May 15, 2026)",
+      "description": "18-qubit VQE on Cu2O7 cluster with our derived parameters. If J ~ 130 meV, parameters are right and formula is wrong. If J ~ 76 meV, both methods agree and parameters need refinement.",
+      "name": "Willow VQE gives J different from perturbative formula",
+      "id": "PRED-willow-j",
+      "prediction_chain": [
+        "MEAS-udd",
+        "MEAS-delta",
+        "DERIV-tpd"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "untested"
+    },
+    {
+      "testable_when": "Mathematical computation (years)",
+      "description": "Lambda proportional to ZD access rate x seam fluctuation frequency x seams per cell. Should give ~10^-122 in Planck units.",
+      "name": "Cosmological constant from ZD basin geometry",
+      "id": "PRED-lambda",
+      "prediction_chain": [
+        "PROOF-42zd",
+        "PROOF-hessian",
+        "DERIV-sedenion"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "untested"
+    },
+    {
+      "notes": "Currently consistent with all experimental bounds (all GUP parameters consistent with zero).",
+      "testable_when": "Existing bounds consistent; future precision tests",
+      "description": "hbar is fixed per Gamma-step, not a running parameter. No Planck-scale modifications to uncertainty principle.",
+      "name": "No generalised uncertainty principle corrections",
+      "id": "PRED-no-gup",
+      "prediction_chain": [
+        "DERIV-constants"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "untested"
+    },
+    {
+      "notes": "Three-path interferometry bounds |kappa| < 10^-2. No violation found.",
+      "testable_when": "Ongoing experimental tests (all consistent to date)",
+      "description": "P=|psi|^2 is a property of the H norm, not of the physics. No regime within our universe should show violations.",
+      "name": "Born rule holds exactly at all energies",
+      "id": "PRED-born-exact",
+      "prediction_chain": [
+        "PROOF-born"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "untested"
+    },
+    {
+      "predicted_value": 0,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "discrepancy_pct": 9.4,
+      "measured_error": 0.05,
+      "measured_value": 0.114,
+      "predicted_unit": "delta_1 - delta_3 (should be zero)",
+      "measured_source": "Derived from PDG 2024 couplings via 1-loop RGE",
+      "description": "Multiplicities (4,8,4) predict delta_1 = delta_3 (since mult(4)=mult(12)=4). Verified to 9.4%. One-parameter fit chi2=0.006, all other models chi2>7. First test of Hessian MULTIPLICITIES against experiment.",
+      "name": "Hessian multiplicities predict threshold correction pattern",
+      "id": "MEAS-mult-threshold",
+      "prediction_chain": [
+        "PROOF-hessian",
+        "PROOF-eigenratios"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "contested"
+    },
+    {
+      "predicted_value": 0,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "discrepancy_pct": 0,
+      "measured_error": 0,
+      "measured_value": 0,
+      "predicted_unit": "proton decay rate (should be zero for d=5,6)",
+      "notes": "If ANY proton decay is observed by Super-K, Hyper-K, or DUNE, QBP in NCG Pati-Salam form is FALSIFIED.",
+      "measured_source": "Super-Kamiokande: tau_p > 2.4e34 yr",
+      "description": "NCG Pati-Salam (Chamseddine-Connes-van Suijlekom 2013) forbids d=6 proton decay (no diquark vertex in SU(4) leptoquark) and d=5 decay (NCG forbids diquark scalars, Aydemir et al. 2018). First allowed operators are d>=7, giving tau >> 10^40 yr. Meson decay bound (M_X > 2500 TeV) satisfied by 10^8. Compatible with Super-K tau_p > 2.4x10^34 yr.",
+      "name": "Proton effectively stable (NCG Pati-Salam forbids d=5,6 decay)",
+      "id": "MEAS-proton-stable",
+      "prediction_chain": [
+        "DERIV-pati-salam",
+        "PROOF-eigenratios"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "testable_when": "Hyper-K (2027+), DUNE (2028+)",
+      "description": "NCG Pati-Salam predicts proton is effectively stable. Hyper-K (2027+) will improve bounds by ~10x. DUNE sensitive to p->K+nubar channel. QBP predicts null result in BOTH.",
+      "name": "Hyper-K and DUNE will NOT observe proton decay",
+      "id": "PRED-proton-decay-null",
+      "prediction_chain": [
+        "DERIV-pati-salam",
+        "MEAS-proton-stable"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "untested"
+    },
+    {
+      "testable_when": "Vienna nanorotor platform, 1-3 years (Troyer et al. 2026 next goal)",
+      "description": "T_rev = 2*pi*I/hbar exact at all mass scales. Born rule P=|psi|^2 from Hurwitz (unique quaternion norm). No objective collapse. Distinguishable from CSL (fidelity ~ m^-2) and Diosi-Penrose (fidelity ~ m^-2/R). 20nm SiO2 dumbbell: T_rev = 154ms, free fall = 12cm.",
+      "name": "Rotational quantum revival time exact (no collapse)",
+      "id": "PRED-revival-exact",
+      "prediction_chain": [
+        "PROOF-born",
+        "DERIV-holographic"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "untested"
+    },
+    {
+      "testable_when": "NOW — data public at PHAIDRA repository (Troyer et al. 2026)",
+      "description": "Cooling curves from 6 different nanorotors (dumbbells, trimers, clusters) should show REDUCED variance when parameterised by Gamma(t) instead of clock time t. Test statistic R = Var(Gamma)/Var(t) predicted < 1.",
+      "name": "Gamma-reparameterisation reduces decoherence variance",
+      "id": "PRED-gamma-universality",
+      "prediction_chain": [
+        "DERIV-arrow",
+        "DERIV-constants"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "untested"
+    },
+    {
+      "predicted_value": 83.51,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "discrepancy_pct": 0.44,
+      "measured_error": 1,
+      "measured_value": 83.14,
+      "predicted_unit": "f(0)",
+      "notes": "OBSERVATION, not proof. The formula f(0)=f0x4C/pi is a CONJECTURE.",
+      "measured_source": "2 x mean(1/alpha_unif) from PDG 2024",
+      "description": "f(0)/mean(1/alpha_unif) = 83.51/41.57 = 2.009. Numerical observation, not derivation. Partially circular (f(0) chosen to match alpha_em). Conjecture: f(0) = f0 x 4C/pi where C=12 (proven), 4=Tr(H)/dim (proven), mechanism not derived.",
+      "name": "f(0) approximately equals 2/alpha_unif (0.44%)",
+      "id": "OBS-f0-2alpha",
+      "prediction_chain": [
+        "PROOF-hessian",
+        "INST-f0"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "predicted_value": 0.666667,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "discrepancy_pct": 0.42,
+      "measured_error": 0.001,
+      "measured_value": 0.669445,
+      "predicted_unit": "Koide ratio Q",
+      "notes": "OBSERVATION, not prediction. 20 triplets tested; finding the closest is expected to be reasonably close. But 0.28% is striking.",
+      "measured_source": "PDG 2024 quark masses",
+      "description": "The three heaviest quarks (charm, bottom, top) satisfy the Koide formula to 0.28%. Post-hoc observation from scanning all 20 quark triplets. No a priori prediction. Standard generation triplets (u,c,t) and (d,s,b) do NOT satisfy Koide. Needs theoretical explanation from Fano geometry.",
+      "name": "Q(c,b,t) = 0.6694, only 0.28% from 2/3",
+      "id": "OBS-cbt-koide",
+      "prediction_chain": [
+        "PROOF-3gen",
+        "PROOF-fano"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "contested"
+    },
+    {
+      "predicted_value": 0.214,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "discrepancy_pct": -37.4,
+      "measured_error": 0.094,
+      "measured_value": 0.342,
+      "predicted_unit": "degrees (if interpreted as angle)",
+      "notes": "First QBP contact with cosmology. Marginal (1.4 sigma). Mechanism for units conversion missing.",
+      "measured_source": "Planck 2020 (Minami & Komatsu)",
+      "description": "The ratio of parity-violating broken G2 generators to total (3/14 = 0.214) is within 1.4 sigma of the Planck cosmic birefringence angle (0.342 +/- 0.094 degrees). No other parameter-free algebraic quantity from the crystallisation geometry is closer. Mechanism connecting algebraic ratio to angle in degrees is missing.",
+      "name": "G2 ratio 3/14 = 0.214 vs Planck birefringence 0.342 (1.4 sigma)",
+      "id": "OBS-cmb-314",
+      "prediction_chain": [
+        "PROOF-g2",
+        "PROOF-eigenratios",
+        "DERIV-pati-salam"
+      ],
+      "tier": 3,
+      "provenance": "T",
+      "status": "contested"
+    },
+    {
+      "predicted_value": 0.76,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "discrepancy_pct": 533,
+      "measured_error": 0.03,
+      "measured_value": 0.12,
+      "predicted_unit": "eV (Sigma m_nu)",
+      "notes": "Not a framework failure — the spectral action accommodates any M_R through the Dirac operator entries. But the NATURAL identification M_R = Lambda is excluded.",
+      "measured_source": "Planck+BAO 95% CL upper bound",
+      "description": "Naive type-I seesaw with M_R = Lambda = 2.4e14 GeV gives Sigma(m_nu) ~ 0.76 eV, excluded by Planck+BAO (< 0.12 eV). Requires M_R > 6*Lambda or modified seesaw. In spectral action, M_R is set by Majorana Yukawa (free parameter), so framework accommodates but natural value fails.",
+      "name": "Neutrino Yukawa constraint: natural seesaw M_R=Lambda excluded",
+      "id": "CONSTRAINT-ynu",
+      "prediction_chain": [
+        "DERIV-pati-salam",
+        "INST-f0"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "contested"
+    },
+    {
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "description": "Lean Q1-Q2: {e₀,e₁,e₂,e₃} closed under sedenion multiplication. Hamilton's ij=k, jk=i, ki=j verified against multiplication table. Machine-verified, zero sorry.",
+      "name": "Quaternion subalgebra ℍ ⊂ 𝕊 is closed + Hamilton table verified",
+      "id": "PROOF-quat-closure",
+      "prediction_chain": [
+        "AXIOM-1",
+        "AXIOM-2"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "description": "Lean Q3-Q4: [eᵢ,eⱼ] = 2εᵢⱼₖeₖ verified for all cyclic permutations. Casimir e₁²+e₂²+e₃² = -3e₀ verified. The Hessian λ=8 eigenspace IS the su(2) algebra.",
+      "name": "su(2) Lie algebra from imaginary quaternion commutators",
+      "id": "PROOF-su2-lie",
+      "prediction_chain": [
+        "PROOF-quat-closure",
+        "PROOF-eigenratios"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "description": "Lean Q5-Q7: Pure imaginary unit quaternions square to -1 (T²=-1). ⟨ψ|Tψ⟩ = 0 for all basis states and all T choices (orthogonality). Tψ ≠ ψ for all states (degeneracy). This is the algebraic foundation of time-reversal protection in ALL class AII topological materials.",
+      "name": "Kramers theorem: T²=-1, orthogonality, degeneracy (algebraic)",
+      "id": "PROOF-kramers",
+      "prediction_chain": [
+        "PROOF-su2-lie",
+        "PROOF-quat-closure"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "description": "Lean Q8: |ab|² = |a|²|b|² verified for ALL quaternion basis sums. This is the algebraic fact underlying both the Born rule (P=|ψ|²) and the Berry phase (π) of topological surface states. Q9 proves this FAILS for sedenions (ZD exists), establishing ℍ as the largest algebra with exact topology.",
+      "name": "Hurwitz norm multiplicativity in ℍ (Berry phase = π, Born rule)",
+      "id": "PROOF-hurwitz-quat",
+      "prediction_chain": [
+        "PROOF-quat-closure"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "description": "Lean Q10: Conjugation by u and -u produce the same inner automorphism. This is the Z₂ kernel of SU(2)→SO(3), which is the topological invariant classifying band insulators. Combined with Kramers (Q5-Q7), establishes the Z₂ classification of topological insulators.",
+      "name": "SU(2)/Z₂ = SO(3) double cover → Z₂ topological invariant",
+      "id": "PROOF-z2-cover",
+      "prediction_chain": [
+        "PROOF-quat-closure",
+        "PROOF-kramers"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "predicted_value": 1,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "discrepancy_pct": 0,
+      "measured_error": 0,
+      "measured_value": 1,
+      "predicted_unit": "Z₂ invariant (1 = topological)",
+      "notes": "Structural prediction (TI yes/no) is coherent. Quantitative gap prediction (0.3 eV) requires QBP-derived SOC which is not yet computed from algebra. Uses measured SOC.",
+      "measured_source": "ARPES + transport measurements, multiple groups",
+      "description": "Lean B4: λ_SOC(Bi) = 1.25 eV > E_gap(trivial) = 0.50 eV → band inversion → topological. Bi₂Se₃ is Altland-Zirnbauer class AII (T²=-1), which maps to quaternionic algebra ℍ in the tenfold way. The Z₂ invariant is derived from SU(2)/Z₂ double cover (PROOF-z2-cover). Measured topological gap: 0.3 eV (Zhang et al. 2009).",
+      "name": "Bi₂Se₃ classified as Z₂ topological insulator (class AII = ℍ)",
+      "id": "MEAS-bi2se3-topo",
+      "prediction_chain": [
+        "PROOF-kramers",
+        "PROOF-z2-cover",
+        "PROOF-hurwitz-quat"
+      ],
+      "tier": 3,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "predicted_value": 0,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "discrepancy_pct": 0,
+      "measured_error": 0,
+      "measured_value": 0,
+      "predicted_unit": "structural classification",
+      "notes": "QBP does not PREDICT the tenfold way — the tenfold way was discovered independently. But both frameworks use the SAME algebraic structure (division algebras) for the SAME physical reason (symmetry protection). This is a CONFLUENCE, not a prediction.",
+      "measured_source": "Altland-Zirnbauer classification (established physics)",
+      "description": "The 10 symmetry classes of free-fermion topological phases map to ℝ (T²=+1: classes AI, D, BDI), ℂ (no T or C: classes A, AIII), and ℍ (T²=-1: classes AII, C, CII, DIII, CI). This is the SAME division algebra hierarchy that QBP derives from the axioms. The mapping was identified independently by condensed matter physicists (Schnyder, Ryu, Furusaki, Ludwig 2008) and connects the QBP algebraic framework to the classification of ALL topological phases of matter.",
+      "name": "Altland-Zirnbauer tenfold way maps to division algebra hierarchy",
+      "id": "OBS-tenfold-division",
+      "prediction_chain": [
+        "AXIOM-1",
+        "AXIOM-2",
+        "PROOF-quat-closure"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "description": "Lean G1-G3: The three imaginary quaternion units satisfy e₁e₂=e₃, e₂e₃=e₁, e₃e₁=e₂ (Z₃ cycle) and anti-cyclic products give opposite signs (Z₂ chirality). This Z₃×Z₂ = the symmetry structure of graphene's Dirac equation. K valley = cyclic (+), K' valley = anti-cyclic (-).",
+      "name": "Honeycomb Z₃ cyclic symmetry from quaternion product e₁e₂=e₃",
+      "id": "PROOF-z3-cyclic",
+      "prediction_chain": [
+        "PROOF-quat-closure"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "description": "Lean G6-G7: C₂z²=-1 (spinor, from e₁²=-1) × T²=-1 gives (C₂zT)²=+1. This squares to PLUS one, not minus one like pure T. Consequence: MATBG has fragile Z topology (real class AI), Bi₂Se₃ has robust Z₂ topology (quaternionic class AII). The SAME multiplication table distinguishes the two topological classes.",
+      "name": "(C₂zT)² = +1 distinguishes fragile from robust topology",
+      "id": "PROOF-c2zt-square",
+      "prediction_chain": [
+        "PROOF-kramers",
+        "PROOF-quat-closure"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "description": "Lean G8-G9: Dirac cone helicity = sign of quaternion cyclic product. K valley: sign(e₁e₂)=+1, K' valley: sign(e₂e₁)=-1. Two same-valley cones in moiré BZ: total helicity = +1+1 = 2 ≠ 0 → topological obstruction. If from opposite valleys: +1+(-1) = 0 → trivial. The fragile topology of MATBG flat bands is an algebraic consequence of the cones sharing a valley.",
+      "name": "Nonzero total helicity → Wannier obstruction (fragile topology)",
+      "id": "PROOF-helicity-obstruction",
+      "prediction_chain": [
+        "PROOF-z3-cyclic",
+        "PROOF-quat-closure"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "predicted_value": 2,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "discrepancy_pct": 0,
+      "measured_error": 0,
+      "measured_value": 2,
+      "predicted_unit": "total Dirac helicity",
+      "notes": "Structural prediction (fragile topology yes/no, helicity count) is coherent. QBP does NOT predict the magic angle θ=1.05° or Tc≈1.7K.",
+      "measured_source": "Multiple groups: Po et al. PRL 2018, Song et al. PRL 2019",
+      "description": "MATBG flat bands carry nonzero Dirac helicity (total = 2), preventing symmetric Wannier functions. This fragile topology is confirmed by STM quasiparticle interference and Hofstadter butterfly measurements. QBP derives the fragile/robust distinction from (C₂zT)²=+1 vs T²=-1 (PROOF-c2zt-square) and the helicity from the quaternion cyclic product sign (PROOF-helicity-obstruction).",
+      "name": "MATBG flat bands have fragile topology (confirmed experimentally)",
+      "id": "MEAS-matbg-fragile",
+      "prediction_chain": [
+        "PROOF-c2zt-square",
+        "PROOF-helicity-obstruction"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "predicted_value": 0.5774,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "discrepancy_pct": 1.5,
+      "measured_error": 0.01,
+      "measured_value": 0.586,
+      "predicted_unit": "dimensionless BM parameter α",
+      "notes": "OBSERVATION, not prediction. Scanned multiple algebraic ratios; 1/√3 was closest. No mechanism. Same epistemic status as OBS-f0-2alpha and OBS-cbt-koide.",
+      "measured_source": "Bistritzer-MacDonald continuum model",
+      "description": "The Bistritzer-MacDonald magic angle parameter α=0.586 is within 1.5% of 1/√3=0.5774. 1/√3 is the honeycomb geometric normalisation factor appearing in the Z₃ rotation axis (1,1,1)/√3. No derivation connecting 1/√3 to the flat band condition. POST-HOC OBSERVATION.",
+      "name": "Magic angle parameter α ≈ 1/√3 to 1.5%",
+      "id": "OBS-alpha-invsqrt3",
+      "prediction_chain": [
+        "PROOF-z3-cyclic"
+      ],
+      "tier": 3,
+      "provenance": "T",
+      "status": "contested"
+    },
+    {
+      "predicted_value": 0,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "discrepancy_pct": 0,
+      "measured_error": 0,
+      "measured_value": 0,
+      "predicted_unit": "structural parallel",
+      "notes": "Structural observation. QBP does not predict the specific phase boundaries or Tc values. The parallel is that BOTH systems derive their competing energy scales from the same Hessian eigenspaces.",
+      "measured_source": "Phase diagrams of REBCO (Keimer et al.) and MATBG (Cao et al. 2018)",
+      "description": "Both MATBG and REBCO are Mott systems where U/t>>1 produces correlated insulators and SC upon doping. U derives from α_em (Hessian λ=4, U(1)), t derives from orbital overlap (λ=8, SU(2)). Both come from the same Hessian spectrum {0,4,8,12}. The phase diagram structure (Mott insulator → SC → metal with doping) is qualitatively the same in both materials.",
+      "name": "MATBG and REBCO share Mott physics structure (U/t from same Hessian)",
+      "id": "OBS-mott-parallel",
+      "prediction_chain": [
+        "PROOF-eigenratios",
+        "PROOF-su2-lie"
+      ],
+      "tier": 3,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "description": "Lean K1-K3: The triple product e₁e₂e₃ = -e₀ is the Kitaev plaquette flux W_p = σ_xσ_yσ_z. W_p² = +1 → eigenvalues ±1 → Z₂ gauge group. All six orderings yield ±e₀ with signs determined by permutation parity. The Z₂ gauge structure of the Kitaev spin liquid follows directly from the quaternion multiplication table.",
+      "name": "Quaternion triple product e₁e₂e₃ = -e₀ → Z₂ gauge structure",
+      "id": "PROOF-plaquette-z2",
+      "prediction_chain": [
+        "PROOF-quat-closure"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "description": "Lean K4-K5: {eᵢ,eⱼ} = -2δᵢⱼe₀ verified for all 9 pairs. Bivectors = vectors (e₁e₂=e₃, e₂e₃=e₁, e₃e₁=e₂) proves Cl(0,3) ≅ ℍ⊕ℍ. The Kitaev Majorana decomposition (matter + gauge sectors) IS this quaternion doubling. The model's exact solvability follows from the algebra being quaternionic.",
+      "name": "Clifford Cl(0,3) anticommutation = Majorana fermion algebra",
+      "id": "PROOF-clifford-majorana",
+      "prediction_chain": [
+        "PROOF-quat-closure",
+        "PROOF-su2-lie"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "description": "Lean K6: e₁e₂ = +e₃ ≠ e₂e₁ = -e₃ verified for all three pairs. Braiding Kitaev anyons in opposite orders gives different results because quaternion multiplication doesn't commute. The non-abelian character of B-phase anyons is a direct algebraic consequence.",
+      "name": "Non-abelian anyons from quaternion non-commutativity",
+      "id": "PROOF-nonabelian-braid",
+      "prediction_chain": [
+        "PROOF-quat-closure"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "description": "Lean K7: dim(ℝ)=1, dim(ℂ)=2, ratio=1/2. A Majorana fermion (real, 1 DOF per mode) has half the degrees of freedom of a Dirac fermion (complex, 2 DOF). The half-quantized thermal Hall conductivity κ_xy/T = (π²k_B²/6ℏ)×(1/2) is algebraically forced by the division algebra hierarchy ℝ⊂ℂ⊂ℍ.",
+      "name": "Majorana central charge c=1/2 from dim(ℝ)/dim(ℂ)",
+      "id": "PROOF-majorana-charge",
+      "prediction_chain": [
+        "AXIOM-1",
+        "AXIOM-2"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "description": "Lean K8: dim(Im ℍ) = 3 = number of independent spin-1/2 operators = number of Kitaev bond types. The Kitaev model is the MOST GENERAL bond-dependent Ising interaction on a honeycomb — there is no fourth independent spin operator. The algebra is complete.",
+      "name": "Three Kitaev bond types exhaust spin-1/2 observables (dim Im ℍ = 3)",
+      "id": "PROOF-bond-complete",
+      "prediction_chain": [
+        "PROOF-quat-closure",
+        "PROOF-3gen"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "predicted_value": 0.5,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "discrepancy_pct": 0,
+      "measured_error": 0,
+      "measured_value": 0.5,
+      "predicted_unit": "j_eff quantum number",
+      "notes": "The j_eff=1/2 description is confirmed but the degree to which α-RuCl₃ realises a pure Kitaev spin liquid (vs a magnetically ordered state with proximate Kitaev physics) remains debated.",
+      "measured_source": "RIXS (Sinn et al. 2016), neutron scattering (Banerjee et al. 2017)",
+      "description": "Lean R3-R4: Ru³⁺ (4d⁵) in octahedral field: 10Dq=2.0eV >> λ_SOC=0.15eV → t₂g well-defined. SOC splits t₂g(6 states) into j_eff=3/2(4, filled) + j_eff=1/2(2, 1 electron). The j_eff=1/2 doublet is a Kramers pair (Q5-Q7, T²=-1). This half-filled Kramers doublet generates the bond-dependent Kitaev interaction because j_eff=1/2 mixes L and S such that different bond directions project onto different spin components. Confirmed by RIXS and neutron scattering.",
+      "name": "α-RuCl₃ j_eff=1/2 Kramers doublet from 4d⁵ + SOC",
+      "id": "MEAS-rucl3-jeff",
+      "prediction_chain": [
+        "PROOF-kramers",
+        "PROOF-su2-lie"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "predicted_value": 0,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "discrepancy_pct": 0,
+      "measured_error": 0,
+      "measured_value": 0,
+      "predicted_unit": "structural (Z₂ gauge, Majorana, non-abelian)",
+      "notes": "This is NOT a prediction — QBP did not predict the Kitaev model. But the QBP proof and Kitaev's exact solution use the same algebra independently. This is a CONFLUENCE.",
+      "measured_source": "Kitaev, Annals of Physics 321 (2006) 2-111",
+      "description": "The Kitaev honeycomb model is exactly solvable (Kitaev 2006). The exact solution confirms: Z₂ gauge structure with conserved plaquette flux W_p = ±1, Majorana fermion excitations, and non-abelian anyons in the B-phase. QBP proves these from the quaternion multiplication table (K1-K6). The exact solution and the QBP algebraic proof agree because they use the SAME algebra.",
+      "name": "Kitaev model Z₂ gauge structure confirmed (exact solution)",
+      "id": "MEAS-kitaev-z2gauge",
+      "prediction_chain": [
+        "PROOF-plaquette-z2",
+        "PROOF-clifford-majorana",
+        "PROOF-nonabelian-braid"
+      ],
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent"
+    },
+    {
+      "predicted_value": 0.5,
+      "last_tested_at": "2026-04-08T00:00:00Z",
+      "discrepancy_pct": 0,
+      "measured_error": 0.1,
+      "measured_value": 0.5,
+      "predicted_unit": "thermal Hall quantization (units of π²k_B²/6ℏ)",
+      "notes": "MARGINAL because the experimental observation is debated. If confirmed, this becomes the most direct experimental signature of the division algebra hierarchy in condensed matter.",
+      "measured_source": "Kasahara et al. Nature 559, 227 (2018); Yokoi et al. Science 373, 568 (2021)",
+      "description": "The half-quantized thermal Hall conductivity κ_xy/T = (π²k_B²/6ℏ)×(1/2) has been reported in α-RuCl₃ under applied field (Kasahara et al. Nature 2018, Yokoi et al. Science 2021). The 1/2 = dim(ℝ)/dim(ℂ) is algebraically forced by the Majorana central charge c=1/2 (PROOF-majorana-charge). However, the observation is DEBATED — some groups see it, others don't. Sample dependence and phonon subtraction issues remain.",
+      "name": "Half-quantized thermal Hall = dim(ℝ)/dim(ℂ) = 1/2 (Majorana edge)",
+      "id": "OBS-thermal-hall-half",
+      "prediction_chain": [
+        "PROOF-majorana-charge",
+        "PROOF-plaquette-z2"
+      ],
+      "tier": 2,
+      "provenance": "T",
+      "status": "contested"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "INST-f0",
+      "name": "Crystallisation profile f(0) = a2/sqrt(2) - 7",
+      "type": "input",
+      "status": "irreducible",
+      "notes": "Tested by 3 independent couplings (alpha_em +0.08%, sin2tw +1.5%, alpha_s -3.3%). Conjecture f(0) = f0 x 4C/pi (C=12 proven, mechanism not derived). f(0)/mean(1/alpha_unif) = 2.009 to 0.44%."
+    },
+    {
+      "id": "INST-theta",
+      "name": "Koide phase theta = 2/9",
+      "type": "input",
+      "status": "irreducible",
+      "notes": "Gives lepton masses to 0.006% but the value 2/9 is not explained by the framework."
+    },
+    {
+      "id": "INST-TcJ-ratio",
+      "name": "Tc/J ratio ~ 0.06",
+      "type": "input",
+      "status": "irreducible",
+      "notes": "Encodes the entire many-body pairing mechanism. 38-year open problem. No algebra can derive this."
+    },
+    {
+      "id": "INST-Jc",
+      "name": "Jc(T,B) pinning landscape",
+      "type": "input",
+      "status": "irreducible",
+      "notes": "Materials science. Depends on defect microstructure, not algebra."
+    },
+    {
+      "id": "INST-07correction",
+      "name": "0.7 three-center correction to t_pd",
+      "type": "input",
+      "status": "irreducible",
+      "notes": "Harrison three-center geometric correction gives 0.97, not 0.70. The 0.7 requires full Madelung potential and orbital hybridisation (DFT-level physics: Hybertsen 0.71, Pavarini 0.68, Weber 0.73). Confirmed as irreducible at the analytical model level."
+    }
+  ],
+  "chains": [
+    {
+      "id": "CHAIN-axioms-to-gauge",
+      "name": "Axioms -> CD hierarchy -> ZD locus -> Hessian -> Gauge groups",
+      "target_id": "PROOF-eigenratios",
+      "notes": "Entirely Tier 1. Every step is proven.",
+      "source_ids": [
+        "AXIOM-1",
+        "AXIOM-2"
+      ],
+      "steps": 4,
+      "status": "coherent"
+    },
+    {
+      "weakest_link_id": "INST-f0",
+      "id": "CHAIN-axioms-to-alpha",
+      "name": "Axioms -> Gauge groups -> f(0) -> RGE -> alpha_em",
+      "target_id": "MEAS-alpha",
+      "notes": "Weakest link is f(0) candidate. All other steps proven or standard physics.",
+      "source_ids": [
+        "AXIOM-1",
+        "AXIOM-2"
+      ],
+      "steps": 6,
+      "status": "coherent"
+    },
+    {
+      "weakest_link_id": "DERIV-slater",
+      "id": "CHAIN-alpha-to-udd",
+      "name": "alpha_em -> Slater screening -> Z_eff -> IE -> U_dd",
+      "target_id": "MEAS-udd",
+      "notes": "Standard atomic physics. Slater screening is approximate (~10-30% for Z_eff).",
+      "source_ids": [
+        "MEAS-alpha"
+      ],
+      "steps": 4,
+      "status": "coherent"
+    },
+    {
+      "weakest_link_id": "DERIV-ionic-radii",
+      "id": "CHAIN-alpha-to-tolerance",
+      "name": "alpha_em -> Slater -> ionic radii -> Goldschmidt -> REBCO stability",
+      "target_id": "MEAS-tolfac",
+      "notes": "Independent path to REBCO. Converges with electronic structure path.",
+      "source_ids": [
+        "MEAS-alpha"
+      ],
+      "steps": 4,
+      "status": "coherent"
+    },
+    {
+      "weakest_link_id": "DERIV-tpd",
+      "id": "CHAIN-udd-to-J",
+      "name": "U_dd + Delta + t_pd -> t_eff -> J (superexchange)",
+      "target_id": "FLAG-J",
+      "notes": "This is where the 41% error lives. Either t_pd correction is wrong or perturbative formula breaks down.",
+      "source_ids": [
+        "MEAS-udd",
+        "MEAS-delta"
+      ],
+      "steps": 3,
+      "status": "incoherent"
+    },
+    {
+      "weakest_link_id": "INST-TcJ-ratio",
+      "id": "CHAIN-J-to-Tc",
+      "name": "J -> Tc/J ratio (INPUT) -> Tc",
+      "target_id": "FLAG-Tc",
+      "notes": "Directly inherits J error. Not independent.",
+      "source_ids": [
+        "FLAG-J"
+      ],
+      "steps": 1,
+      "status": "incoherent"
+    },
+    {
+      "weakest_link_id": "DERIV-tpd",
+      "id": "CHAIN-udd-to-Jd",
+      "name": "U_dd + Delta + t_pd -> GL parameters -> Jd",
+      "target_id": "MEAS-jd",
+      "notes": "Error cancellation in GL formula gives +2.2% despite upstream errors. Lucky but documented.",
+      "source_ids": [
+        "MEAS-udd",
+        "MEAS-delta"
+      ],
+      "steps": 5,
+      "status": "coherent"
+    },
+    {
+      "weakest_link_id": "DERIV-sedenion",
+      "id": "CHAIN-sedenion-to-gw",
+      "name": "Sedenion topology -> seam formation -> GW-EM correlation",
+      "target_id": "PRED-gw-em",
+      "notes": "The physical interpretation of sedenion seams is the weakest link.",
+      "source_ids": [
+        "AXIOM-2",
+        "DERIV-sedenion"
+      ],
+      "steps": 3,
+      "status": "untested"
+    },
+    {
+      "weakest_link_id": "DERIV-sedenion",
+      "id": "CHAIN-zd-to-lambda",
+      "name": "42 ZDs -> basin geometry -> seam fluctuation rate -> Lambda",
+      "target_id": "PRED-lambda",
+      "notes": "If this gives 10^-122, it would be the most important result in the programme.",
+      "source_ids": [
+        "PROOF-42zd",
+        "PROOF-hessian"
+      ],
+      "steps": 4,
+      "status": "untested"
+    },
+    {
+      "id": "CHAIN-hessian-to-threshold",
+      "name": "Hessian multiplicities -> threshold correction pattern",
+      "target_id": "MEAS-mult-threshold",
+      "notes": "Multiplicities (4,8,4) tested against coupling discrepancies at M_Z. Zero-parameter prediction delta_1=delta_3 passes at 9.4%.",
+      "source_ids": [
+        "PROOF-hessian",
+        "PROOF-eigenratios"
+      ],
+      "steps": 3,
+      "status": "contested"
+    },
+    {
+      "weakest_link_id": "DERIV-pati-salam",
+      "id": "CHAIN-ncg-to-proton",
+      "name": "NCG Pati-Salam -> no diquark couplings -> proton stable",
+      "target_id": "MEAS-proton-stable",
+      "notes": "Relies on Chamseddine-Connes-van Suijlekom (2013) for Pati-Salam emergence and Aydemir et al. (2018) for absence of diquark couplings.",
+      "source_ids": [
+        "AXIOM-1",
+        "AXIOM-2",
+        "DERIV-pati-salam"
+      ],
+      "steps": 4,
+      "status": "coherent"
+    },
+    {
+      "id": "CHAIN-born-to-revival",
+      "name": "Hurwitz -> Born rule exact -> revival fidelity mass-independent",
+      "target_id": "PRED-revival-exact",
+      "notes": "If the Born rule is exact (Hurwitz), revival fidelity depends only on decoherence, not mass. Distinguishes QBP from CSL and Diosi-Penrose.",
+      "source_ids": [
+        "PROOF-born",
+        "DERIV-holographic"
+      ],
+      "steps": 3,
+      "status": "untested"
+    },
+    {
+      "id": "CHAIN-axioms-to-kramers",
+      "name": "Axioms → CD → ZD → Hessian → SU(2) → Kramers theorem",
+      "target_id": "PROOF-kramers",
+      "notes": "Entirely Tier 1. Every step is Lean-verified. Axioms → sedenion (CD construction) → 42 ZDs → Hessian spectrum → λ=8 eigenspace = SU(2) → pure quaternions square to -1 → Kramers.",
+      "source_ids": [
+        "AXIOM-1",
+        "AXIOM-2"
+      ],
+      "steps": 6,
+      "status": "coherent"
+    },
+    {
+      "id": "CHAIN-kramers-to-z2",
+      "name": "Kramers → double cover → Z₂ → topological classification",
+      "target_id": "PROOF-z2-cover",
+      "notes": "Kramers degeneracy + SU(2)/Z₂ = SO(3) double cover gives the Z₂ topological invariant. Proven in Lean Q10.",
+      "source_ids": [
+        "PROOF-kramers"
+      ],
+      "steps": 2,
+      "status": "coherent"
+    },
+    {
+      "weakest_link_id": "MEAS-bi2se3-topo",
+      "id": "CHAIN-z2-to-bi2se3",
+      "name": "Z₂ classification + SOC(Bi) → Bi₂Se₃ is topological insulator",
+      "target_id": "MEAS-bi2se3-topo",
+      "notes": "General Z₂ classification (proven) + measured SOC for Bi (1.25 eV) > trivial gap (0.5 eV) → band inversion → topological. SOC is measured, not derived from QBP Z_eff. Chain is coherent but the quantitative gap prediction awaits QBP-derived SOC.",
+      "source_ids": [
+        "PROOF-z2-cover",
+        "PROOF-hurwitz-quat"
+      ],
+      "steps": 4,
+      "status": "coherent"
+    },
+    {
+      "id": "CHAIN-axioms-to-honeycomb",
+      "name": "Axioms → quaternion closure → Z₃ cyclic → honeycomb symmetry",
+      "target_id": "PROOF-z3-cyclic",
+      "notes": "Entirely Tier 1. CD construction → sedenion → quaternion subalgebra → cyclic product.",
+      "source_ids": [
+        "AXIOM-1",
+        "AXIOM-2"
+      ],
+      "steps": 4,
+      "status": "coherent"
+    },
+    {
+      "id": "CHAIN-kramers-to-fragile",
+      "name": "Kramers (T²=-1) + C₂z (e₁²=-1) → (C₂zT)²=+1 → fragile topology",
+      "target_id": "PROOF-c2zt-square",
+      "notes": "The sign cancellation (-1)×(-1)=+1 distinguishes fragile from robust topology.",
+      "source_ids": [
+        "PROOF-kramers",
+        "PROOF-quat-closure"
+      ],
+      "steps": 2,
+      "status": "coherent"
+    },
+    {
+      "id": "CHAIN-helicity-to-matbg",
+      "name": "Z₃ cyclic sign → helicity → Wannier obstruction → MATBG fragile topology",
+      "target_id": "MEAS-matbg-fragile",
+      "notes": "The helicity count (2 from same-valley cones) is algebraically forced by the cyclic product sign.",
+      "source_ids": [
+        "PROOF-z3-cyclic",
+        "PROOF-c2zt-square"
+      ],
+      "steps": 3,
+      "status": "coherent"
+    },
+    {
+      "id": "CHAIN-axioms-to-z2gauge",
+      "name": "Axioms → quaternion closure → triple product → Z₂ gauge → Kitaev spin liquid",
+      "target_id": "PROOF-plaquette-z2",
+      "notes": "Entirely Tier 1. CD → sedenion → quaternion subalgebra → e₁e₂e₃=-e₀ → Z₂. The Z₂ gauge structure is algebraically forced.",
+      "source_ids": [
+        "AXIOM-1",
+        "AXIOM-2"
+      ],
+      "steps": 5,
+      "status": "coherent"
+    },
+    {
+      "weakest_link_id": "MEAS-rucl3-jeff",
+      "id": "CHAIN-kramers-to-jeff",
+      "name": "Kramers T²=-1 + SOC regime → j_eff=1/2 → Kitaev interaction in α-RuCl₃",
+      "target_id": "MEAS-rucl3-jeff",
+      "notes": "Kramers protection (proven) + SOC > Hund (measured) → j_eff=1/2 doublet → bond-dependent Kitaev interaction.",
+      "source_ids": [
+        "PROOF-kramers"
+      ],
+      "steps": 3,
+      "status": "coherent"
+    },
+    {
+      "weakest_link_id": "OBS-thermal-hall-half",
+      "id": "CHAIN-majorana-to-thermal-hall",
+      "name": "dim(ℝ)/dim(ℂ) = 1/2 → Majorana c=1/2 → half-quantized thermal Hall",
+      "target_id": "OBS-thermal-hall-half",
+      "notes": "Algebraically forced (proven) but experimentally debated. If thermal Hall confirms, this is the strongest division algebra signature in condensed matter.",
+      "source_ids": [
+        "PROOF-majorana-charge",
+        "PROOF-plaquette-z2"
+      ],
+      "steps": 3,
+      "status": "contested"
+    }
+  ],
+  "confluence_points": [
+    {
+      "id": "CONFL-rebco-stability",
+      "anchor_id": "MEAS-tolfac",
+      "description": "REBCO stability predicted by BOTH tolerance factor (geometric, ionic radii path) AND electronic structure (U_dd, Delta path). Independent paths converge.",
+      "paths": [
+        {
+          "chain_id": "CHAIN-alpha-to-tolerance",
+          "programme": "QBP",
+          "provenance": "Internal"
+        },
+        {
+          "chain_id": "CHAIN-udd-to-Jd",
+          "programme": "QBP",
+          "provenance": "Internal"
+        }
+      ],
+      "status": "coherent"
+    },
+    {
+      "id": "CONFL-coupling-ratios",
+      "anchor_id": "MEAS-sin2tw",
+      "description": "Weak mixing angle predicted by BOTH the eigenvalue ratio (algebraic, Tier 1) AND the RGE running from f(0) (instance, Tier 2). Convergence tests whether f(0) is consistent with the algebra.",
+      "paths": [
+        {
+          "chain_id": "CHAIN-axioms-to-alpha",
+          "programme": "QBP",
+          "provenance": "Internal"
+        },
+        {
+          "chain_id": "CHAIN-axioms-to-gauge",
+          "programme": "QBP",
+          "provenance": "Internal"
+        }
+      ],
+      "status": "coherent"
+    },
+    {
+      "id": "CONFL-f0-three-couplings",
+      "anchor_id": "OBS-f0-2alpha",
+      "description": "f(0) tested by three independent couplings (alpha_em, sin2tw, alpha_s) through the same spectral action formula but with different RGE running. The discrepancy pattern (+,+,-) constrains threshold corrections and is consistent with Hessian multiplicity structure.",
+      "paths": [
+        {
+          "chain_id": "CHAIN-axioms-to-alpha",
+          "programme": "QBP",
+          "provenance": "Internal"
+        },
+        {
+          "chain_id": "CHAIN-hessian-to-threshold",
+          "programme": "QBP",
+          "provenance": "Internal"
+        }
+      ],
+      "status": "coherent"
+    },
+    {
+      "id": "CONFL-born-berry-kramers",
+      "anchor_id": "PROOF-hurwitz-quat",
+      "description": "The Born rule (P=|ψ|², PRED-born-exact), Berry phase (π for surface Dirac cone), and Kramers protection (T²=-1) are THREE physical consequences of ONE algebraic fact: the Hurwitz norm multiplicativity in ℍ (PROOF-hurwitz-quat). They arise in quantum mechanics (Born), topology (Berry), and materials science (Kramers/Z₂) as independent physical manifestations. This is the deepest confluence in the programme — three domains, one theorem.",
+      "paths": [
+        {
+          "chain_id": "CHAIN-axioms-to-kramers",
+          "programme": "QBP",
+          "provenance": "Internal"
+        },
+        {
+          "chain_id": "CHAIN-z2-to-bi2se3",
+          "programme": "QBP",
+          "provenance": "Internal"
+        }
+      ],
+      "status": "coherent"
+    },
+    {
+      "id": "CONFL-tenfold-qbp",
+      "anchor_id": "OBS-tenfold-division",
+      "description": "The Altland-Zirnbauer tenfold way (discovered independently in condensed matter physics by Schnyder et al. 2008) uses the SAME division algebra hierarchy (ℝ,ℂ,ℍ) that QBP derives from information preservation + maximality. This is external convergence: an independent research programme arrived at the same algebraic structure for the same physical reason (symmetry classification).",
+      "paths": [
+        {
+          "chain_id": "CHAIN-axioms-to-kramers",
+          "programme": "QBP",
+          "provenance": "Internal"
+        }
+      ],
+      "status": "coherent"
+    },
+    {
+      "id": "CONFL-three-materials",
+      "anchor_id": "PROOF-quat-closure",
+      "description": "Three materials (Bi₂Se₃, MATBG, REBCO) with three different topological classes (Z₂ robust, Z fragile, d-wave nodal) ALL derive their symmetry structure from the SAME quaternion subalgebra proven in Q1-Q2. The multiplication table e₁²=-1, e₁e₂=e₃ determines: T²=-1 (Kramers → Bi₂Se₃), (C₂zT)²=+1 (fragile → MATBG), and SU(2) orbital overlap (→ REBCO). One algebraic fact, three topological classes, three materials.",
+      "paths": [
+        {
+          "chain_id": "CHAIN-z2-to-bi2se3",
+          "programme": "QBP",
+          "provenance": "Internal"
+        },
+        {
+          "chain_id": "CHAIN-helicity-to-matbg",
+          "programme": "QBP",
+          "provenance": "Internal"
+        }
+      ],
+      "status": "coherent"
+    },
+    {
+      "id": "CONFL-kitaev-exact",
+      "anchor_id": "MEAS-kitaev-z2gauge",
+      "description": "Kitaev's exact solution (2006) and QBP's algebraic proof (K1-K6) arrive at the SAME structure (Z₂ gauge, Majorana decomposition, non-abelian anyons) using the SAME algebra (quaternion multiplication table) independently. Kitaev solved a physics model; QBP proved algebraic identities. Both get the same answer because both are computing with ℍ.",
+      "paths": [
+        {
+          "chain_id": "CHAIN-axioms-to-z2gauge",
+          "programme": "QBP",
+          "provenance": "Internal"
+        }
+      ],
+      "status": "coherent"
+    },
+    {
+      "id": "CONFL-four-materials",
+      "anchor_id": "PROOF-quat-closure",
+      "description": "FOUR materials (Bi₂Se₃, MATBG, REBCO, α-RuCl₃) with FOUR different topological/phase classes (Z₂ robust, Z fragile, d-wave, Z₂ gauge) ALL derive from the SAME quaternion multiplication table. Each material accesses a different algebraic fact: eᵢ²=-1 (Kramers), e₁²·e₂²=+1 (C₂zT), SU(2) overlap (Mott), e₁e₂e₃=-e₀ (gauge flux). One 4×4 table → four condensed matter phenomena.",
+      "paths": [
+        {
+          "chain_id": "CHAIN-z2-to-bi2se3",
+          "programme": "QBP",
+          "provenance": "Internal"
+        },
+        {
+          "chain_id": "CHAIN-axioms-to-z2gauge",
+          "programme": "QBP",
+          "provenance": "Internal"
+        }
+      ],
+      "status": "coherent"
+    }
+  ]
+}

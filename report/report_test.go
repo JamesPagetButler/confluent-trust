@@ -120,7 +120,7 @@ func TestRiverMap_NonEmpty(t *testing.T) {
 }
 
 func TestRunFullAnalysis_OnEachShippedFixture(t *testing.T) {
-	for _, name := range []string{"minimal.json", "qbp_quantum_v0_1.json", "qbp_quantum_v0_2.json", "qbp_dm_fork.json"} {
+	for _, name := range []string{"minimal.json", "qbp_quantum_v0_1.json", "qbp_quantum_v0_2.json", "qbp_dm_fork.json", "qbp_v3_2.json"} {
 		t.Run(name, func(t *testing.T) {
 			inv := loadInv(t, name)
 			fa := RunFullAnalysis(inv, nil)
