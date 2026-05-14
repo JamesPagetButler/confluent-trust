@@ -719,7 +719,7 @@ func TestConcurrent_AppendsRaceClean(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		id := fmt.Sprintf("PROOF-concurrent-%03d", i)
 		go func(anchorID string) {
 			defer wg.Done()
@@ -774,7 +774,7 @@ func TestConcurrent_AppendAndUpdate(t *testing.T) {
 
 	// 25 appending goroutines.
 	wg.Add(appendN)
-	for i := 0; i < appendN; i++ {
+	for i := range appendN {
 		id := fmt.Sprintf("PROOF-append-%03d", i)
 		go func(anchorID string) {
 			defer wg.Done()
@@ -787,7 +787,7 @@ func TestConcurrent_AppendAndUpdate(t *testing.T) {
 	// 25 updating goroutines — alternate between untested and coherent to
 	// trigger the whitelist fields changed check.
 	wg.Add(updateN)
-	for i := 0; i < updateN; i++ {
+	for i := range updateN {
 		target := model.StatusCoherent
 		if i%2 == 0 {
 			target = model.StatusUntested

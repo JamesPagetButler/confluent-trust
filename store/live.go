@@ -2,6 +2,7 @@ package store
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"sync"
@@ -567,9 +568,7 @@ func cloneInventory(inv *model.Inventory) model.Inventory {
 		// TierBreakdown is a map — deep-copy it.
 		if inv.Health.TierBreakdown != nil {
 			h.TierBreakdown = make(map[string]int, len(inv.Health.TierBreakdown))
-			for k, v := range inv.Health.TierBreakdown {
-				h.TierBreakdown[k] = v
-			}
+			maps.Copy(h.TierBreakdown, inv.Health.TierBreakdown)
 		}
 		// RhoNet, CoherenceRatio, CompressionVelocity are *float64 — clone.
 		if inv.Health.RhoNet != nil {
