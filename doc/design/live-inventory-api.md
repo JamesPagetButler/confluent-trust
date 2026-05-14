@@ -2,6 +2,8 @@
 
 **Status:** §I4 design surface (Loop 1 Reference). Implementation deferred to a follow-up PR after §I4 sign-off.
 
+**Revision:** v0.2 — adds §2.1 *Hook semantics — Append fires + per-kind filter* resolving the T8 + T9 design clarifications flagged by @contextus-impl §I4 review on PR #62. Per beekeeper direction 2026-05-14: design-surface gaps resolve in a follow-up design PR, not the impl PR. See `## Changelog` at the bottom.
+
 **Issue:** [#51](https://github.com/JamesPagetButler/confluent-trust/issues/51) — feat: live inventory update API — append/mutate anchors as theory advances
 
 ## 0. §I4 invariant — design-doc-as-S-01-review-surface
@@ -81,6 +83,10 @@ func OpenLiveInventory(path string, hooks *Hooks) (*LiveInventory, error)
 // any existing anchor or axiom; on collision the method returns
 // model.ErrIDCollision wrapped. The single anchor is schema-validated
 // before insertion; the full Inventory.Validate() runs before fsync.
+//
+// On successful commit, Hooks.OnAnchorChange fires with before == nil
+// and after pointing at the appended anchor (deep copy). See §2.1 for
+// the full hook-semantics contract.
 func (li *LiveInventory) AppendAnchor(a model.Anchor) error
 
 // AppendChain, AppendConfluence, AppendInput follow the same contract.
@@ -96,10 +102,14 @@ func (li *LiveInventory) AppendInput(in model.Input) error
 // If the mutator changes any of {Status, MeasuredValue, MeasuredError,
 // DiscrepancyPct, LastTestedAt}, Hooks.OnAnchorChange fires with the
 // before/after snapshot. Other field changes do not fire the hook
-// (avoids spurious NATS publishes on routine bookkeeping).
+// (avoids spurious NATS publishes on routine bookkeeping). The
+// anchor-specific whitelist is NOT applied to OnChainChange or
+// OnConfluenceChange; see §2.1.
 func (li *LiveInventory) UpdateAnchor(id string, mutator func(*model.Anchor) error) error
 
-// UpdateChain has the same shape as UpdateAnchor.
+// UpdateChain has the same shape as UpdateAnchor, with one semantic
+// difference: OnChainChange fires on ALL field changes (no whitelist
+// filter). See §2.1 for rationale.
 func (li *LiveInventory) UpdateChain(id string, mutator func(*model.Chain) error) error
 
 // Snapshot returns a deep copy of the current inventory state. Callers
@@ -122,6 +132,28 @@ func (li *LiveInventory) Close() error
 ```
 
 The supporting `model.ErrIDCollision` and `model.ErrClosed` sentinel errors land alongside this PR's implementation; they are referenced in `model/errors.go` (new file, ~12 lines).
+
+### 2.1 Hook semantics — Append fires + per-kind filter
+
+**(Added v0.2 — resolves PR #62 T8 + T9 design clarifications flagged by @contextus-impl §I4 review.)**
+
+Two semantic questions were left implicit in v0.1 and are pinned here:
+
+**(a) `Append*` methods fire hooks with `before == nil`.** Every successful `AppendAnchor`, `AppendChain`, `AppendConfluence` invokes the corresponding `OnAnchorChange` / `OnChainChange` / `OnConfluenceChange` hook with `before == nil` and `after` pointing at the just-appended record (deep copy, same isolation as `Snapshot`). This is symmetric with `Update*` (which always supplies both `before` and `after`). The single hook surface covers both lifecycle events; consumers register one callback per kind, not a separate "watch-new-IDs" surface.
+
+`AppendInput` does NOT fire a hook (no `OnInputChange` defined; inputs are programme-level metadata, not anchor-graph state).
+
+**(b) The per-field filter is anchor-specific. Chain and confluence hooks fire on all field changes.**
+
+| Hook | Fires on Append? | Fires on Update for which fields? |
+|---|---|---|
+| `OnAnchorChange` | yes (`before == nil`) | only when `{Status, MeasuredValue, MeasuredError, DiscrepancyPct, LastTestedAt}` change. Other field changes (e.g., `Notes`, `Description`) do not fire. |
+| `OnChainChange` | yes (`before == nil`) | **all field changes fire**, no whitelist. Chain topology IS the derivation surface; any change matters to closure-caching consumers (e.g., Contextus `cth-derivation` membership predicate). |
+| `OnConfluenceChange` | yes (`before == nil`) | **all field changes fire**, no whitelist. Same rationale: confluence membership in the derivation closure determines the "what counts as evidence" set; consumers must observe every change. |
+
+**Rationale for the asymmetry**: anchor records have many fields (`Notes`, `Description`, `References`, `Tags`, citation links, etc.) that change frequently as humans curate the inventory without affecting ρ_net or downstream consumers. The whitelist filter (`{Status, MeasuredValue, …}`) is the ρ_net-affecting subset per Theory v0.2 §4.1. Chain and confluence records, by contrast, have a small fixed shape where every field matters to some consumer; filtering would just guess wrong.
+
+**Hook fire order**: hooks for sequential successful mutations fire in commit order. The implementation queues hook dispatch outside the critical section but preserves the order in which mutations linearised under the write lock. Consumers replaying mutations to reconstruct state can rely on the order; they need not add their own reconciliation pass for ordering.
 
 ## 3. Concurrency contract
 
@@ -220,7 +252,7 @@ Steps 1–2 are in scope for this issue. Steps 3–5 are consumer-side work in s
 
 2. **Snapshot deep-copy vs pointer-with-token.** Deep-copy is safe but allocates; pointer-with-token (caller receives a `*model.Inventory` plus a release function) is cheaper but caller must release. My lean: **deep-copy at v0.1**; v0.2 add a `SnapshotRef()` variant returning the cheaper shape. Pushback if BMA's L3 read frequency makes the alloc cost load-bearing at Toddle.
 
-3. **Per-field status-change filtering for OnAnchorChange.** The current §2 spec fires the hook only when `{Status, MeasuredValue, MeasuredError, DiscrepancyPct, LastTestedAt}` change. Is this the right set? Should bridges, predictions, or proof-related fields also fire it? My lean: **start with the listed set** (those are the ρ_net-affecting fields per Theory v0.2 §4.1); broaden in v0.2 if specific callers need finer signaling.
+3. ~~**Per-field status-change filtering for OnAnchorChange.**~~ **RESOLVED v0.2.** The anchor-side whitelist `{Status, MeasuredValue, MeasuredError, DiscrepancyPct, LastTestedAt}` ships at v0.1 per the original spec. **Chain and confluence hooks fire on all field changes** (no whitelist) per §2.1 — chain/confluence records have small fixed shape where every field matters to some consumer. **Append* methods fire hooks with `before == nil`** per §2.1, symmetric with Update*. Hook fire order is commit order, queued outside the critical section.
 
 4. **`AppendAxiom` and `AppendDerivedPrinciple` absent from v0.1.** Axioms are conventionally write-once-at-programme-init; derived principles change rarely. My lean: **omit at v0.1**, add via SaveInventory full-rewrite path until a real use case surfaces. Pushback if QBP's PR7 reconciliation cycle needs them.
 
@@ -241,3 +273,10 @@ Steps 1–2 are in scope for this issue. Steps 3–5 are consumer-side work in s
 - **workspace-phase-architecture §0.11** — η = CTH ρ_net trust-anchor identity
 - **workspace-phase-architecture §2.4** — CTH as L3 Beliefs substrate at Toddle
 - **workspace-phase-architecture §2.7** — Toddle→Walk exit gate (federation-wide Wyrd v0.2 cutover)
+
+## Changelog
+
+| Revision | Date | Changes |
+|---|---|---|
+| v0.1 | 2026-05-14 (PR #62 merged 17:52 UTC per beekeeper-override; named-reviewer set incomplete at merge per @contextus-impl §I4 review) | Initial design surface for §51 LiveInventory API. |
+| v0.2 | 2026-05-14 (this PR) | Adds §2.1 *Hook semantics — Append fires + per-kind filter*. Resolves T8 (chain/confluence hooks fire on all field changes; no whitelist) and T9 (`Append*` fires hooks with `before == nil`) clarifications flagged in @contextus-impl PR #62 §I4 review + expanded test plan. Updates AppendAnchor + UpdateAnchor + UpdateChain godoc to cross-reference §2.1. §10 OQ #3 marked RESOLVED. Test plan T8/T9 in the impl PR can now be specified without further design work. |
