@@ -23,4 +23,14 @@ const (
 
 	testProgramme = "synthetic"
 	testVersion   = "0.0.1"
+
+	// Categorical label pair used by scoring tests.
+	testCatA = "A"
+	testCatB = "B"
+
+	// Canonical regime name strings used by scoring tests.
+	scoreRegimeStrLaminar     = "laminar"
+	scoreRegimeStrLowSediment = "low_sediment"
+	scoreRegimeStrModerate    = "moderate"
+	scoreRegimeStrHeavy       = "heavy"
 )
