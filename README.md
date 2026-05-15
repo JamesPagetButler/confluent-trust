@@ -20,16 +20,19 @@ CTH is a Go library plus CLI that computes:
 
 It is designed to be embedded by [BMA][bma] (the cognitive substrate),
 [Contextus][contextus], and any programme that needs epistemic-health
-monitoring. Storage is layered: JSON files (Crawl), MuninnDB engrams
-(Walk), SurrealDB structural ground truth (Run).
+monitoring. Storage is layered atop [Wyrd][wyrd], the workspace's
+native quaternion-native typed hypergraph database (Lean-verified):
+JSON-file persistence (Crawl), Wyrd v0.2 with MuninnDB engrams (Walk),
+Wyrd v0.3 with Skuld supervisor + HAMA Tier-N (Run). No third-party
+DB in the CTH stack at any phase.
 
 ## Phases
 
 | Phase | Storage | Capabilities |
 |---|---|---|
-| Crawl (v0.1.x) | JSON files | Core types, all compute, CLI |
-| Walk  (v0.2.x) | MuninnDB + NATS | Hebbian co-activation, Ebbinghaus decay, branch-locked vaults |
-| Run   (v0.3.x) | + SurrealDB | BMA integration, agent flow field |
+| Crawl (v0.1.x) | JSON files | Core types, all compute, CLI, live append/mutate |
+| Walk  (v0.2.x) | Wyrd v0.2 + MuninnDB engrams + NATS | Hebbian co-activation, Ebbinghaus decay, branch-locked vaults, federation-wide cutover per CTH #60 schema bridging |
+| Run   (v0.3.x) | Wyrd v0.3 + Skuld supervisor + HAMA Tier-N | Multi-tenant federation participation, agent flow field |
 
 See `~/Documents/CTH/Archive/CTH-Go-Implementation-Plan (1).md` for the
 27-issue plan. All issues are filed against this repo with phase /
@@ -40,7 +43,7 @@ type / priority labels.
 ```
 model/                 Pure data types (stdlib only)
 compute/               Pure functions (stdlib only)
-store/                 JSON, MuninnDB, SurrealDB backends
+store/                 JSON files (Crawl); Wyrd-backed adapters land at Walk/Run per CTH #60
 report/                Dashboard, markdown report, river map
 cmd/cth/               CLI: cth analyse | merge | health | compare | fork
 schema/                JSON Schema 2020-12 for inventory documents
@@ -76,3 +79,4 @@ Apache 2.0 — see `LICENSE`.
 [theory]: ../Archive/Confluent-Trust-Hypergraph-Theory-v0_2%20%281%29.md
 [bma]: https://github.com/JamesPagetButler/bma-systema
 [contextus]: ../../Contextus/
+[wyrd]: https://github.com/JamesPagetButler/wyrd
