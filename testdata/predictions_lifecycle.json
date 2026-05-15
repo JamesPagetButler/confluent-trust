@@ -1,0 +1,182 @@
+{
+  "$comment": "Predictions lifecycle fixture (#53 part 2): exercises the four ScorePrediction regime classes (laminar / low_sediment / moderate / heavy) plus the untested initial state. Hand-computed discrepancy_pct values match compute.ScorePrediction output to <1e-6 tolerance.",
+  "schema_version": "v0.2",
+  "programme": "PREDICTIONS-LIFECYCLE",
+  "version": "0.1",
+  "full_name": "Prediction-observation lifecycle test fixture",
+  "timestamp": "2026-05-14T00:00:00Z",
+  "axioms": [
+    {
+      "id": "AXIOM-baseline",
+      "name": "Baseline theoretical commitment",
+      "statement": "The phenomenon is governed by an inverse-square law with coupling constant 42.0 (synthetic).",
+      "derivable": false
+    }
+  ],
+  "anchors": [
+    {
+      "id": "PROOF-derivation",
+      "name": "Coupling-constant derivation",
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent",
+      "description": "Synthetic theoretical chain producing predicted value 42.0. Stand-in for a real proof.",
+      "prediction_chain": [
+        "AXIOM-baseline"
+      ]
+    },
+    {
+      "id": "PRED-laminar-match",
+      "name": "Laminar regime: prediction within 1% of observation",
+      "tier": 2,
+      "provenance": "T",
+      "status": "coherent",
+      "description": "Predicted 42.0; measured 41.97. Discrepancy 0.0714% → laminar regime → status coherent. Confirmatory bits ≈ 10.45 per -log2(0.000714).",
+      "predicted_value": 42.0,
+      "predicted_unit": "synthetic",
+      "measured_value": 41.97,
+      "measured_error": 0.05,
+      "measured_source": "Synthetic observation A",
+      "discrepancy_pct": 0.0714285714285714,
+      "prediction_chain": [
+        "PROOF-derivation"
+      ],
+      "last_tested_at": "2026-05-14T00:00:00Z"
+    },
+    {
+      "id": "PRED-low-sediment-match",
+      "name": "Low-sediment regime: prediction within 10% of observation",
+      "tier": 2,
+      "provenance": "T",
+      "status": "coherent",
+      "description": "Predicted 42.0; measured 41.0. Discrepancy 2.38% → low_sediment regime → status coherent (annotated).",
+      "predicted_value": 42.0,
+      "predicted_unit": "synthetic",
+      "measured_value": 41.0,
+      "measured_error": 0.1,
+      "measured_source": "Synthetic observation B",
+      "discrepancy_pct": 2.3809523809523809,
+      "prediction_chain": [
+        "PROOF-derivation"
+      ],
+      "last_tested_at": "2026-05-14T00:00:00Z"
+    },
+    {
+      "id": "PRED-moderate-discrepancy",
+      "name": "Moderate regime: prediction off by 10-50%",
+      "tier": 2,
+      "provenance": "T",
+      "status": "contested",
+      "description": "Predicted 42.0; measured 35.0. Discrepancy 16.67% → moderate regime → status contested.",
+      "predicted_value": 42.0,
+      "predicted_unit": "synthetic",
+      "measured_value": 35.0,
+      "measured_error": 0.2,
+      "measured_source": "Synthetic observation C",
+      "discrepancy_pct": 16.6666666666666666,
+      "prediction_chain": [
+        "PROOF-derivation"
+      ],
+      "last_tested_at": "2026-05-14T00:00:00Z"
+    },
+    {
+      "id": "PRED-heavy-refutation",
+      "name": "Heavy regime: prediction off by 50% or more",
+      "tier": 2,
+      "provenance": "T",
+      "status": "refuted",
+      "description": "Predicted 42.0; measured 70.0. Discrepancy 66.67% → heavy regime → status refuted.",
+      "predicted_value": 42.0,
+      "predicted_unit": "synthetic",
+      "measured_value": 70.0,
+      "measured_error": 0.3,
+      "measured_source": "Synthetic observation D",
+      "discrepancy_pct": 66.6666666666666667,
+      "prediction_chain": [
+        "PROOF-derivation"
+      ],
+      "last_tested_at": "2026-05-14T00:00:00Z"
+    },
+    {
+      "id": "PRED-untested-pending",
+      "name": "Pending observation",
+      "tier": 3,
+      "provenance": "T",
+      "status": "untested",
+      "description": "Predicted 42.0; no observation yet. Stays at Tier 3 (TierPrediction) until an observation arrives and promotes it to Tier 2.",
+      "predicted_value": 42.0,
+      "predicted_unit": "synthetic",
+      "prediction_chain": [
+        "PROOF-derivation"
+      ]
+    }
+  ],
+  "chains": [
+    {
+      "id": "CHAIN-axiom-to-derivation",
+      "name": "AXIOM-baseline -> PROOF-derivation",
+      "source_ids": [
+        "AXIOM-baseline"
+      ],
+      "target_id": "PROOF-derivation",
+      "steps": 1,
+      "status": "coherent",
+      "fidelity": 0.99
+    },
+    {
+      "id": "CHAIN-derivation-to-laminar",
+      "name": "PROOF-derivation -> PRED-laminar-match",
+      "source_ids": [
+        "PROOF-derivation"
+      ],
+      "target_id": "PRED-laminar-match",
+      "steps": 1,
+      "status": "coherent",
+      "fidelity": 0.99
+    },
+    {
+      "id": "CHAIN-derivation-to-low-sediment",
+      "name": "PROOF-derivation -> PRED-low-sediment-match",
+      "source_ids": [
+        "PROOF-derivation"
+      ],
+      "target_id": "PRED-low-sediment-match",
+      "steps": 1,
+      "status": "coherent",
+      "fidelity": 0.95
+    },
+    {
+      "id": "CHAIN-derivation-to-moderate",
+      "name": "PROOF-derivation -> PRED-moderate-discrepancy",
+      "source_ids": [
+        "PROOF-derivation"
+      ],
+      "target_id": "PRED-moderate-discrepancy",
+      "steps": 1,
+      "status": "contested",
+      "fidelity": 0.85
+    },
+    {
+      "id": "CHAIN-derivation-to-heavy",
+      "name": "PROOF-derivation -> PRED-heavy-refutation",
+      "source_ids": [
+        "PROOF-derivation"
+      ],
+      "target_id": "PRED-heavy-refutation",
+      "steps": 1,
+      "status": "refuted",
+      "fidelity": 0.6
+    },
+    {
+      "id": "CHAIN-derivation-to-untested",
+      "name": "PROOF-derivation -> PRED-untested-pending",
+      "source_ids": [
+        "PROOF-derivation"
+      ],
+      "target_id": "PRED-untested-pending",
+      "steps": 1,
+      "status": "untested",
+      "fidelity": 0.9
+    }
+  ]
+}

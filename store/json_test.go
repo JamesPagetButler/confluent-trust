@@ -16,6 +16,7 @@ func TestLoadInventory_AllFixtures(t *testing.T) {
 		"qbp_quantum_v0_2.json",
 		"qbp_dm_fork.json",
 		"qbp_v3_2.json",
+		"predictions_lifecycle.json",
 	}
 	for _, name := range fixtures {
 		t.Run(name, func(t *testing.T) {
@@ -41,6 +42,7 @@ func TestLoadSave_RoundTripDeepEqual(t *testing.T) {
 		"qbp_quantum_v0_2.json",
 		"qbp_dm_fork.json",
 		"qbp_v3_2.json",
+		"predictions_lifecycle.json",
 	}
 	for _, name := range fixtures {
 		t.Run(name, func(t *testing.T) {
