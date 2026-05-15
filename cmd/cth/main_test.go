@@ -67,8 +67,7 @@ func TestRunScore_DefaultMode_LifecycleFixture(t *testing.T) {
 		t.Error("output missing untested anchor row")
 	}
 	// Verify the row uses "—" for missing columns (at least four "—" on that line)
-	lines := strings.Split(out, "\n")
-	for _, line := range lines {
+	for line := range strings.SplitSeq(out, "\n") {
 		if strings.Contains(line, "PRED-untested-pending") {
 			dashes := strings.Count(line, "—")
 			if dashes < 4 {
@@ -244,12 +243,4 @@ func TestRunScore_MissingInventoryArg(t *testing.T) {
 	if !strings.Contains(err.Error(), "expects one inventory.json") {
 		t.Errorf("error message should mention inventory argument; got: %v", err)
 	}
-}
-
-// min is a helper for pre-Go-1.21 compatibility if needed.
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
