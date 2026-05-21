@@ -680,8 +680,8 @@ func runMigrate(args []string) error {
 // path by inserting "_v0_3" before the extension.
 // "testdata/foo.json" → "testdata/foo_v0_3.json"
 func migrateDefaultOutputPath(src string) string {
-	if strings.HasSuffix(src, ".json") {
-		return strings.TrimSuffix(src, ".json") + "_v0_3.json"
+	if base, ok := strings.CutSuffix(src, ".json"); ok {
+		return base + "_v0_3.json"
 	}
 	return src + "_v0_3.json"
 }

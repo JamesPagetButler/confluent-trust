@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -149,13 +150,7 @@ func TestMigrate_WithDecisions(t *testing.T) {
 	}
 
 	// Decision must appear in DecisionsApplied.
-	var applied bool
-	for _, id := range report.DecisionsApplied {
-		if id == "MEAS-alpha" {
-			applied = true
-			break
-		}
-	}
+	applied := slices.Contains(report.DecisionsApplied, "MEAS-alpha")
 	if !applied {
 		t.Error("MEAS-alpha not listed in report.DecisionsApplied")
 	}
