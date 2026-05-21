@@ -49,8 +49,13 @@ type Hooks struct {
 	// OnAnchorChange fires after a successful AppendAnchor (before==nil,
 	// after points at the just-appended record) or after a successful
 	// UpdateAnchor that changed one of {Status, MeasuredValue,
-	// MeasuredError, DiscrepancyPct, LastTestedAt}. Other UpdateAnchor
-	// field changes (e.g. Notes, Description) do not fire the hook.
+	// MeasuredError, DiscrepancyPct, Tier, PredictionChain}. Other
+	// UpdateAnchor field changes (e.g. Notes, Description, LastTestedAt)
+	// do not fire the hook.
+	//
+	// The whitelist is derived from compute.NetCompression's call graph;
+	// see doc/design/onanchorchange-whitelist-derivation.md (sprint-1-closeout
+	// seq=12, Notary-bootstrap target #2).
 	OnAnchorChange func(before *model.Anchor, after *model.Anchor)
 
 	// OnChainChange fires after a successful AppendChain (before==nil)
@@ -289,9 +294,14 @@ func (li *LiveInventory) AppendInput(in model.Input) error {
 // in-memory state is rolled back; disk state is unchanged.
 //
 // If the mutator changes any of {Status, MeasuredValue, MeasuredError,
-// DiscrepancyPct, LastTestedAt}, Hooks.OnAnchorChange fires with the
-// before/after snapshot. Other field changes do not fire the hook
-// (avoids spurious NATS publishes on routine bookkeeping per design §2.1).
+// DiscrepancyPct, Tier, PredictionChain}, Hooks.OnAnchorChange fires with
+// the before/after snapshot. Other field changes (e.g. Notes, Description,
+// LastTestedAt) do not fire the hook (avoids spurious NATS publishes on
+// routine bookkeeping per design §2.1).
+//
+// The whitelist is derived from compute.NetCompression's call graph; see
+// doc/design/onanchorchange-whitelist-derivation.md (sprint-1-closeout
+// seq=12).
 func (li *LiveInventory) UpdateAnchor(id string, mutator func(*model.Anchor) error) error {
 	li.mu.Lock()
 
@@ -501,12 +511,36 @@ func (li *LiveInventory) checkInputIDCollision(id string) error {
 
 // ---- anchorStatusFieldsChanged ----
 
-// anchorStatusFieldsChanged returns true if any of the five whitelist fields
-// {Status, MeasuredValue, MeasuredError, DiscrepancyPct, LastTestedAt} differ
-// between before and after. Pointer fields are compared by dereferenced value
-// with nil-checks; a nil-to-non-nil (or non-nil-to-nil) transition also counts.
+// anchorStatusFieldsChanged returns true if any of the six whitelist fields
+//
+//	{Status, MeasuredValue, MeasuredError, DiscrepancyPct, Tier, PredictionChain}
+//
+// differ between before and after.
+//
+// Derivation: see doc/design/onanchorchange-whitelist-derivation.md
+// (sprint-1-closeout-2026-05-17 seq=12, Notary-bootstrap target #2).
+//
+// The whitelist is derived from compute.NetCompression's transitive call graph:
+//
+//   - Status         — gates confirmedAnchors (TierMeasurement + StatusCoherent)
+//   - DiscrepancyPct — sole numeric input to compute.ConfirmatoryInfo (ι(v))
+//   - Tier           — gates confirmedAnchors and selects ConfirmatoryInfo branch
+//   - PredictionChain — iterated in both passes of NetCompression for input-cost
+//     allocation (a PredictionChain change alters which inputs are charged)
+//   - MeasuredValue  — upstream of DiscrepancyPct in the typical write workflow
+//     (retained under the inclusive heuristic)
+//   - MeasuredError  — same rationale as MeasuredValue
+//
+// LastTestedAt was in the v0.1 whitelist but has no path to any NetCompression
+// computation; it is removed in this derivation-based update.
+//
+// Pointer fields are compared by dereferenced value with nil-checks; a
+// nil-to-non-nil (or non-nil-to-nil) transition also counts as a change.
 func anchorStatusFieldsChanged(before, after *model.Anchor) bool {
 	if before.Status != after.Status {
+		return true
+	}
+	if before.Tier != after.Tier {
 		return true
 	}
 	if !float64PtrEqual(before.MeasuredValue, after.MeasuredValue) {
@@ -518,7 +552,7 @@ func anchorStatusFieldsChanged(before, after *model.Anchor) bool {
 	if !float64PtrEqual(before.DiscrepancyPct, after.DiscrepancyPct) {
 		return true
 	}
-	if !stringPtrEqual(before.LastTestedAt, after.LastTestedAt) {
+	if !stringSliceEqual(before.PredictionChain, after.PredictionChain) {
 		return true
 	}
 	return false
@@ -534,14 +568,19 @@ func float64PtrEqual(a, b *float64) bool {
 	return *a == *b
 }
 
-func stringPtrEqual(a, b *string) bool {
-	if a == nil && b == nil {
-		return true
-	}
-	if a == nil || b == nil {
+// stringSliceEqual reports whether a and b contain the same strings in the
+// same order. nil and empty slice are considered equal (both represent
+// "no entries").
+func stringSliceEqual(a, b []string) bool {
+	if len(a) != len(b) {
 		return false
 	}
-	return *a == *b
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // ---- Deep-copy helpers ----
