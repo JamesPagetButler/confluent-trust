@@ -32,7 +32,7 @@ func TestSchemaInSync(t *testing.T) {
 		t.Fatalf("read canonical schema: %v", err)
 	}
 
-	var embeddedDoc, canonicalDoc interface{}
+	var embeddedDoc, canonicalDoc any
 	if err := json.Unmarshal(rawSchema, &embeddedDoc); err != nil {
 		t.Fatalf("parse embedded schema: %v", err)
 	}
