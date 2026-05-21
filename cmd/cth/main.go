@@ -9,6 +9,7 @@
 //	cth score <inventory.json>                         score predictions against observations
 //	cth migrate <inventory.json>                       migrate v0.2 inventory to v0.3
 //	cth lean-link <inventory.json> <corpus-root>       cross-reference Lean theorems with PROOF anchors
+//	cth resolve <inventory.json> <anchor-id>           resolve one anchor by ID
 //
 // Each command reads from the named file(s) and writes to stdout (or the
 // path given by -o). Inventories are loaded through store.LoadInventory
@@ -52,6 +53,7 @@ Usage:
   cth lean-link <inventory.json> <corpus-root> [-o out.md]       Lean↔PROOF-anchor cross-ref
   cth lean-link ... --update-inventory                           write resolved metadata back
   cth lean-link ... --strict                                     exit non-zero on any finding
+  cth resolve <inventory.json> <anchor-id> [-o out.json]         resolve one anchor by ID
 
 The library API (model + compute + store + report packages) is the
 recommended consumption path for Go callers; this CLI exists for
@@ -91,6 +93,8 @@ func dispatch(cmd string, args []string) error {
 		return runMigrate(args)
 	case "lean-link":
 		return runLeanLink(args)
+	case "resolve":
+		return runResolve(args)
 	case "help", "-h", "--help":
 		_, err := fmt.Fprintln(os.Stdout, usage)
 		return err
