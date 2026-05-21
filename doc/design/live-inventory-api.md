@@ -155,6 +155,32 @@ Two semantic questions were left implicit in v0.1 and are pinned here:
 
 **Hook fire order**: hooks for sequential successful mutations fire in commit order. The implementation queues hook dispatch outside the critical section but preserves the order in which mutations linearised under the write lock. Consumers replaying mutations to reconstruct state can rely on the order; they need not add their own reconciliation pass for ordering.
 
+See §2.2 for the prediction-to-measurement transition contract.
+
+### 2.2 Prediction-to-Measurement Transition Contract
+
+**(Added — Sprint 2 Notary-bootstrap target #3 per sprint-1-closeout-2026-05-17 seq=12.)**
+
+When an observation arrives on a `Tier 3 / TierPrediction / Status: Untested` anchor via `UpdateAnchor`, the caller-supplied mutator is responsible for the full transition shape:
+
+1. Set `Tier = TierMeasurement` (3 → 2)
+2. Populate `MeasuredValue`, `MeasuredError`, `MeasuredSource`, `LastTestedAt`
+3. Compute `DiscrepancyPct` via `compute.ScorePrediction` (or equivalent)
+4. Reclassify `Status` per the regime: `Laminar → Coherent`, `LowSediment → Coherent` (annotated), `Moderate → Contested`, `Heavy → Refuted`
+
+The `Hooks.OnAnchorChange` whitelist `{Status, MeasuredValue, MeasuredError, DiscrepancyPct, LastTestedAt}` is structurally designed for this transition — all 5 whitelist fields change atomically when the mutator does its job.
+
+**Known gap (v0.3 deferred):** the API does NOT enforce all 6 fields move together; a mutator that sets `MeasuredValue` without changing `Tier` is allowed. The end-to-end round-trip tests (`TestLiveInventory_PredictionToMeasurementTransition_*`) document this contract and current gap. Future Invariant 6 candidate: `Anchor.Validate()` could enforce the joint-population shape, but that constrains legitimate intermediate states. Defer to a future design surface PR.
+
+**Regime → Status mapping:**
+
+| compute.ScoreRegime | model.Status |
+|---|---|
+| `ScoreRegimeLaminar` (delta < 1%) | `StatusCoherent` |
+| `ScoreRegimeLowSediment` (1% ≤ delta < 10%) | `StatusCoherent` (annotated low-sediment) |
+| `ScoreRegimeModerate` (10% ≤ delta < 50%) | `StatusContested` |
+| `ScoreRegimeHeavy` (delta ≥ 50%) | `StatusRefuted` |
+
 ## 3. Concurrency contract
 
 - **Single-writer-or-multi-reader** at the LiveInventory level via `sync.RWMutex`. `Snapshot()` acquires RLock; all append/update methods acquire Lock.
@@ -280,3 +306,4 @@ Steps 1–2 are in scope for this issue. Steps 3–5 are consumer-side work in s
 |---|---|---|
 | v0.1 | 2026-05-14 (PR #62 merged 17:52 UTC per beekeeper-override; named-reviewer set incomplete at merge per @contextus-impl §I4 review) | Initial design surface for §51 LiveInventory API. |
 | v0.2 | 2026-05-14 (this PR) | Adds §2.1 *Hook semantics — Append fires + per-kind filter*. Resolves T8 (chain/confluence hooks fire on all field changes; no whitelist) and T9 (`Append*` fires hooks with `before == nil`) clarifications flagged in @contextus-impl PR #62 §I4 review + expanded test plan. Updates AppendAnchor + UpdateAnchor + UpdateChain godoc to cross-reference §2.1. §10 OQ #3 marked RESOLVED. Test plan T8/T9 in the impl PR can now be specified without further design work. |
+| v0.3 | 2026-05-21 (sprint-1-closeout seq=12 Notary-bootstrap target #3) | Adds §2.2 *Prediction-to-Measurement Transition Contract* — full 6-field transition shape, regime→Status mapping, known gap (Anchor.Validate() joint-population not enforced), future Invariant 6 candidate deferred. Adds §2.1 cross-reference to §2.2. |
