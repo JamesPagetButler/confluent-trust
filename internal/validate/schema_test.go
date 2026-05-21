@@ -2,8 +2,10 @@ package validate
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
@@ -14,16 +16,46 @@ func TestSchemaCompiles(t *testing.T) {
 	}
 }
 
-// TestSchemaInSync ensures internal/validate/schema.json (embedded)
-// matches the canonical schema/inventory.schema.json byte-for-byte.
-// Update both with `go generate ./...` if you change one.
+// TestSchemaInSync ensures internal/validate/schema.json (embedded) is
+// semantically equivalent to the canonical schema/inventory.schema.json.
+//
+// Rationale: per sprint-1-closeout-2026-05-17 seq=12 Notary-bootstrap
+// target #4 — Notary discipline upgrades verification from
+// "compares-equal-bytes" to "validates-equivalent-meaning", catching
+// drift only when the schemas actually differ. Key reordering, whitespace
+// normalisation, or trailing-newline changes preserve semantics but would
+// break a byte-equal check; this test is immune to such cosmetic changes.
+// Update both files with `go generate ./...` if you change one.
 func TestSchemaInSync(t *testing.T) {
 	canonical, err := os.ReadFile(filepath.Join("..", "..", "schema", "inventory.schema.json"))
 	if err != nil {
 		t.Fatalf("read canonical schema: %v", err)
 	}
+
+	var embeddedDoc, canonicalDoc interface{}
+	if err := json.Unmarshal(rawSchema, &embeddedDoc); err != nil {
+		t.Fatalf("parse embedded schema: %v", err)
+	}
+	if err := json.Unmarshal(canonical, &canonicalDoc); err != nil {
+		t.Fatalf("parse canonical schema: %v", err)
+	}
+
+	if !reflect.DeepEqual(embeddedDoc, canonicalDoc) {
+		t.Fatal("internal/validate/schema.json semantically diverged from schema/inventory.schema.json — re-copy with `go generate ./...`")
+	}
+}
+
+// TestSchemaInSync_ByteEqual is a hygiene signal: it logs (but does not fail)
+// when the two schema files are byte-different. Semantic equality is the
+// load-bearing invariant (see TestSchemaInSync above); byte equality is
+// desirable for diff hygiene but not required for correctness.
+func TestSchemaInSync_ByteEqual(t *testing.T) {
+	canonical, err := os.ReadFile(filepath.Join("..", "..", "schema", "inventory.schema.json"))
+	if err != nil {
+		t.Fatalf("read canonical schema: %v", err)
+	}
 	if !bytes.Equal(rawSchema, canonical) {
-		t.Fatal("internal/validate/schema.json drifted from schema/inventory.schema.json — re-copy")
+		t.Logf("internal/validate/schema.json byte-different from schema/inventory.schema.json — semantically still in sync per TestSchemaInSync, but consider re-copying for hygiene (`go generate ./...`)")
 	}
 }
 
