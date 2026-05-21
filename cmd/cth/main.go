@@ -1,13 +1,14 @@
 // Command cth is the CTH CLI. Subcommands:
 //
-//	cth analyse <inventory.json>            full markdown report
-//	cth health <inventory.json>             compact dashboard only
-//	cth merge <a.json> <b.json>             merge two programmes (writes JSON)
-//	cth compare <old.json> <new.json>       compression velocity Δρ/Δn
-//	cth fork <inventory.json>               per-branch health comparison
-//	cth check-branch <inventory.json>       branch consistency report
-//	cth score <inventory.json>              score predictions against observations
-//	cth migrate <inventory.json>            migrate v0.2 inventory to v0.3
+//	cth analyse <inventory.json>                       full markdown report
+//	cth health <inventory.json>                        compact dashboard only
+//	cth merge <a.json> <b.json>                        merge two programmes (writes JSON)
+//	cth compare <old.json> <new.json>                  compression velocity Δρ/Δn
+//	cth fork <inventory.json>                          per-branch health comparison
+//	cth check-branch <inventory.json>                  branch consistency report
+//	cth score <inventory.json>                         score predictions against observations
+//	cth migrate <inventory.json>                       migrate v0.2 inventory to v0.3
+//	cth lean-link <inventory.json> <corpus-root>       cross-reference Lean theorems with PROOF anchors
 //
 // Each command reads from the named file(s) and writes to stdout (or the
 // path given by -o). Inventories are loaded through store.LoadInventory
@@ -29,21 +30,28 @@ import (
 	"github.com/JamesPagetButler/confluent-trust/store"
 )
 
+// flagO is the long-form alias for the -o output flag used across all
+// subcommand parsers. Declared as a constant to satisfy CI goconst.
+const flagO = "--o"
+
 const usage = `cth — Confluent Trust Hypergraph CLI
 
 Usage:
-  cth analyse <inventory.json> [-o out.md]                    full markdown report
-  cth health <inventory.json> [-o out.txt]                    compact dashboard
-  cth merge <a.json> <b.json> [-o out.json]                   merge two programmes
-  cth compare <old.json> <new.json> [-o out.md]               compression velocity
-  cth fork <inventory.json> [-o out.md]                       per-branch health
-  cth check-branch <inventory.json> [-o out.md]               branch consistency
-  cth score <inventory.json> [-o out.md]                      score predictions
-  cth score <inventory.json> --prediction <ID> [-o out.md]    single-anchor detail
-  cth score <inventory.json> --regime [-o out.md]             group by regime
-  cth migrate <inventory.json> [-o out.json]                  migrate v0.2 → v0.3
-  cth migrate <inventory.json> --decisions <d.json>           migrate with decisions
-  cth migrate <inventory.json> --check                        validate only (no output)
+  cth analyse <inventory.json> [-o out.md]                       full markdown report
+  cth health <inventory.json> [-o out.txt]                       compact dashboard
+  cth merge <a.json> <b.json> [-o out.json]                      merge two programmes
+  cth compare <old.json> <new.json> [-o out.md]                  compression velocity
+  cth fork <inventory.json> [-o out.md]                          per-branch health
+  cth check-branch <inventory.json> [-o out.md]                  branch consistency
+  cth score <inventory.json> [-o out.md]                         score predictions
+  cth score <inventory.json> --prediction <ID> [-o out.md]       single-anchor detail
+  cth score <inventory.json> --regime [-o out.md]                group by regime
+  cth migrate <inventory.json> [-o out.json]                     migrate v0.2 → v0.3
+  cth migrate <inventory.json> --decisions <d.json>              migrate with decisions
+  cth migrate <inventory.json> --check                           validate only (no output)
+  cth lean-link <inventory.json> <corpus-root> [-o out.md]       Lean↔PROOF-anchor cross-ref
+  cth lean-link ... --update-inventory                           write resolved metadata back
+  cth lean-link ... --strict                                     exit non-zero on any finding
 
 The library API (model + compute + store + report packages) is the
 recommended consumption path for Go callers; this CLI exists for
@@ -81,6 +89,8 @@ func dispatch(cmd string, args []string) error {
 		return runScore(args)
 	case "migrate":
 		return runMigrate(args)
+	case "lean-link":
+		return runLeanLink(args)
 	case "help", "-h", "--help":
 		_, err := fmt.Fprintln(os.Stdout, usage)
 		return err
@@ -100,7 +110,7 @@ func parseFlags(name string, args []string) (out string, positional []string, er
 	var flagArgs []string
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
-		case "-o", "--o":
+		case "-o", flagO:
 			if i+1 >= len(args) {
 				return "", nil, fmt.Errorf("%s: -o requires a path argument", name)
 			}
@@ -211,7 +221,7 @@ func parseScoreFlags(args []string) (sf scoreFlags, positional []string, err err
 	var flagArgs []string
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
-		case "-o", "--o":
+		case "-o", flagO:
 			if i+1 >= len(args) {
 				return scoreFlags{}, nil, fmt.Errorf("score: -o requires a path argument")
 			}
@@ -592,7 +602,7 @@ type migrateFlags struct {
 func parseMigrateFlags(args []string) (mf migrateFlags, positional []string, err error) {
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
-		case "-o", "--o":
+		case "-o", flagO:
 			if i+1 >= len(args) {
 				return migrateFlags{}, nil, fmt.Errorf("migrate: -o requires a path argument")
 			}

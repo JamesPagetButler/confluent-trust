@@ -1,0 +1,20 @@
+{
+  "packages": [
+    {
+      "url": "https://github.com/leanprover-community/mathlib4",
+      "type": "git",
+      "rev": "abc123def456789012345678901234567890abcd",
+      "name": "mathlib",
+      "manifestFile": "lake-manifest.json",
+      "inputRev": "v4.30.0"
+    },
+    {
+      "url": "https://github.com/leanprover/std4",
+      "type": "git",
+      "rev": "deadbeef12345678901234567890abcdef123456",
+      "name": "std",
+      "manifestFile": "lake-manifest.json",
+      "inputRev": "v4.30.0"
+    }
+  ]
+}

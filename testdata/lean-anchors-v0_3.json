@@ -1,0 +1,79 @@
+{
+  "$comment": "Fixture for cth lean-link tests (CTH #54). Exercises all 5 reconciliation classes.",
+  "schema_version": "v0.3",
+  "programme": "QBP-lean-link-fixture",
+  "version": "0.1.0",
+  "axioms": [],
+  "anchors": [
+    {
+      "id": "PROOF-hurwitz-lean",
+      "name": "Hurwitz Normed Division Algebra Classification",
+      "description": "Lean 4 formalisation of Hurwitz 1898 theorem.",
+      "tier": 1,
+      "status": "coherent",
+      "provenance": "T",
+      "provenance_kind": "proof",
+      "proof_language": "lean4",
+      "proof_file": "Foundations/Hurwitz.lean",
+      "proof_state": "written",
+      "sorry_count": 0,
+      "prediction_chain": [],
+      "theorems": [
+        { "name": "hurwitz_theorem", "status": "written" }
+      ]
+    },
+    {
+      "id": "PROOF-missing-file",
+      "name": "Theorem In Missing File",
+      "description": "Anchor whose proof_file does not exist in the corpus.",
+      "tier": 1,
+      "status": "coherent",
+      "provenance": "T",
+      "provenance_kind": "proof",
+      "proof_language": "lean4",
+      "proof_file": "Foundations/DoesNotExist.lean",
+      "proof_state": "written",
+      "sorry_count": 0,
+      "prediction_chain": [],
+      "theorems": [
+        { "name": "missing_theorem", "status": "written" }
+      ]
+    },
+    {
+      "id": "PROOF-sedenion-drift",
+      "name": "Sedenion Associativity (drift case)",
+      "description": "Anchor says sorry_count=0 but file has 1 sorry.",
+      "tier": 1,
+      "status": "coherent",
+      "provenance": "T",
+      "provenance_kind": "proof",
+      "proof_language": "lean4",
+      "proof_file": "Foundations/Sedenion.lean",
+      "proof_state": "written",
+      "sorry_count": 0,
+      "prediction_chain": [],
+      "theorems": [
+        { "name": "sedenion_assoc", "status": "written" }
+      ]
+    },
+    {
+      "id": "PROOF-phantom",
+      "name": "Phantom Theorem (Invariant 5 violation)",
+      "description": "Anchor declares phantom_proof as not_started but it appears in the file.",
+      "tier": 1,
+      "status": "coherent",
+      "provenance": "T",
+      "provenance_kind": "proof",
+      "proof_language": "lean4",
+      "proof_file": "Foundations/Phantom.lean",
+      "proof_state": "written",
+      "prediction_chain": [],
+      "theorems": [
+        { "name": "phantom_proof", "status": "not_started" }
+      ]
+    }
+  ],
+  "chains": [],
+  "predictions": [],
+  "fork_points": []
+}
