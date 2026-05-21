@@ -831,9 +831,15 @@ func TestConcurrent_AppendAndUpdate(t *testing.T) {
 // Sprint-1 Notary-bootstrap target #3 (sprint-1-closeout-2026-05-17 seq=12).
 // See doc/design/live-inventory-api.md §2.2 for the documented contract.
 //
-// These tests operate against the main-branch whitelist:
-//   {Status, MeasuredValue, MeasuredError, DiscrepancyPct, LastTestedAt}
-// per doc/design/live-inventory-api.md §2.1.
+// These tests operate against the main-branch whitelist (v0.3, post-PR-#79):
+//   {Status, MeasuredValue, MeasuredError, DiscrepancyPct, Tier, PredictionChain}
+// per doc/design/live-inventory-api.md §2.1 + doc/design/onanchorchange-whitelist-derivation.md.
+//
+// Note: LastTestedAt was in the v0.1 whitelist but PR #79's derivation from
+// compute.NetCompressionDetail's field-dependency graph found it has no path
+// to ρ_net. The tests below still set LastTestedAt as part of the legitimate
+// transition shape (Notary discipline records when a measurement was taken
+// regardless of hook semantics) but assertions focus on the v0.3 whitelist.
 
 // predTestAnchorID is the canonical PRED-* anchor ID used across the
 // transition tests; hoisted to satisfy CI goconst.
@@ -1149,12 +1155,16 @@ func TestLiveInventory_PredictionToMeasurementTransition_RegimeMatches(t *testin
 }
 
 // TestLiveInventory_PredictionToMeasurementTransition_HookWhitelistAllFire
-// verifies that a single UpdateAnchor touching all 5 whitelist fields fires
-// OnAnchorChange exactly once (not 5x — hook fires per-call, not per-field)
-// and that the before/after pair reflects all 5 field changes.
+// verifies that a single UpdateAnchor touching the full whitelist fires
+// OnAnchorChange exactly once (not N×, hook fires per-call, not per-field)
+// and that the before/after pair reflects the field changes.
 //
-// Whitelist (main branch): {Status, MeasuredValue, MeasuredError, DiscrepancyPct, LastTestedAt}.
-// Contract per doc/design/live-inventory-api.md §2.1 + §2.2.
+// Whitelist (v0.3, post-PR #79):
+//
+//	{Status, MeasuredValue, MeasuredError, DiscrepancyPct, Tier, PredictionChain}
+//
+// Contract per doc/design/live-inventory-api.md §2.1 + §2.2 +
+// doc/design/onanchorchange-whitelist-derivation.md.
 func TestLiveInventory_PredictionToMeasurementTransition_HookWhitelistAllFire(t *testing.T) {
 	hookCount := 0
 	var capturedBefore, capturedAfter *model.Anchor
@@ -1210,7 +1220,11 @@ func TestLiveInventory_PredictionToMeasurementTransition_HookWhitelistAllFire(t 
 		t.Fatal("hook before/after must not be nil")
 	}
 
-	// All 5 whitelist fields differ between before and after.
+	// All 5 v0.3-whitelist fields touched by this mutator differ between before
+	// and after. PredictionChain isn't touched by the prediction-to-measurement
+	// transition (the chain stays the same; only the observation arrives), so
+	// it's verified as unchanged here; a dedicated PredictionChain-change test
+	// lives in store/live_whitelist_test.go (PR #79).
 	if capturedBefore.Status == capturedAfter.Status {
 		t.Errorf("Status unchanged: before=%v after=%v", capturedBefore.Status, capturedAfter.Status)
 	}
@@ -1223,7 +1237,18 @@ func TestLiveInventory_PredictionToMeasurementTransition_HookWhitelistAllFire(t 
 	if float64PtrEqual(capturedBefore.DiscrepancyPct, capturedAfter.DiscrepancyPct) {
 		t.Errorf("DiscrepancyPct unchanged: before=%v after=%v", capturedBefore.DiscrepancyPct, capturedAfter.DiscrepancyPct)
 	}
-	// LastTestedAt: before is nil; after is set — they differ (nil-to-non-nil).
+	// Tier is in the v0.3 whitelist — the 3→2 transition fires the hook
+	// even on its own; explicit assertion that it's observable.
+	if capturedBefore.Tier == capturedAfter.Tier {
+		t.Errorf("Tier unchanged: before=%v after=%v (expected 3→2 transition)", capturedBefore.Tier, capturedAfter.Tier)
+	}
+	if capturedBefore.Tier != model.TierPrediction || capturedAfter.Tier != model.TierMeasurement {
+		t.Errorf("Tier transition: got before=%v after=%v want before=TierPrediction after=TierMeasurement",
+			capturedBefore.Tier, capturedAfter.Tier)
+	}
+	// LastTestedAt: NOT in the v0.3 whitelist (PR #79 derivation removed it),
+	// but the mutator still sets it as part of the legitimate transition shape.
+	// Observable in the captured hook payload regardless of whitelist membership.
 	if capturedAfter.LastTestedAt == nil {
 		t.Errorf("LastTestedAt after: got nil want non-nil")
 	}
