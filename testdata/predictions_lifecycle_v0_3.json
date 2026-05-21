@@ -1,0 +1,165 @@
+{
+  "$comment": "v0.3 fixture: exercises provenance_kind enum, proof-bearing fields (Invariant 2+3), theory-external fields, internal-compute, philosophy, and new Status values (killed). Sibling to predictions_lifecycle.json.",
+  "schema_version": "v0.3",
+  "programme": "PREDICTIONS-LIFECYCLE",
+  "version": "0.2",
+  "full_name": "Prediction-observation lifecycle v0.3 test fixture",
+  "timestamp": "2026-05-20T00:00:00Z",
+  "axioms": [
+    {
+      "id": "AXIOM-baseline",
+      "name": "Baseline theoretical commitment",
+      "statement": "The phenomenon is governed by an inverse-square law with coupling constant 42.0 (synthetic).",
+      "derivable": false
+    }
+  ],
+  "anchors": [
+    {
+      "id": "PROOF-derivation-lean4",
+      "name": "Coupling-constant derivation (Lean 4 verified)",
+      "tier": 1,
+      "provenance": "T",
+      "provenance_kind": "proof",
+      "status": "coherent",
+      "description": "Formal Lean 4 proof of coupling-constant derivation. proof_state verified; all theorems verified.",
+      "proof_language": "lean4",
+      "proof_file": "proofs/coupling_constant.lean",
+      "theorems": [
+        {
+          "name": "coupling_constant_derivation",
+          "status": "verified"
+        },
+        {
+          "name": "coupling_constant_uniqueness",
+          "status": "verified"
+        }
+      ],
+      "verification": {
+        "toolchain": "leanprover/lean4:v4.30.0-rc2",
+        "libraries": {
+          "mathlib": {
+            "ref": "v4.30.0",
+            "sha": "abc123def456789012345678901234567890abcd",
+            "url": "https://github.com/leanprover-community/mathlib4"
+          }
+        },
+        "verified_at": "2026-05-20T10:00:00Z",
+        "verifier": "lake-build-ci",
+        "result": "zero-sorry"
+      },
+      "prediction_chain": [
+        "AXIOM-baseline"
+      ]
+    },
+    {
+      "id": "PROOF-hurwitz-external",
+      "name": "Hurwitz theorem invoked as external authority",
+      "tier": 1,
+      "provenance": "T",
+      "provenance_kind": "theory-external",
+      "status": "coherent",
+      "description": "Relies on Hurwitz 1898 theorem as external proof. No internal formalisation.",
+      "theory_citation": "Hurwitz, A. (1898). Über die Composition der quadratischen Formen von beliebig vielen Variablen. Nachrichten von der Gesellschaft der Wissenschaften zu Göttingen.",
+      "theory_doi": "10.1000/placeholder-hurwitz-1898",
+      "theory_url": "https://example.org/hurwitz-1898",
+      "prediction_chain": [
+        "AXIOM-baseline"
+      ]
+    },
+    {
+      "id": "PROOF-numerical-verify",
+      "name": "Numerical verification of coupling constant",
+      "tier": 1,
+      "provenance": "T",
+      "provenance_kind": "internal-compute",
+      "status": "coherent",
+      "description": "Python symbolic computation confirming coupling constant. No proof assistant involved.",
+      "prediction_chain": [
+        "AXIOM-baseline"
+      ]
+    },
+    {
+      "id": "PROOF-programme-commitment",
+      "name": "Programmatic commitment to inverse-square framework",
+      "tier": 1,
+      "provenance": "T",
+      "provenance_kind": "philosophy",
+      "status": "coherent",
+      "description": "Foundational philosophical commitment framing the programme scope.",
+      "prediction_chain": [
+        "AXIOM-baseline"
+      ]
+    },
+    {
+      "id": "PRED-killed-hypothesis",
+      "name": "Definitively disproved coupling variant",
+      "tier": 3,
+      "provenance": "T",
+      "provenance_kind": "hypothesis",
+      "status": "killed",
+      "description": "A coupling variant that was definitively disproved with proof recorded in CTH. Uses new status value 'killed' (design §3).",
+      "predicted_value": 100.0,
+      "predicted_unit": "synthetic",
+      "prediction_chain": [
+        "AXIOM-baseline"
+      ]
+    }
+  ],
+  "chains": [
+    {
+      "id": "CHAIN-axiom-to-lean4-proof",
+      "name": "AXIOM-baseline -> PROOF-derivation-lean4",
+      "source_ids": [
+        "AXIOM-baseline"
+      ],
+      "target_id": "PROOF-derivation-lean4",
+      "steps": 1,
+      "status": "coherent",
+      "fidelity": 0.99
+    },
+    {
+      "id": "CHAIN-axiom-to-hurwitz",
+      "name": "AXIOM-baseline -> PROOF-hurwitz-external",
+      "source_ids": [
+        "AXIOM-baseline"
+      ],
+      "target_id": "PROOF-hurwitz-external",
+      "steps": 1,
+      "status": "coherent",
+      "fidelity": 0.98
+    },
+    {
+      "id": "CHAIN-axiom-to-numerical",
+      "name": "AXIOM-baseline -> PROOF-numerical-verify",
+      "source_ids": [
+        "AXIOM-baseline"
+      ],
+      "target_id": "PROOF-numerical-verify",
+      "steps": 1,
+      "status": "coherent",
+      "fidelity": 0.95
+    },
+    {
+      "id": "CHAIN-axiom-to-philosophy",
+      "name": "AXIOM-baseline -> PROOF-programme-commitment",
+      "source_ids": [
+        "AXIOM-baseline"
+      ],
+      "target_id": "PROOF-programme-commitment",
+      "steps": 1,
+      "status": "coherent",
+      "fidelity": 0.90
+    },
+    {
+      "id": "CHAIN-axiom-to-killed",
+      "name": "AXIOM-baseline -> PRED-killed-hypothesis",
+      "source_ids": [
+        "AXIOM-baseline"
+      ],
+      "target_id": "PRED-killed-hypothesis",
+      "steps": 1,
+      "status": "refuted",
+      "fidelity": 0.10
+    }
+  ]
+}

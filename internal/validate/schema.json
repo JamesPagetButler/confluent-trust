@@ -19,8 +19,8 @@
     },
     "schema_version": {
       "type": "string",
-      "enum": ["v0.1", "v0.2"],
-      "description": "CTH inventory schema version. Absent or \"v0.1\" enables binary-confluence migration; \"v0.2\" is strict N-ary."
+      "enum": ["v0.1", "v0.2", "v0.3"],
+      "description": "CTH inventory schema version. Absent or \"v0.1\" enables binary-confluence migration; \"v0.2\" is strict N-ary; \"v0.3\" adds proof-bearing fields and fine-grained provenance."
     },
     "full_name":         { "type": "string" },
     "timestamp":         { "type": "string", "format": "date-time" },
@@ -48,7 +48,7 @@
   "$defs": {
     "Status": {
       "type": "string",
-      "enum": ["coherent", "untested", "incoherent", "contested", "refuted"]
+      "enum": ["coherent", "untested", "incoherent", "contested", "refuted", "killed", "marginal", "converged", "falsified"]
     },
     "Provenance": {
       "type": "string",
@@ -62,6 +62,67 @@
     "Burden": {
       "type": "string",
       "enum": ["Minimal", "Extended"]
+    },
+    "ProvenanceKind": {
+      "type": "string",
+      "enum": ["proof", "theory", "theory-external", "experiment", "hypothesis", "internal-compute", "philosophy"],
+      "description": "v0.3 fine-grained provenance classifier per design §2."
+    },
+    "ProofState": {
+      "type": "string",
+      "enum": ["verified", "partial", "written"],
+      "description": "Rollup state of a proof-bearing anchor per design §4.1."
+    },
+    "TheoremStatus": {
+      "type": "string",
+      "enum": ["verified", "written", "not_started"],
+      "description": "Per-theorem verification state per design §4."
+    },
+    "TheoremRef": {
+      "type": "object",
+      "required": ["name", "status"],
+      "properties": {
+        "name":     { "type": "string", "minLength": 1 },
+        "status":   { "$ref": "#/$defs/TheoremStatus" },
+        "blockers": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "LibraryRef": {
+      "type": "object",
+      "required": ["ref", "sha"],
+      "properties": {
+        "ref": { "type": "string" },
+        "sha": { "type": "string", "minLength": 1 },
+        "url": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "VerificationRecord": {
+      "type": "object",
+      "required": ["toolchain", "libraries", "verified_at", "verifier", "result"],
+      "properties": {
+        "toolchain":   { "type": "string", "minLength": 1 },
+        "libraries":   {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/LibraryRef" }
+        },
+        "verified_at": { "type": "string" },
+        "verifier":    { "type": "string" },
+        "result":      { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "AdditionalVerification": {
+      "type": "object",
+      "required": ["proof_language", "proof_file", "theorems", "verification"],
+      "properties": {
+        "proof_language": { "type": "string" },
+        "proof_file":     { "type": "string" },
+        "theorems":       { "type": "array", "items": { "$ref": "#/$defs/TheoremRef" } },
+        "verification":   { "$ref": "#/$defs/VerificationRecord" }
+      },
+      "additionalProperties": true
     },
     "Axiom": {
       "type": "object",
@@ -101,33 +162,72 @@
       "description": "A Tier 1-3 node: proof, measurement, prediction, or hypothesis. The `id` field follows the workspace ID-prefix convention (see schema docs): `PROOF-*` for Tier 1 theoretical proofs, `MEAS-*` for Tier 2 measurements, `PRED-*` for Tier 3 predictions awaiting observation (or Tier 2 once the observation arrives and the anchor is scored via `compute.ScorePrediction`), `FLAG-*` / `KILLED-*` for special states. The prefix is convention, not schema-enforced.",
       "required": ["id", "name", "tier", "provenance", "status", "description", "prediction_chain"],
       "properties": {
-        "id":                       { "type": "string", "minLength": 1, "description": "Workspace-convention prefix (PROOF-/MEAS-/PRED-/FLAG-/KILLED-/etc.) + suffix. Not pattern-enforced at v0.2." },
-        "name":                     { "type": "string" },
-        "tier":                     { "type": "integer", "minimum": 1, "maximum": 3 },
-        "provenance":               { "$ref": "#/$defs/Provenance" },
-        "status":                   { "$ref": "#/$defs/Status" },
-        "description":              { "type": "string" },
-        "prediction_chain":         { "type": "array", "items": { "type": "string" } },
-        "predicted_value":          { "type": "number" },
-        "predicted_unit":           { "type": "string" },
-        "measured_value":           { "type": "number" },
-        "measured_error":           { "type": "number" },
-        "measured_source":          { "type": "string" },
-        "discrepancy_pct":          { "type": "number" },
-        "last_tested_at":           { "type": ["string", "null"], "format": "date-time" },
-        "inherited_from":           { "type": "string" },
-        "inherited_at":             { "type": "string" },
-        "proof_system":             { "type": "string" },
-        "sorry_count":              { "type": "integer", "minimum": 0 },
-        "proof_file":               { "type": "string" },
-        "lean_theorem":             { "type": "string" },
-        "lean_companion_theorems":  { "type": "array", "items": { "type": "string" } },
-        "bridge_role":              { "type": "string" },
-        "testable_when":            { "type": "string" },
-        "notes":                    { "type": "string" },
-        "branch_id":                { "type": "string" }
+        "id":                        { "type": "string", "minLength": 1, "description": "Workspace-convention prefix (PROOF-/MEAS-/PRED-/FLAG-/KILLED-/etc.) + suffix. Not pattern-enforced at v0.2." },
+        "name":                      { "type": "string" },
+        "tier":                      { "type": "integer", "minimum": 1, "maximum": 3 },
+        "provenance":                { "$ref": "#/$defs/Provenance" },
+        "status":                    { "$ref": "#/$defs/Status" },
+        "description":               { "type": "string" },
+        "prediction_chain":          { "type": "array", "items": { "type": "string" } },
+        "predicted_value":           { "type": "number" },
+        "predicted_unit":            { "type": "string" },
+        "measured_value":            { "type": "number" },
+        "measured_error":            { "type": "number" },
+        "measured_source":           { "type": "string" },
+        "discrepancy_pct":           { "type": "number" },
+        "last_tested_at":            { "type": ["string", "null"], "format": "date-time" },
+        "inherited_from":            { "type": "string" },
+        "inherited_at":              { "type": "string" },
+        "proof_system":              { "type": "string" },
+        "sorry_count":               { "type": "integer", "minimum": 0 },
+        "proof_file":                { "type": "string" },
+        "lean_theorem":              { "type": "string" },
+        "lean_companion_theorems":   { "type": "array", "items": { "type": "string" } },
+        "bridge_role":               { "type": "string" },
+        "testable_when":             { "type": "string" },
+        "notes":                     { "type": "string" },
+        "branch_id":                 { "type": "string" },
+        "provenance_kind":           { "$ref": "#/$defs/ProvenanceKind" },
+        "proof_state":               { "$ref": "#/$defs/ProofState" },
+        "proof_language":            { "type": "string" },
+        "theorems":                  { "type": "array", "items": { "$ref": "#/$defs/TheoremRef" } },
+        "verification":              { "$ref": "#/$defs/VerificationRecord" },
+        "theory_citation":           { "type": "string" },
+        "theory_doi":                { "type": "string" },
+        "theory_url":                { "type": "string" },
+        "additional_verifications":  { "type": "array", "items": { "$ref": "#/$defs/AdditionalVerification" } }
       },
-      "additionalProperties": true
+      "additionalProperties": true,
+      "allOf": [
+        {
+          "if": {
+            "properties": { "provenance_kind": { "not": { "const": "proof" } } },
+            "required": ["provenance_kind"]
+          },
+          "then": {
+            "properties": {
+              "proof_state":    { "not": {} },
+              "proof_language": { "not": {} },
+              "theorems":       { "not": {} },
+              "verification":   { "not": {} }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "proof_state": { "enum": ["verified", "partial"] } },
+            "required": ["proof_state"]
+          },
+          "then": {
+            "required": ["verification"],
+            "properties": {
+              "verification": {
+                "required": ["toolchain", "libraries", "verified_at", "verifier", "result"]
+              }
+            }
+          }
+        }
+      ]
     },
     "Input": {
       "type": "object",

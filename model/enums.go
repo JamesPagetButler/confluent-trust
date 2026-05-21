@@ -30,6 +30,8 @@ type Status uint8
 
 // Status values per Theory v0.2 §4.1. StatusUnknown is the zero value
 // for anchors that have not yet been classified.
+// v0.3 adds: StatusKilled, StatusMarginal, StatusConverged, StatusFalsified
+// (promoted from QBP-local convention per design §3).
 const (
 	StatusUnknown Status = iota
 	StatusCoherent
@@ -37,6 +39,10 @@ const (
 	StatusIncoherent
 	StatusContested
 	StatusRefuted
+	StatusKilled
+	StatusMarginal
+	StatusConverged
+	StatusFalsified
 )
 
 // Provenance distinguishes theoretical, experimental, and hypothesis anchors.
@@ -88,6 +94,14 @@ func (s Status) String() string {
 		return "contested"
 	case StatusRefuted:
 		return "refuted"
+	case StatusKilled:
+		return "killed"
+	case StatusMarginal:
+		return "marginal"
+	case StatusConverged:
+		return "converged"
+	case StatusFalsified:
+		return "falsified"
 	default:
 		return ""
 	}
@@ -126,6 +140,14 @@ func (s *Status) UnmarshalJSON(b []byte) error {
 		*s = StatusContested
 	case "refuted":
 		*s = StatusRefuted
+	case "killed":
+		*s = StatusKilled
+	case "marginal":
+		*s = StatusMarginal
+	case "converged":
+		*s = StatusConverged
+	case "falsified":
+		*s = StatusFalsified
 	default:
 		return fmt.Errorf("status: unknown value %q", raw)
 	}
@@ -278,6 +300,214 @@ func (b *Burden) UnmarshalJSON(data []byte) error {
 		*b = BurdenExtended
 	default:
 		return fmt.Errorf("burden: unknown value %q", raw)
+	}
+	return nil
+}
+
+// ---- ProvenanceKind (v0.3) ----
+
+// ProvenanceKind is the v0.3 fine-grained provenance classifier.
+// It supersedes the legacy Provenance enum (T/E/H) and extends it
+// with proof, internal-compute, and philosophy values (design §2).
+type ProvenanceKind uint8
+
+// ProvenanceKind values per design §2.
+const (
+	ProvenanceKindUnknown         ProvenanceKind = iota
+	ProvenanceKindProof                          // formal proof assistant
+	ProvenanceKindTheory                         // internal mathematical argument
+	ProvenanceKindTheoryExternal                 // external published theorem invoked as proof
+	ProvenanceKindExperiment                     // empirical measurement
+	ProvenanceKindHypothesis                     // tentative claim awaiting evidence
+	ProvenanceKindInternalCompute                // numerical/symbolic computation
+	ProvenanceKindPhilosophy                     // conceptual framing / programmatic principle
+)
+
+// String returns the canonical JSON string form of a ProvenanceKind.
+func (p ProvenanceKind) String() string {
+	switch p {
+	case ProvenanceKindProof:
+		return "proof"
+	case ProvenanceKindTheory:
+		return "theory"
+	case ProvenanceKindTheoryExternal:
+		return "theory-external"
+	case ProvenanceKindExperiment:
+		return "experiment"
+	case ProvenanceKindHypothesis:
+		return "hypothesis"
+	case ProvenanceKindInternalCompute:
+		return "internal-compute"
+	case ProvenanceKindPhilosophy:
+		return "philosophy"
+	default:
+		return ""
+	}
+}
+
+// MarshalJSON encodes a ProvenanceKind as its canonical string, or null when unknown.
+func (p ProvenanceKind) MarshalJSON() ([]byte, error) {
+	v := p.String()
+	if v == "" {
+		return []byte(`null`), nil
+	}
+	return json.Marshal(v)
+}
+
+// UnmarshalJSON decodes a ProvenanceKind from its canonical string.
+// Unknown values produce a wrapped error; null and empty string become ProvenanceKindUnknown.
+func (p *ProvenanceKind) UnmarshalJSON(b []byte) error {
+	if string(b) == jsonNull {
+		*p = ProvenanceKindUnknown
+		return nil
+	}
+	var raw string
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return fmt.Errorf("provenance_kind: %w", err)
+	}
+	switch raw {
+	case "":
+		*p = ProvenanceKindUnknown
+	case "proof":
+		*p = ProvenanceKindProof
+	case "theory":
+		*p = ProvenanceKindTheory
+	case "theory-external":
+		*p = ProvenanceKindTheoryExternal
+	case "experiment":
+		*p = ProvenanceKindExperiment
+	case "hypothesis":
+		*p = ProvenanceKindHypothesis
+	case "internal-compute":
+		*p = ProvenanceKindInternalCompute
+	case "philosophy":
+		*p = ProvenanceKindPhilosophy
+	default:
+		return fmt.Errorf("provenance_kind: unknown value %q", raw)
+	}
+	return nil
+}
+
+// ---- ProofState (v0.3) ----
+
+// ProofState is the rollup state of a proof-bearing anchor (design §4.1).
+type ProofState uint8
+
+// ProofState values per design §4.1.
+const (
+	ProofStateUnknown  ProofState = iota // absent/null — no proof file
+	ProofStateVerified                   // all theorems verified
+	ProofStatePartial                    // mix of verified/written/not_started theorems
+	ProofStateWritten                    // proof file exists, no theorems verified yet
+)
+
+// String returns the canonical JSON string form of a ProofState.
+func (s ProofState) String() string {
+	switch s {
+	case ProofStateVerified:
+		return "verified"
+	case ProofStatePartial:
+		return "partial"
+	case ProofStateWritten:
+		return "written"
+	default:
+		return ""
+	}
+}
+
+// MarshalJSON encodes a ProofState as its canonical string, or null when unknown.
+func (s ProofState) MarshalJSON() ([]byte, error) {
+	v := s.String()
+	if v == "" {
+		return []byte(`null`), nil
+	}
+	return json.Marshal(v)
+}
+
+// UnmarshalJSON decodes a ProofState from its canonical string.
+// Unknown values produce a wrapped error; null and empty string become ProofStateUnknown.
+func (s *ProofState) UnmarshalJSON(b []byte) error {
+	if string(b) == jsonNull {
+		*s = ProofStateUnknown
+		return nil
+	}
+	var raw string
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return fmt.Errorf("proof_state: %w", err)
+	}
+	switch raw {
+	case "":
+		*s = ProofStateUnknown
+	case "verified":
+		*s = ProofStateVerified
+	case "partial":
+		*s = ProofStatePartial
+	case "written":
+		*s = ProofStateWritten
+	default:
+		return fmt.Errorf("proof_state: unknown value %q", raw)
+	}
+	return nil
+}
+
+// ---- TheoremStatus (v0.3) ----
+
+// TheoremStatus is the per-theorem verification state within a proof file (design §4).
+type TheoremStatus uint8
+
+// TheoremStatus values per design §4.
+const (
+	TheoremStatusUnknown    TheoremStatus = iota
+	TheoremStatusVerified                 // theorem successfully verified by proof assistant
+	TheoremStatusWritten                  // theorem written in file, not yet verified
+	TheoremStatusNotStarted               // declared intent; theorem name not yet in proof file
+)
+
+// String returns the canonical JSON string form of a TheoremStatus.
+func (t TheoremStatus) String() string {
+	switch t {
+	case TheoremStatusVerified:
+		return "verified"
+	case TheoremStatusWritten:
+		return "written"
+	case TheoremStatusNotStarted:
+		return "not_started"
+	default:
+		return ""
+	}
+}
+
+// MarshalJSON encodes a TheoremStatus as its canonical string, or null when unknown.
+func (t TheoremStatus) MarshalJSON() ([]byte, error) {
+	v := t.String()
+	if v == "" {
+		return []byte(`null`), nil
+	}
+	return json.Marshal(v)
+}
+
+// UnmarshalJSON decodes a TheoremStatus from its canonical string.
+// Unknown values produce a wrapped error; null and empty string become TheoremStatusUnknown.
+func (t *TheoremStatus) UnmarshalJSON(b []byte) error {
+	if string(b) == jsonNull {
+		*t = TheoremStatusUnknown
+		return nil
+	}
+	var raw string
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return fmt.Errorf("theorem_status: %w", err)
+	}
+	switch raw {
+	case "":
+		*t = TheoremStatusUnknown
+	case "verified":
+		*t = TheoremStatusVerified
+	case "written":
+		*t = TheoremStatusWritten
+	case "not_started":
+		*t = TheoremStatusNotStarted
+	default:
+		return fmt.Errorf("theorem_status: unknown value %q", raw)
 	}
 	return nil
 }

@@ -15,6 +15,7 @@ import (
 const (
 	SchemaV01 = "v0.1"
 	SchemaV02 = "v0.2"
+	SchemaV03 = "v0.3"
 )
 
 // LoadInventory reads, schema-validates, and unmarshals an inventory file.
@@ -32,7 +33,7 @@ func LoadInventory(path string) (model.Inventory, error) {
 		return model.Inventory{}, fmt.Errorf("store/json: %s: %w", path, err)
 	}
 	switch version {
-	case SchemaV01, SchemaV02:
+	case SchemaV01, SchemaV02, SchemaV03:
 		// supported
 	default:
 		return model.Inventory{}, fmt.Errorf("store/json: %s: unsupported schema version %q", path, version)
