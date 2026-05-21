@@ -7,6 +7,7 @@
 //	cth fork <inventory.json>               per-branch health comparison
 //	cth check-branch <inventory.json>       branch consistency report
 //	cth score <inventory.json>              score predictions against observations
+//	cth migrate <inventory.json>            migrate v0.2 inventory to v0.3
 //
 // Each command reads from the named file(s) and writes to stdout (or the
 // path given by -o). Inventories are loaded through store.LoadInventory
@@ -40,6 +41,9 @@ Usage:
   cth score <inventory.json> [-o out.md]                      score predictions
   cth score <inventory.json> --prediction <ID> [-o out.md]    single-anchor detail
   cth score <inventory.json> --regime [-o out.md]             group by regime
+  cth migrate <inventory.json> [-o out.json]                  migrate v0.2 → v0.3
+  cth migrate <inventory.json> --decisions <d.json>           migrate with decisions
+  cth migrate <inventory.json> --check                        validate only (no output)
 
 The library API (model + compute + store + report packages) is the
 recommended consumption path for Go callers; this CLI exists for
@@ -75,6 +79,8 @@ func dispatch(cmd string, args []string) error {
 		return runCheckBranch(args)
 	case "score":
 		return runScore(args)
+	case "migrate":
+		return runMigrate(args)
 	case "help", "-h", "--help":
 		_, err := fmt.Fprintln(os.Stdout, usage)
 		return err
@@ -122,11 +128,11 @@ func writeOutput(out, content string) error {
 		return err
 	}
 	tmp := out + ".tmp"
-	if err := os.WriteFile(tmp, []byte(content), 0o644); err != nil { // #nosec G306 -- output files are user content
+	if err := os.WriteFile(tmp, []byte(content), 0o644); err != nil { // #nosec G306,G703 -- output files are user content; tmp path is user-supplied via -o flag
 		return fmt.Errorf("write %s: %w", tmp, err)
 	}
-	if err := os.Rename(tmp, out); err != nil {
-		_ = os.Remove(tmp)
+	if err := os.Rename(tmp, out); err != nil { // #nosec G703 -- out is user-supplied via the CLI -o flag; atomic rename is the intended semantic
+		_ = os.Remove(tmp) // #nosec G703 -- same; cleanup of staging file on rename failure
 		return fmt.Errorf("rename %s -> %s: %w", tmp, out, err)
 	}
 	return nil
@@ -568,6 +574,116 @@ func runCheckBranch(args []string) error {
 	}
 	fmt.Fprintf(&b, "**Total violations across all forks: %d**\n", totalViolations)
 	return writeOutput(out, b.String())
+}
+
+// migrateFlags holds the parsed flags for the migrate subcommand.
+type migrateFlags struct {
+	out       string
+	decisions string // --decisions <path>; empty means "no decisions file"
+	check     bool   // --check: validate only, do not write output
+}
+
+// parseMigrateFlags parses flags for cth migrate:
+//   - -o <path>            write v0.3 output here
+//   - --decisions <path>   per-anchor decisions JSON
+//   - --check              validate-only mode (no output written)
+//
+// Positional arguments are returned separately.
+func parseMigrateFlags(args []string) (mf migrateFlags, positional []string, err error) {
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "-o", "--o":
+			if i+1 >= len(args) {
+				return migrateFlags{}, nil, fmt.Errorf("migrate: -o requires a path argument")
+			}
+			mf.out = args[i+1]
+			i++
+		case "--decisions":
+			if i+1 >= len(args) {
+				return migrateFlags{}, nil, fmt.Errorf("migrate: --decisions requires a path argument")
+			}
+			mf.decisions = args[i+1]
+			i++
+		case "--check":
+			mf.check = true
+		default:
+			positional = append(positional, args[i])
+		}
+	}
+	return mf, positional, nil
+}
+
+// runMigrate implements `cth migrate <inventory.json> [flags]`.
+//
+// Three modes:
+//   - default: translate v0.2 → v0.3, write JSON output + migration-report.md
+//   - --decisions <path>: apply per-anchor decisions during translation
+//   - --check: validate-only, emit report to stdout, do NOT write v0.3 output
+func runMigrate(args []string) error {
+	mf, pos, err := parseMigrateFlags(args)
+	if err != nil {
+		return err
+	}
+	if len(pos) != 1 {
+		return errors.New("migrate: expects one inventory.json argument")
+	}
+	srcPath := pos[0]
+
+	inv, err := store.LoadInventory(srcPath)
+	if err != nil {
+		return err
+	}
+
+	decisions, err := LoadDecisions(mf.decisions)
+	if err != nil {
+		return err
+	}
+
+	// Determine output path (default: same directory, same stem, _v0_3.json suffix).
+	outPath := mf.out
+	if outPath == "" && !mf.check {
+		outPath = migrateDefaultOutputPath(srcPath)
+	}
+
+	migratedInv, report, err := Migrate(inv, decisions)
+	if err != nil {
+		return err
+	}
+	report.SourcePath = srcPath
+	report.OutputPath = outPath
+
+	reportMD := FormatReport(report)
+
+	if mf.check {
+		// Check mode: emit report to stdout, do NOT write any output file.
+		_, werr := fmt.Fprint(os.Stdout, reportMD)
+		return werr
+	}
+
+	// Write the v0.3 JSON output.
+	if err := store.SaveInventory(migratedInv, outPath); err != nil {
+		return err
+	}
+
+	// Write the companion migration report alongside the output file.
+	reportPath := outPath + ".migration-report.md"
+	if err := writeOutput(reportPath, reportMD); err != nil {
+		return fmt.Errorf("migrate: write report %s: %w", reportPath, err)
+	}
+
+	fmt.Fprintf(os.Stderr, "migrate: wrote %s\n", outPath)
+	fmt.Fprintf(os.Stderr, "migrate: wrote %s\n", reportPath)
+	return nil
+}
+
+// migrateDefaultOutputPath derives the default output path from the source
+// path by inserting "_v0_3" before the extension.
+// "testdata/foo.json" → "testdata/foo_v0_3.json"
+func migrateDefaultOutputPath(src string) string {
+	if base, ok := strings.CutSuffix(src, ".json"); ok {
+		return base + "_v0_3.json"
+	}
+	return src + "_v0_3.json"
 }
 
 func anchorCount(inv model.Inventory) int {
