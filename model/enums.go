@@ -304,6 +304,15 @@ func (b *Burden) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// v0.3 enum wire-form string constants. Repeated across ProofState and
+// TheoremStatus String/UnmarshalJSON methods; hoisted to satisfy CI goconst.
+const (
+	proofStateVerifiedStr      = "verified"
+	proofStatePartialStr       = "partial"
+	proofStateWrittenStr       = "written"
+	theoremStatusNotStartedStr = "not_started"
+)
+
 // ---- ProvenanceKind (v0.3) ----
 
 // ProvenanceKind is the v0.3 fine-grained provenance classifier.
@@ -405,11 +414,11 @@ const (
 func (s ProofState) String() string {
 	switch s {
 	case ProofStateVerified:
-		return "verified"
+		return proofStateVerifiedStr
 	case ProofStatePartial:
-		return "partial"
+		return proofStatePartialStr
 	case ProofStateWritten:
-		return "written"
+		return proofStateWrittenStr
 	default:
 		return ""
 	}
@@ -438,11 +447,11 @@ func (s *ProofState) UnmarshalJSON(b []byte) error {
 	switch raw {
 	case "":
 		*s = ProofStateUnknown
-	case "verified":
+	case proofStateVerifiedStr:
 		*s = ProofStateVerified
-	case "partial":
+	case proofStatePartialStr:
 		*s = ProofStatePartial
-	case "written":
+	case proofStateWrittenStr:
 		*s = ProofStateWritten
 	default:
 		return fmt.Errorf("proof_state: unknown value %q", raw)
@@ -467,11 +476,11 @@ const (
 func (t TheoremStatus) String() string {
 	switch t {
 	case TheoremStatusVerified:
-		return "verified"
+		return proofStateVerifiedStr
 	case TheoremStatusWritten:
-		return "written"
+		return proofStateWrittenStr
 	case TheoremStatusNotStarted:
-		return "not_started"
+		return theoremStatusNotStartedStr
 	default:
 		return ""
 	}
@@ -500,11 +509,11 @@ func (t *TheoremStatus) UnmarshalJSON(b []byte) error {
 	switch raw {
 	case "":
 		*t = TheoremStatusUnknown
-	case "verified":
+	case proofStateVerifiedStr:
 		*t = TheoremStatusVerified
-	case "written":
+	case proofStateWrittenStr:
 		*t = TheoremStatusWritten
-	case "not_started":
+	case theoremStatusNotStartedStr:
 		*t = TheoremStatusNotStarted
 	default:
 		return fmt.Errorf("theorem_status: unknown value %q", raw)

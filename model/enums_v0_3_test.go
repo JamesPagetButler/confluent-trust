@@ -88,11 +88,11 @@ func TestProvenanceKind_NullRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal unknown: %v", err)
 	}
-	if string(b) != "null" {
+	if string(b) != jsonNull {
 		t.Errorf("unknown provenance_kind: got %s, want null", b)
 	}
 	var got ProvenanceKind
-	if err := json.Unmarshal([]byte("null"), &got); err != nil {
+	if err := json.Unmarshal([]byte(jsonNull), &got); err != nil {
 		t.Fatalf("unmarshal null: %v", err)
 	}
 	if got != ProvenanceKindUnknown {
@@ -147,11 +147,11 @@ func TestProofState_NullRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal unknown: %v", err)
 	}
-	if string(b) != "null" {
+	if string(b) != jsonNull {
 		t.Errorf("unknown proof_state: got %s, want null", b)
 	}
 	var got ProofState
-	if err := json.Unmarshal([]byte("null"), &got); err != nil {
+	if err := json.Unmarshal([]byte(jsonNull), &got); err != nil {
 		t.Fatalf("unmarshal null: %v", err)
 	}
 	if got != ProofStateUnknown {
@@ -206,11 +206,11 @@ func TestTheoremStatus_NullRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal unknown: %v", err)
 	}
-	if string(b) != "null" {
+	if string(b) != jsonNull {
 		t.Errorf("unknown theorem_status: got %s, want null", b)
 	}
 	var got TheoremStatus
-	if err := json.Unmarshal([]byte("null"), &got); err != nil {
+	if err := json.Unmarshal([]byte(jsonNull), &got); err != nil {
 		t.Fatalf("unmarshal null: %v", err)
 	}
 	if got != TheoremStatusUnknown {

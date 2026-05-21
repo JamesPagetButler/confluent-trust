@@ -5,6 +5,10 @@ import (
 	"testing"
 )
 
+// proofLanguageLean4 is the canonical proof_language value for Lean 4,
+// used across anchor v0.3 tests; hoisted to satisfy CI goconst.
+const proofLanguageLean4 = "lean4"
+
 // verificationRecord returns a valid VerificationRecord for use in tests.
 func verificationRecord() *VerificationRecord {
 	return &VerificationRecord{
@@ -166,7 +170,7 @@ func TestInvariant4_TheoryWithProofState_Negative(t *testing.T) {
 func TestInvariant4_TheoryWithProofLanguage_Negative(t *testing.T) {
 	a := baseAnchor("PROOF-inv4-lang-neg")
 	a.ProvenanceKind = ProvenanceKindTheory
-	a.ProofLanguage = "lean4" // must be absent
+	a.ProofLanguage = proofLanguageLean4 // must be absent
 	if err := a.Validate(); err == nil {
 		t.Error("expected error: theory with proof_language, got nil")
 	} else if !strings.Contains(err.Error(), "proof_language") {
@@ -225,7 +229,7 @@ func TestInvariant4_ProofKindAllowsProofFields_Positive(t *testing.T) {
 	a := baseAnchor("PROOF-inv4-proof-pos")
 	a.ProvenanceKind = ProvenanceKindProof
 	a.ProofState = ProofStateVerified
-	a.ProofLanguage = "lean4"
+	a.ProofLanguage = proofLanguageLean4
 	a.Verification = verificationRecord()
 	a.Theorems = []TheoremRef{{Name: "thm", Status: TheoremStatusVerified}}
 	if err := a.Validate(); err != nil {
@@ -241,7 +245,7 @@ func TestInvariant4_UnknownProvenanceKindAllowsAll_Positive(t *testing.T) {
 	a := baseAnchor("PROOF-inv4-unknown-pos")
 	// ProvenanceKind intentionally left as zero (Unknown)
 	a.ProofState = ProofStateVerified
-	a.ProofLanguage = "lean4"
+	a.ProofLanguage = proofLanguageLean4
 	a.Verification = verificationRecord()
 	a.Theorems = []TheoremRef{{Name: "thm", Status: TheoremStatusVerified}}
 	if err := a.Validate(); err != nil {

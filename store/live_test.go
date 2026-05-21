@@ -16,6 +16,13 @@ import (
 // qbpQuantumFixturePath is the relative path to the QBP-Q quantum fixture.
 const qbpQuantumFixturePath = "../testdata/qbp_quantum_v0_2.json"
 
+// liveTestProofAnchorID and liveTestUpdatedNotes are repeated across tests;
+// hoisted to satisfy CI goconst.
+const (
+	liveTestProofAnchorID = "PROOF-new-1"
+	liveTestUpdatedNotes  = "updated notes"
+)
+
 // minimalInventoryJSON is a small hand-written inventory for tests that
 // need a clean, write-to-disk fixture. It is a subset of minimal.json
 // with exactly one anchor, one chain, and one input.
@@ -151,7 +158,7 @@ func TestAppendAnchor_HappyPath(t *testing.T) {
 	li, path := openTempLive(t, hooks)
 	defer li.Close() //nolint:errcheck // test defer
 
-	anchor := freshAnchor("PROOF-new-1")
+	anchor := freshAnchor(liveTestProofAnchorID)
 	if err := li.AppendAnchor(anchor); err != nil {
 		t.Fatalf("AppendAnchor: %v", err)
 	}
@@ -160,7 +167,7 @@ func TestAppendAnchor_HappyPath(t *testing.T) {
 	snap := li.Snapshot()
 	found := false
 	for _, a := range snap.Anchors {
-		if a.ID == "PROOF-new-1" {
+		if a.ID == liveTestProofAnchorID {
 			found = true
 		}
 	}
@@ -175,7 +182,7 @@ func TestAppendAnchor_HappyPath(t *testing.T) {
 	}
 	diskFound := false
 	for _, a := range reloaded.Anchors {
-		if a.ID == "PROOF-new-1" {
+		if a.ID == liveTestProofAnchorID {
 			diskFound = true
 		}
 	}
@@ -195,7 +202,7 @@ func TestAppendAnchor_HappyPath(t *testing.T) {
 	if hookBefore != nil {
 		t.Errorf("hook before: got %v want nil", hookBefore)
 	}
-	if hookAfter == nil || hookAfter.ID != "PROOF-new-1" {
+	if hookAfter == nil || hookAfter.ID != liveTestProofAnchorID {
 		t.Errorf("hook after.ID: got %v want PROOF-new-1", hookAfter)
 	}
 }
@@ -413,7 +420,7 @@ func TestUpdateAnchor_HookFiltering_NotesChangeDoesNotFire(t *testing.T) {
 
 	// Update only Notes.
 	err := li.UpdateAnchor("PROOF-notes-test", func(a *model.Anchor) error {
-		a.Notes = "updated notes"
+		a.Notes = liveTestUpdatedNotes
 		return nil
 	})
 	if err != nil {
@@ -424,8 +431,8 @@ func TestUpdateAnchor_HookFiltering_NotesChangeDoesNotFire(t *testing.T) {
 	snap := li.Snapshot()
 	for _, a := range snap.Anchors {
 		if a.ID == "PROOF-notes-test" {
-			if a.Notes != "updated notes" {
-				t.Errorf("Notes: got %q want %q", a.Notes, "updated notes")
+			if a.Notes != liveTestUpdatedNotes {
+				t.Errorf("Notes: got %q want %q", a.Notes, liveTestUpdatedNotes)
 			}
 		}
 	}
@@ -615,7 +622,7 @@ func TestUpdateChain_AllFieldChangesFire(t *testing.T) {
 
 	// UpdateChain fires for a Notes-only change (no whitelist on chain hooks).
 	err := li.UpdateChain("CHAIN-seed", func(c *model.Chain) error {
-		c.Notes = "updated notes"
+		c.Notes = liveTestUpdatedNotes
 		return nil
 	})
 	if err != nil {
@@ -628,7 +635,7 @@ func TestUpdateChain_AllFieldChangesFire(t *testing.T) {
 	if capturedChainBefore == nil || capturedChainBefore.Notes != "" {
 		t.Errorf("before.Notes: got %v want empty string", capturedChainBefore)
 	}
-	if capturedChainAfter == nil || capturedChainAfter.Notes != "updated notes" {
+	if capturedChainAfter == nil || capturedChainAfter.Notes != liveTestUpdatedNotes {
 		t.Errorf("after.Notes: got %v want 'updated notes'", capturedChainAfter)
 	}
 }
