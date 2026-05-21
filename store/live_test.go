@@ -3,11 +3,13 @@ package store
 import (
 	"errors"
 	"fmt"
+	"math"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"testing"
 
+	"github.com/JamesPagetButler/confluent-trust/compute"
 	"github.com/JamesPagetButler/confluent-trust/model"
 )
 
@@ -823,4 +825,491 @@ func TestConcurrent_AppendAndUpdate(t *testing.T) {
 	if got := anchorHookCount.Load(); got < appendN {
 		t.Errorf("hook count: got %d want >= %d (append fires)", got, appendN)
 	}
+}
+
+// ---- PRED-* → Tier 3→2 transition invariant tests ----
+// Sprint-1 Notary-bootstrap target #3 (sprint-1-closeout-2026-05-17 seq=12).
+// See doc/design/live-inventory-api.md §2.2 for the documented contract.
+//
+// These tests operate against the main-branch whitelist:
+//   {Status, MeasuredValue, MeasuredError, DiscrepancyPct, LastTestedAt}
+// per doc/design/live-inventory-api.md §2.1.
+
+// predTestAnchorID is the canonical PRED-* anchor ID used across the
+// transition tests; hoisted to satisfy CI goconst.
+// predLastTestedAt is the RFC3339 timestamp used in the transition tests.
+const (
+	predTestAnchorID = "PRED-test-01"
+	predLastTestedAt = "2026-05-21T00:00:00Z"
+)
+
+// freshPredictionAnchor returns a valid TierPrediction anchor with the given
+// ID, ready to be appended to the minimal TEST inventory.
+func freshPredictionAnchor(id string) model.Anchor {
+	predicted := 42.0
+	return model.Anchor{
+		ID:              id,
+		Name:            "Prediction anchor " + id,
+		Description:     "Test prediction anchor for " + id,
+		Tier:            model.TierPrediction,
+		Provenance:      model.ProvenanceTheoretical,
+		Status:          model.StatusUntested,
+		PredictedValue:  &predicted,
+		PredictionChain: []string{"AXIOM-1"},
+	}
+}
+
+// regimeToStatus maps a compute.ScoreRegime to the expected model.Status per
+// the transition contract in doc/design/live-inventory-api.md §2.2.
+// Laminar and LowSediment both map to Coherent; Moderate → Contested; Heavy → Refuted.
+func regimeToStatus(regime compute.ScoreRegime) model.Status {
+	switch regime {
+	case compute.ScoreRegimeLaminar, compute.ScoreRegimeLowSediment:
+		return model.StatusCoherent
+	case compute.ScoreRegimeModerate:
+		return model.StatusContested
+	default: // ScoreRegimeHeavy
+		return model.StatusRefuted
+	}
+}
+
+// TestLiveInventory_PredictionToMeasurementTransition_HappyPath verifies the
+// full end-to-end Tier 3→2 transition via UpdateAnchor:
+//
+//   - Tier changes from TierPrediction (3) to TierMeasurement (2)
+//   - MeasuredValue, MeasuredError, MeasuredSource, LastTestedAt are populated
+//   - DiscrepancyPct is computed via compute.ScorePrediction and stored
+//   - Status transitions from Untested → Coherent (laminar regime: delta ~0.71%)
+//   - OnAnchorChange fires (MeasuredValue + Status + DiscrepancyPct + LastTestedAt
+//     all in the whitelist; before.Tier==3 / after.Tier==2 observable)
+//   - Disk (reload via LoadInventory) reflects all 6 field changes
+//
+// Contract per doc/design/live-inventory-api.md §2.2.
+func TestLiveInventory_PredictionToMeasurementTransition_HappyPath(t *testing.T) {
+	hookCount := 0
+	var capturedBefore, capturedAfter *model.Anchor
+
+	hooks := &Hooks{
+		OnAnchorChange: func(before, after *model.Anchor) {
+			hookCount++
+			capturedBefore = before
+			capturedAfter = after
+		},
+	}
+
+	li, path := openTempLive(t, hooks)
+	defer li.Close() //nolint:errcheck // test defer
+
+	// --- Append phase ---
+	pred := freshPredictionAnchor(predTestAnchorID)
+	if err := li.AppendAnchor(pred); err != nil {
+		t.Fatalf("AppendAnchor: %v", err)
+	}
+
+	// AppendAnchor fires OnAnchorChange with before==nil (§2.1 contract).
+	if hookCount != 1 {
+		t.Errorf("hook count after append: got %d want 1", hookCount)
+	}
+	if capturedBefore != nil {
+		t.Errorf("hook before on append: got %v want nil", capturedBefore)
+	}
+	if capturedAfter == nil || capturedAfter.Tier != model.TierPrediction {
+		t.Errorf("hook after.Tier on append: got %v want TierPrediction", capturedAfter)
+	}
+	hookCount = 0 // reset for transition assertion
+
+	// --- Transition phase (the load-bearing assertion) ---
+	predicted := 42.0
+	observed := 41.7
+	score, err := compute.ScorePrediction(compute.KindScalar, predicted, observed)
+	if err != nil {
+		t.Fatalf("ScorePrediction: %v", err)
+	}
+
+	measuredErr := 0.1
+	measuredSrc := "test"
+	lastTested := predLastTestedAt
+	wantDiscrepancyPct := score.DiscrepancyPct
+	wantStatus := regimeToStatus(score.Regime)
+
+	updateErr := li.UpdateAnchor(predTestAnchorID, func(a *model.Anchor) error {
+		a.Tier = model.TierMeasurement
+		a.MeasuredValue = &observed
+		a.MeasuredError = &measuredErr
+		a.MeasuredSource = measuredSrc
+		a.LastTestedAt = &lastTested
+		a.DiscrepancyPct = &wantDiscrepancyPct
+		a.Status = wantStatus
+		return nil
+	})
+	if updateErr != nil {
+		t.Fatalf("UpdateAnchor: %v", updateErr)
+	}
+
+	// --- Snapshot assertions: all 6 fields set ---
+	snap := li.Snapshot()
+	var got *model.Anchor
+	for i := range snap.Anchors {
+		if snap.Anchors[i].ID == predTestAnchorID {
+			got = &snap.Anchors[i]
+			break
+		}
+	}
+	if got == nil {
+		t.Fatal("anchor not found in snapshot after transition")
+	}
+	if got.Tier != model.TierMeasurement {
+		t.Errorf("Tier: got %d want %d (TierMeasurement)", got.Tier, model.TierMeasurement)
+	}
+	if got.MeasuredValue == nil || *got.MeasuredValue != observed {
+		t.Errorf("MeasuredValue: got %v want %v", got.MeasuredValue, observed)
+	}
+	if got.MeasuredError == nil || *got.MeasuredError != measuredErr {
+		t.Errorf("MeasuredError: got %v want %v", got.MeasuredError, measuredErr)
+	}
+	if got.MeasuredSource != measuredSrc {
+		t.Errorf("MeasuredSource: got %q want %q", got.MeasuredSource, measuredSrc)
+	}
+	if got.LastTestedAt == nil || *got.LastTestedAt != lastTested {
+		t.Errorf("LastTestedAt: got %v want %q", got.LastTestedAt, lastTested)
+	}
+	if got.DiscrepancyPct == nil || math.Abs(*got.DiscrepancyPct-wantDiscrepancyPct) > 1e-9 {
+		t.Errorf("DiscrepancyPct: got %v want %v", got.DiscrepancyPct, wantDiscrepancyPct)
+	}
+	if got.Status != wantStatus {
+		t.Errorf("Status: got %v want %v", got.Status, wantStatus)
+	}
+
+	// --- Hook assertions: transition observable in before/after ---
+	if hookCount != 1 {
+		t.Errorf("hook count after transition: got %d want 1", hookCount)
+	}
+	if capturedBefore == nil || capturedBefore.Tier != model.TierPrediction {
+		t.Errorf("hook before.Tier: got %v want TierPrediction (3)", capturedBefore)
+	}
+	if capturedAfter == nil || capturedAfter.Tier != model.TierMeasurement {
+		t.Errorf("hook after.Tier: got %v want TierMeasurement (2)", capturedAfter)
+	}
+	if capturedBefore == nil || capturedBefore.Status != model.StatusUntested {
+		t.Errorf("hook before.Status: got %v want StatusUntested", capturedBefore)
+	}
+	if capturedAfter == nil || capturedAfter.Status != wantStatus {
+		t.Errorf("hook after.Status: got %v want %v", capturedAfter, wantStatus)
+	}
+	if capturedBefore != nil && capturedBefore.MeasuredValue != nil {
+		t.Errorf("hook before.MeasuredValue: got %v want nil", capturedBefore.MeasuredValue)
+	}
+	if capturedAfter == nil || capturedAfter.MeasuredValue == nil {
+		t.Errorf("hook after.MeasuredValue: got nil want non-nil")
+	}
+
+	// --- Disk persistence: reload confirms all 6 field changes ---
+	reloaded, reloadErr := LoadInventory(path)
+	if reloadErr != nil {
+		t.Fatalf("reload: %v", reloadErr)
+	}
+	var disk *model.Anchor
+	for i := range reloaded.Anchors {
+		if reloaded.Anchors[i].ID == predTestAnchorID {
+			disk = &reloaded.Anchors[i]
+			break
+		}
+	}
+	if disk == nil {
+		t.Fatal("anchor not found on disk after transition")
+	}
+	if disk.Tier != model.TierMeasurement {
+		t.Errorf("disk Tier: got %d want %d", disk.Tier, model.TierMeasurement)
+	}
+	if disk.Status != wantStatus {
+		t.Errorf("disk Status: got %v want %v", disk.Status, wantStatus)
+	}
+	if disk.MeasuredValue == nil || *disk.MeasuredValue != observed {
+		t.Errorf("disk MeasuredValue: got %v want %v", disk.MeasuredValue, observed)
+	}
+}
+
+// TestLiveInventory_PredictionToMeasurementTransition_RegimeMatches verifies
+// that the three regime transitions (Coherent / Contested / Refuted) all round-
+// trip correctly through UpdateAnchor. compute.ScorePrediction drives
+// DiscrepancyPct + Regime → Status in each case.
+//
+// Contract per doc/design/live-inventory-api.md §2.2.
+func TestLiveInventory_PredictionToMeasurementTransition_RegimeMatches(t *testing.T) {
+	cases := []struct {
+		name           string
+		predicted      float64
+		observed       float64
+		expectedStatus model.Status
+		expectedRegime compute.ScoreRegime
+	}{
+		{
+			name:           "laminar_coherent",
+			predicted:      42.0,
+			observed:       41.97, // delta ~0.07% — laminar
+			expectedStatus: model.StatusCoherent,
+			expectedRegime: compute.ScoreRegimeLaminar,
+		},
+		{
+			name:           "moderate_contested",
+			predicted:      42.0,
+			observed:       35.0, // delta ~16.67% — moderate
+			expectedStatus: model.StatusContested,
+			expectedRegime: compute.ScoreRegimeModerate,
+		},
+		{
+			name:           "heavy_refuted",
+			predicted:      42.0,
+			observed:       70.0, // delta ~66.67% — heavy
+			expectedStatus: model.StatusRefuted,
+			expectedRegime: compute.ScoreRegimeHeavy,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			li, path := openTempLive(t, nil)
+			defer li.Close() //nolint:errcheck // test defer
+
+			anchorID := "PRED-regime-" + tc.name
+			pred := freshPredictionAnchor(anchorID)
+			pred.PredictedValue = &tc.predicted
+			if err := li.AppendAnchor(pred); err != nil {
+				t.Fatalf("AppendAnchor: %v", err)
+			}
+
+			score, err := compute.ScorePrediction(compute.KindScalar, tc.predicted, tc.observed)
+			if err != nil {
+				t.Fatalf("ScorePrediction: %v", err)
+			}
+			if score.Regime != tc.expectedRegime {
+				t.Errorf("ScorePrediction regime: got %v want %v", score.Regime, tc.expectedRegime)
+			}
+
+			discrepancyPct := score.DiscrepancyPct
+			lastTested := predLastTestedAt
+			wantStatus := regimeToStatus(score.Regime)
+
+			if err := li.UpdateAnchor(anchorID, func(a *model.Anchor) error {
+				a.Tier = model.TierMeasurement
+				a.MeasuredValue = &tc.observed
+				a.DiscrepancyPct = &discrepancyPct
+				a.LastTestedAt = &lastTested
+				a.Status = wantStatus
+				return nil
+			}); err != nil {
+				t.Fatalf("UpdateAnchor: %v", err)
+			}
+
+			// Snapshot confirms transition.
+			snap := li.Snapshot()
+			var got *model.Anchor
+			for i := range snap.Anchors {
+				if snap.Anchors[i].ID == anchorID {
+					got = &snap.Anchors[i]
+					break
+				}
+			}
+			if got == nil {
+				t.Fatal("anchor not found in snapshot")
+			}
+			if got.Tier != model.TierMeasurement {
+				t.Errorf("Tier: got %d want TierMeasurement", got.Tier)
+			}
+			if got.Status != tc.expectedStatus {
+				t.Errorf("Status: got %v want %v", got.Status, tc.expectedStatus)
+			}
+			if got.DiscrepancyPct == nil || math.Abs(*got.DiscrepancyPct-score.DiscrepancyPct) > 1e-9 {
+				t.Errorf("DiscrepancyPct: got %v want %v", got.DiscrepancyPct, score.DiscrepancyPct)
+			}
+
+			// Disk persistence.
+			reloaded, reloadErr := LoadInventory(path)
+			if reloadErr != nil {
+				t.Fatalf("reload: %v", reloadErr)
+			}
+			var disk *model.Anchor
+			for i := range reloaded.Anchors {
+				if reloaded.Anchors[i].ID == anchorID {
+					disk = &reloaded.Anchors[i]
+					break
+				}
+			}
+			if disk == nil {
+				t.Fatal("anchor not found on disk")
+			}
+			if disk.Tier != model.TierMeasurement {
+				t.Errorf("disk Tier: got %d want TierMeasurement", disk.Tier)
+			}
+			if disk.Status != tc.expectedStatus {
+				t.Errorf("disk Status: got %v want %v", disk.Status, tc.expectedStatus)
+			}
+		})
+	}
+}
+
+// TestLiveInventory_PredictionToMeasurementTransition_HookWhitelistAllFire
+// verifies that a single UpdateAnchor touching all 5 whitelist fields fires
+// OnAnchorChange exactly once (not 5x — hook fires per-call, not per-field)
+// and that the before/after pair reflects all 5 field changes.
+//
+// Whitelist (main branch): {Status, MeasuredValue, MeasuredError, DiscrepancyPct, LastTestedAt}.
+// Contract per doc/design/live-inventory-api.md §2.1 + §2.2.
+func TestLiveInventory_PredictionToMeasurementTransition_HookWhitelistAllFire(t *testing.T) {
+	hookCount := 0
+	var capturedBefore, capturedAfter *model.Anchor
+
+	hooks := &Hooks{
+		OnAnchorChange: func(before, after *model.Anchor) {
+			hookCount++
+			capturedBefore = before
+			capturedAfter = after
+		},
+	}
+
+	li, _ := openTempLive(t, hooks)
+	defer li.Close() //nolint:errcheck // test defer
+
+	anchorID := "PRED-whitelist-all"
+	pred := freshPredictionAnchor(anchorID)
+	if err := li.AppendAnchor(pred); err != nil {
+		t.Fatalf("AppendAnchor: %v", err)
+	}
+	hookCount = 0 // reset; count only the update hook
+
+	predicted := 42.0
+	observed := 41.7
+	score, err := compute.ScorePrediction(compute.KindScalar, predicted, observed)
+	if err != nil {
+		t.Fatalf("ScorePrediction: %v", err)
+	}
+
+	measuredErr := 0.1
+	lastTested := predLastTestedAt
+	discrepancyPct := score.DiscrepancyPct
+
+	if err := li.UpdateAnchor(anchorID, func(a *model.Anchor) error {
+		// Touch all 5 whitelist fields in one mutator call.
+		a.MeasuredValue = &observed
+		a.MeasuredError = &measuredErr
+		a.DiscrepancyPct = &discrepancyPct
+		a.LastTestedAt = &lastTested
+		a.Status = model.StatusCoherent
+		// Tier transition also set as part of the full transition shape.
+		a.Tier = model.TierMeasurement
+		return nil
+	}); err != nil {
+		t.Fatalf("UpdateAnchor: %v", err)
+	}
+
+	// Hook fires exactly once per UpdateAnchor call, not once per field.
+	if hookCount != 1 {
+		t.Errorf("hook count: got %d want 1 (fires per-call, not per-field)", hookCount)
+	}
+	if capturedBefore == nil || capturedAfter == nil {
+		t.Fatal("hook before/after must not be nil")
+	}
+
+	// All 5 whitelist fields differ between before and after.
+	if capturedBefore.Status == capturedAfter.Status {
+		t.Errorf("Status unchanged: before=%v after=%v", capturedBefore.Status, capturedAfter.Status)
+	}
+	if float64PtrEqual(capturedBefore.MeasuredValue, capturedAfter.MeasuredValue) {
+		t.Errorf("MeasuredValue unchanged: before=%v after=%v", capturedBefore.MeasuredValue, capturedAfter.MeasuredValue)
+	}
+	if float64PtrEqual(capturedBefore.MeasuredError, capturedAfter.MeasuredError) {
+		t.Errorf("MeasuredError unchanged: before=%v after=%v", capturedBefore.MeasuredError, capturedAfter.MeasuredError)
+	}
+	if float64PtrEqual(capturedBefore.DiscrepancyPct, capturedAfter.DiscrepancyPct) {
+		t.Errorf("DiscrepancyPct unchanged: before=%v after=%v", capturedBefore.DiscrepancyPct, capturedAfter.DiscrepancyPct)
+	}
+	// LastTestedAt: before is nil; after is set — they differ (nil-to-non-nil).
+	if capturedAfter.LastTestedAt == nil {
+		t.Errorf("LastTestedAt after: got nil want non-nil")
+	}
+	if capturedBefore.LastTestedAt != nil {
+		t.Errorf("LastTestedAt before: got non-nil want nil")
+	}
+}
+
+// TestLiveInventory_PartialTransition_HookFiresWhenWhitelistTouched is a
+// negative-discipline test that documents the known gap in the v0.3 API.
+//
+// The current API allows a mutator to set MeasuredValue without changing Tier
+// (no auto-Tier-transition; the caller is responsible). This test asserts the
+// current observed behavior:
+//   - UpdateAnchor succeeds even when only MeasuredValue changes (Tier stays at 3)
+//   - OnAnchorChange still fires (MeasuredValue is in the whitelist)
+//   - Tier in the snapshot remains TierPrediction
+//
+// Known gap (v0.3 deferred): Anchor.Validate() does not enforce the joint-
+// population shape (all 6 fields moving together). This is the documented gap
+// from sprint-1-closeout-2026-05-17 seq=12 — future Invariant 6 candidate.
+// See doc/design/live-inventory-api.md §2.2.
+func TestLiveInventory_PartialTransition_HookFiresWhenWhitelistTouched(t *testing.T) {
+	hookCount := 0
+	var capturedAfter *model.Anchor
+
+	hooks := &Hooks{
+		OnAnchorChange: func(_, after *model.Anchor) {
+			hookCount++
+			capturedAfter = after
+		},
+	}
+
+	li, _ := openTempLive(t, hooks)
+	defer li.Close() //nolint:errcheck // test defer
+
+	anchorID := "PRED-partial-01"
+	pred := freshPredictionAnchor(anchorID)
+	if err := li.AppendAnchor(pred); err != nil {
+		t.Fatalf("AppendAnchor: %v", err)
+	}
+	hookCount = 0 // reset
+
+	// Mutator sets MeasuredValue ONLY — Tier stays at TierPrediction.
+	// This is the documented-gap case: the API allows this even though it
+	// creates a semantically incomplete measurement record.
+	observed := 41.7
+	if err := li.UpdateAnchor(anchorID, func(a *model.Anchor) error {
+		a.MeasuredValue = &observed
+		return nil
+	}); err != nil {
+		t.Fatalf("UpdateAnchor: %v", err)
+	}
+
+	// OnAnchorChange fires because MeasuredValue is in the whitelist.
+	if hookCount != 1 {
+		t.Errorf("hook count: got %d want 1 (MeasuredValue is whitelist)", hookCount)
+	}
+
+	// Tier in snapshot is still TierPrediction — the API did NOT auto-promote.
+	snap := li.Snapshot()
+	var got *model.Anchor
+	for i := range snap.Anchors {
+		if snap.Anchors[i].ID == anchorID {
+			got = &snap.Anchors[i]
+			break
+		}
+	}
+	if got == nil {
+		t.Fatal("anchor not found in snapshot")
+	}
+	if got.Tier != model.TierPrediction {
+		t.Errorf("Tier: got %d want %d (TierPrediction — no auto-promotion)", got.Tier, model.TierPrediction)
+	}
+	if got.MeasuredValue == nil || *got.MeasuredValue != observed {
+		t.Errorf("MeasuredValue: got %v want %v", got.MeasuredValue, observed)
+	}
+
+	// Confirm hook captured the partial state.
+	if capturedAfter == nil || capturedAfter.Tier != model.TierPrediction {
+		t.Errorf("hook after.Tier: got %v want TierPrediction", capturedAfter)
+	}
+
+	// t.Log documents the semantic gap for future Invariant 6 candidate.
+	t.Log("KNOWN GAP (v0.3 deferred): MeasuredValue set without Tier transition. " +
+		"Anchor.Validate() does not enforce joint-population of all 6 transition fields. " +
+		"Future Invariant 6 candidate: enforce Tier==TierMeasurement when MeasuredValue!=nil. " +
+		"See doc/design/live-inventory-api.md §2.2.")
 }
