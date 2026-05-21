@@ -23,6 +23,10 @@ const qbpQuantumFixturePath = "../testdata/qbp_quantum_v0_2.json"
 const (
 	liveTestProofAnchorID = "PROOF-new-1"
 	liveTestUpdatedNotes  = "updated notes"
+	// liveTestAxiomID is the canonical axiom ID used by both live_test.go and
+	// live_whitelist_test.go fixtures; hoisted for goconst (5+ occurrences across
+	// store/ test files in CI's strict pass).
+	liveTestAxiomID = "AXIOM-1"
 )
 
 // minimalInventoryJSON is a small hand-written inventory for tests that
@@ -91,7 +95,7 @@ func freshAnchor(id string) model.Anchor {
 		Tier:            model.TierProof,
 		Provenance:      model.ProvenanceTheoretical,
 		Status:          model.StatusUntested,
-		PredictionChain: []string{"AXIOM-1"},
+		PredictionChain: []string{liveTestAxiomID},
 	}
 }
 
@@ -100,7 +104,7 @@ func freshChain(id string) model.Chain {
 	return model.Chain{
 		ID:        id,
 		Name:      "Fresh chain " + id,
-		SourceIDs: []string{"AXIOM-1"},
+		SourceIDs: []string{liveTestAxiomID},
 		TargetID:  "PROOF-seed",
 		Steps:     1,
 		Status:    model.StatusCoherent,
@@ -861,7 +865,7 @@ func freshPredictionAnchor(id string) model.Anchor {
 		Provenance:      model.ProvenanceTheoretical,
 		Status:          model.StatusUntested,
 		PredictedValue:  &predicted,
-		PredictionChain: []string{"AXIOM-1"},
+		PredictionChain: []string{liveTestAxiomID},
 	}
 }
 

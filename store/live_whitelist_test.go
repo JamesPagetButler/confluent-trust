@@ -213,7 +213,7 @@ func TestOnAnchorChange_WhitelistDerivation(t *testing.T) {
 			Tier:            model.TierProof,
 			Status:          model.StatusUntested,
 			Provenance:      model.ProvenanceTheoretical,
-			PredictionChain: []string{"AXIOM-1"},
+			PredictionChain: []string{liveTestAxiomID},
 		}
 		after := &model.Anchor{
 			ID:              "PROOF-derivation-assert",
@@ -222,10 +222,10 @@ func TestOnAnchorChange_WhitelistDerivation(t *testing.T) {
 			Tier:            model.TierMeasurement, // changed
 			Status:          model.StatusCoherent,  // changed
 			Provenance:      model.ProvenanceTheoretical,
-			PredictionChain: []string{"AXIOM-1", "AXIOM-2"}, // changed
-			DiscrepancyPct:  &disc,                          // changed
-			MeasuredValue:   &measVal,                       // changed
-			MeasuredError:   &measErr,                       // changed
+			PredictionChain: []string{liveTestAxiomID, "AXIOM-2"}, // changed
+			DiscrepancyPct:  &disc,                                // changed
+			MeasuredValue:   &measVal,                             // changed
+			MeasuredError:   &measErr,                             // changed
 		}
 
 		if !anchorStatusFieldsChanged(before, after) {
