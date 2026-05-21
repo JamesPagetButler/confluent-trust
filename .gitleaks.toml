@@ -1,0 +1,37 @@
+# gitleaks configuration for federation repos.
+# Extends the default ruleset; adds federation-specific tunings.
+# Reference: inter/best-practices/gitleaks-federation.md
+
+# Inherit the default upstream rules (catches GitHub tokens, AWS keys,
+# OpenAI API keys, JWTs, private keys, etc.)
+[extend]
+useDefault = true
+
+# Allowlist: lines that legitimately contain token-shaped patterns but
+# are NOT real secrets. Pattern: regex over secret value, OR commit
+# hashes that pre-date the federation-wide adoption (2026-05-18).
+[allowlist]
+description = "Federation allowlist — historical false-positives + documentation patterns"
+
+# Don't flag the literal token already on main in older commits
+# (history scrub deferred per chore/security-redact-leaked-token PR #12).
+# This DOES NOT skip new commits — only historical ones.
+commits = [
+    "dee73d1",  # inter sprint-1-closeout-brief-2026-05-15 (redacted on main 2026-05-19 da55907)
+]
+
+# Allow descriptive prose that mentions token shapes in best-practice docs.
+# Match patterns that are clearly explaining the pattern, not real values.
+regexes = [
+    '''gho_\*''',                              # "gho_*" prefix as discussed pattern
+    '''github_pat_\*''',                       # "github_pat_*" prefix as discussed pattern
+    '''gh\[a-z\]_''',                          # regex source code referencing the pattern
+    '''(REDACTED|REDACTED-TOKEN|<token>)''',  # placeholder strings
+]
+
+# File-based allowlist: don't scan certain meta/reference files
+paths = [
+    '''\.gitleaks\.toml$''',                   # this file itself
+    '''\.github/workflows/gitleaks\.yml$''',   # the CI workflow file
+    '''best-practices/gitleaks-federation\.md$''', # the documentation
+]

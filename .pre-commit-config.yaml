@@ -1,0 +1,20 @@
+# Pre-commit hooks for the federation hub repo.
+# Adopted 2026-05-18 as part of the gitleaks-federation pattern
+# (companion to .github/workflows/gitleaks.yml CI scan).
+#
+# To activate locally:
+#   pip install pre-commit  # or: brew install pre-commit
+#   pre-commit install      # registers the hooks in .git/hooks/pre-commit
+#
+# Reference: best-practices/gitleaks-federation.md
+
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+        name: gitleaks (block committed secrets)
+        description: |
+          Scans staged changes for credential patterns (GitHub tokens,
+          AWS keys, OpenAI API keys, JWTs, private keys). Blocks the
+          commit if detected. Configuration lives in .gitleaks.toml.

@@ -1,0 +1,39 @@
+name: gitleaks
+
+# Secret-scanning via gitleaks GitHub Action.
+# Adopted federation-wide 2026-05-18 as the alternative to GitHub-native
+# secret-scanning (not available on private repos at the current plan).
+# Reference: inter/best-practices/gitleaks-federation.md (canonical pattern).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write   # required for gitleaks-action to post PR comments on detection
+
+jobs:
+  scan:
+    name: Detect committed secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history for accurate scan)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          # GITHUB_TOKEN is auto-supplied by Actions; gitleaks uses it to
+          # post a PR comment on detection. No additional secrets required.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITLEAKS_ENABLE_COMMENTS: emit PR comment on detection
+          GITLEAKS_ENABLE_COMMENTS: true
+          # GITLEAKS_ENABLE_UPLOAD_ARTIFACT: persist sarif for audit
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
+          # GITLEAKS_NOTIFY_USER_LIST: ping @JamesPagetButler on detection
+          GITLEAKS_NOTIFY_USER_LIST: "@JamesPagetButler"
