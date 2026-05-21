@@ -128,7 +128,7 @@ func writeOutput(out, content string) error {
 		return err
 	}
 	tmp := out + ".tmp"
-	if err := os.WriteFile(tmp, []byte(content), 0o644); err != nil { // #nosec G306 -- output files are user content
+	if err := os.WriteFile(tmp, []byte(content), 0o644); err != nil { // #nosec G306,G703 -- output files are user content; tmp path is user-supplied via -o flag
 		return fmt.Errorf("write %s: %w", tmp, err)
 	}
 	if err := os.Rename(tmp, out); err != nil { // #nosec G703 -- out is user-supplied via the CLI -o flag; atomic rename is the intended semantic
