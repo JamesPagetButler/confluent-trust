@@ -15,6 +15,8 @@ const (
 	qbpV32Fixture      = "../../testdata/qbp_v3_2.json"
 	lifecycleV2Fixture = "../../testdata/predictions_lifecycle.json"
 	lifecycleV3Fixture = "../../testdata/predictions_lifecycle_v0_3.json"
+	// Repeated literals hoisted for goconst.
+	testProofLangLean4 = "lean4"
 )
 
 // TestMigrate_QBPv3_2_RoundTrip migrates qbp_v3_2.json (59 anchors, all provenance T)
@@ -42,15 +44,15 @@ func TestMigrate_QBPv3_2_RoundTrip(t *testing.T) {
 
 	proofSysAnchors := map[string]string{
 		"PROOF-hurwitz":     "established_mathematics",
-		"PROOF-42zd":        "lean4",
-		"PROOF-hessian":     "lean4",
-		"PROOF-eigenratios": "lean4",
+		"PROOF-42zd":        testProofLangLean4,
+		"PROOF-hessian":     testProofLangLean4,
+		"PROOF-eigenratios": testProofLangLean4,
 		"PROOF-g2":          "python_exhaustive",
-		"PROOF-fano":        "lean4",
-		"PROOF-cl6":         "lean4",
-		"PROOF-3gen":        "lean4",
+		"PROOF-fano":        testProofLangLean4,
+		"PROOF-cl6":         testProofLangLean4,
+		"PROOF-3gen":        testProofLangLean4,
 		"PROOF-born":        "established_mathematics",
-		"PROOF-shells":      "lean4",
+		"PROOF-shells":      testProofLangLean4,
 	}
 
 	for _, a := range migrated.Anchors {
@@ -112,7 +114,7 @@ func TestMigrate_WithDecisions(t *testing.T) {
 	decisions := []MigrationDecision{
 		{
 			AnchorID:       "MEAS-alpha",
-			ProvenanceKind: "theory-external",
+			ProvenanceKind: pkTheoryExternalStr,
 			TheoryCitation: "PDG (2024). Review of Particle Physics.",
 			TheoryDOI:      "10.1093/ptep/ptad058",
 			TheoryURL:      "https://pdg.lbl.gov/",
@@ -166,7 +168,7 @@ func TestMigrate_WithDecisions_MissingCitation(t *testing.T) {
 	decisions := []MigrationDecision{
 		{
 			AnchorID:       "PROOF-derivation",
-			ProvenanceKind: "theory-external",
+			ProvenanceKind: pkTheoryExternalStr,
 			TheoryCitation: "", // missing
 		},
 	}
@@ -193,7 +195,7 @@ func TestMigrate_HeuristicSuggestions(t *testing.T) {
 				ID:        "PROOF-with-file",
 				ProofFile: "proofs/foo.lean",
 			},
-			wantSuggestion: "theory",
+			wantSuggestion: pkTheoryStr,
 		},
 		{
 			name: "description with citation year and external keyword → theory-external",
@@ -201,7 +203,7 @@ func TestMigrate_HeuristicSuggestions(t *testing.T) {
 				ID:          "PROOF-external-cite",
 				Description: "Relies on Hurwitz 1898 theorem as external authority.",
 			},
-			wantSuggestion: "theory-external",
+			wantSuggestion: pkTheoryExternalStr,
 		},
 		{
 			name: "description with bare citation year → theory-external",
@@ -209,7 +211,7 @@ func TestMigrate_HeuristicSuggestions(t *testing.T) {
 				ID:          "PROOF-year-only",
 				Description: "After Einstein 1905, the special theory of relativity implies...",
 			},
-			wantSuggestion: "theory-external",
+			wantSuggestion: pkTheoryExternalStr,
 		},
 		{
 			name: "no citation pattern → theory",
@@ -217,7 +219,7 @@ func TestMigrate_HeuristicSuggestions(t *testing.T) {
 				ID:          "PROOF-internal",
 				Description: "Algebraic derivation from axioms. No external references.",
 			},
-			wantSuggestion: "theory",
+			wantSuggestion: pkTheoryStr,
 		},
 	}
 
@@ -426,7 +428,7 @@ func TestLoadDecisions_ValidFile(t *testing.T) {
 		Anchors: []MigrationDecision{
 			{
 				AnchorID:       "PROOF-foo",
-				ProvenanceKind: "theory-external",
+				ProvenanceKind: pkTheoryExternalStr,
 				TheoryCitation: "Hurwitz, A. (1898).",
 				TheoryDOI:      "10.1000/placeholder",
 				TheoryURL:      "https://example.org/",
@@ -477,7 +479,7 @@ func TestFormatReport_ContainsRequiredSections(t *testing.T) {
 		AnchorCount:     5,
 		MechanicalCount: 3,
 		DecisionsNeeded: []DecisionPrompt{
-			{AnchorID: "PROOF-x", AnchorName: "X", Suggestion: "theory", Rationale: "test"},
+			{AnchorID: "PROOF-x", AnchorName: "X", Suggestion: pkTheoryStr, Rationale: "test"},
 		},
 		DecisionsApplied: []string{"PROOF-y"},
 		Warnings:         []string{"anchor PROOF-z: proof_state set to written"},

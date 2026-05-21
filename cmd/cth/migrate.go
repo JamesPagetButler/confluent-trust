@@ -12,6 +12,15 @@ import (
 	"github.com/JamesPagetButler/confluent-trust/store"
 )
 
+// Canonical wire-form strings for the migration tool's per-anchor decision
+// field. These are the JSON values callers write in their decisions file;
+// kept as constants here so the wire form is the single source of truth and
+// to satisfy CI goconst (the strings recur across migrate.go + tests).
+const (
+	pkTheoryStr         = "theory"
+	pkTheoryExternalStr = "theory-external"
+)
+
 // decisionFile is the top-level shape of the JSON decisions file that callers
 // supply via --decisions.  Each entry resolves the per-anchor ambiguity for
 // one "T"-provenance anchor.
@@ -76,7 +85,7 @@ func suggestProvenance(a model.Anchor) (suggestion, rationale string) {
 
 	if a.ProofFile != "" {
 		// If there is an explicit proof file, we treat it as theory (we wrote it).
-		return "theory", "has proof_file → likely programme-internal argument"
+		return pkTheoryStr, "has proof_file → likely programme-internal argument"
 	}
 	if hasCitation && (strings.Contains(combined, "external") ||
 		strings.Contains(combined, "invoked") ||
@@ -88,12 +97,12 @@ func suggestProvenance(a model.Anchor) (suggestion, rationale string) {
 		strings.Contains(combined, "altland") ||
 		strings.Contains(a.ID, "external") ||
 		strings.Contains(a.ID, "hurwitz") && a.ProofFile == "") {
-		return "theory-external", "description references external authority + citation pattern detected"
+		return pkTheoryExternalStr, "description references external authority + citation pattern detected"
 	}
 	if hasCitation {
-		return "theory-external", "citation-year pattern detected in description/notes; may cite external work"
+		return pkTheoryExternalStr, "citation-year pattern detected in description/notes; may cite external work"
 	}
-	return "theory", "no citation pattern detected → safe default"
+	return pkTheoryStr, "no citation pattern detected → safe default"
 }
 
 // Migrate runs the v0.2 → v0.3 translation, applying any caller-supplied
@@ -193,7 +202,7 @@ func Migrate(inv model.Inventory, decisions []MigrationDecision) (model.Inventor
 			// Per-anchor decision needed: theory vs theory-external.
 			if dec, found := decisionByID[a.ID]; found {
 				switch dec.ProvenanceKind {
-				case "theory-external":
+				case pkTheoryExternalStr:
 					if dec.TheoryCitation == "" {
 						return model.Inventory{}, MigrationReport{},
 							fmt.Errorf("migrate: anchor %s: decision theory-external requires non-empty theory_citation", a.ID)
@@ -202,7 +211,7 @@ func Migrate(inv model.Inventory, decisions []MigrationDecision) (model.Inventor
 					a.TheoryCitation = dec.TheoryCitation
 					a.TheoryDOI = dec.TheoryDOI
 					a.TheoryURL = dec.TheoryURL
-				case "theory", "":
+				case pkTheoryStr, "":
 					a.ProvenanceKind = model.ProvenanceKindTheory
 				default:
 					return model.Inventory{}, MigrationReport{},

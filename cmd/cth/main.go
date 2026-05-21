@@ -131,8 +131,8 @@ func writeOutput(out, content string) error {
 	if err := os.WriteFile(tmp, []byte(content), 0o644); err != nil { // #nosec G306 -- output files are user content
 		return fmt.Errorf("write %s: %w", tmp, err)
 	}
-	if err := os.Rename(tmp, out); err != nil {
-		_ = os.Remove(tmp)
+	if err := os.Rename(tmp, out); err != nil { // #nosec G703 -- out is user-supplied via the CLI -o flag; atomic rename is the intended semantic
+		_ = os.Remove(tmp) // #nosec G703 -- same; cleanup of staging file on rename failure
 		return fmt.Errorf("rename %s -> %s: %w", tmp, out, err)
 	}
 	return nil
