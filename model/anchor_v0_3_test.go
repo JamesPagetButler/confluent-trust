@@ -155,13 +155,18 @@ func TestInvariant3_PartialAllowsMixedTheoremStatus_Positive(t *testing.T) {
 }
 
 // ---- Invariant 4: provenance_kind != proof ⟹ no proof-* fields ----
+// Restored to PR #74 form. CTH #88 P-legacy maps to provenance_kind=theory
+// WITHOUT proof_state by default (preserves Invariant 4). Decisions-file
+// override can set provenance_kind=proof + proof_state=written for
+// proof-file-bearing legacy P anchors.
 
 func TestInvariant4_TheoryWithProofState_Negative(t *testing.T) {
-	a := baseAnchor("PROOF-inv4-theory-neg")
+	// Per design §6 Invariant 4: a theory-kind anchor MUST NOT carry proof_state.
+	a := baseAnchor("PROOF-inv4-theory-ps-neg")
 	a.ProvenanceKind = ProvenanceKindTheory
-	a.ProofState = ProofStateWritten // must be absent
+	a.ProofState = ProofStatePartial
 	if err := a.Validate(); err == nil {
-		t.Error("expected error: theory with proof_state, got nil")
+		t.Error("expected error: theory anchor cannot carry proof_state, got nil")
 	} else if !strings.Contains(err.Error(), "proof_state") {
 		t.Errorf("error %q does not mention proof_state", err)
 	}

@@ -5,6 +5,37 @@ import (
 	"testing"
 )
 
+// TestProvenance_LegacyEnumRoundTrip verifies Marshal/Unmarshal round-trip for
+// the three QBP-local v0.2 legacy Provenance values (D/I/P) added in CTH #88.
+func TestProvenance_LegacyEnumRoundTrip(t *testing.T) {
+	cases := []struct {
+		wantJSON string
+		value    Provenance
+	}{
+		{`"D"`, ProvenanceDerived},
+		{`"I"`, ProvenanceInternalCompute},
+		{`"P"`, ProvenancePhilosophy},
+	}
+	for _, c := range cases {
+		t.Run(c.wantJSON, func(t *testing.T) {
+			b, err := json.Marshal(c.value)
+			if err != nil {
+				t.Fatalf("marshal %v: %v", c.value, err)
+			}
+			if string(b) != c.wantJSON {
+				t.Errorf("marshal: got %s, want %s", b, c.wantJSON)
+			}
+			var got Provenance
+			if err := json.Unmarshal(b, &got); err != nil {
+				t.Fatalf("unmarshal %s: %v", b, err)
+			}
+			if got != c.value {
+				t.Errorf("round-trip drift: %v -> %s -> %v", c.value, b, got)
+			}
+		})
+	}
+}
+
 // TestStatusExtension_V03_RoundTrip verifies marshal/unmarshal round-trip for
 // the four new Status values added in v0.3 (design §3).
 func TestStatusExtension_V03_RoundTrip(t *testing.T) {

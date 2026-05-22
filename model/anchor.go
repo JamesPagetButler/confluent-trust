@@ -138,6 +138,10 @@ func (a Anchor) Validate() error {
 	}
 
 	// Invariant 4 (design §6): provenance_kind != "proof" ⟹ proof-* fields absent.
+	// Restored to PR #74 form; CTH #88 P-legacy maps to theory (no proof_state) by
+	// default per the design-invariant-preserving rule. Decisions-file override
+	// can set provenance_kind="proof" + proof_state="written" + synthesize a
+	// stub verification record for legacy P-with-proof-file anchors.
 	if a.ProvenanceKind != ProvenanceKindProof && a.ProvenanceKind != ProvenanceKindUnknown {
 		if a.ProofState != ProofStateUnknown {
 			return fmt.Errorf("anchor %s: provenance_kind %s cannot carry proof_state", a.ID, a.ProvenanceKind)

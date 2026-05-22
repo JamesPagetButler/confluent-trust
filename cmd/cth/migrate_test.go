@@ -15,8 +15,14 @@ const (
 	qbpV32Fixture      = "../../testdata/qbp_v3_2.json"
 	lifecycleV2Fixture = "../../testdata/predictions_lifecycle.json"
 	lifecycleV3Fixture = "../../testdata/predictions_lifecycle_v0_3.json"
+	qbpLocalV02Fixture = "../../testdata/qbp_local_v0_2.json"
 	// Repeated literals hoisted for goconst.
 	testProofLangLean4 = "lean4"
+	// QBP-local v0.2 fixture anchor IDs (per CTH #88 testdata).
+	idInternalComputeA = "PROOF-internal-compute-a"
+	idInternalComputeB = "PROOF-internal-compute-b"
+	idPhilosophyA      = "PROOF-philosophy-a"
+	idPhilosophyB      = "PROOF-philosophy-b"
 )
 
 // TestMigrate_QBPv3_2_RoundTrip migrates qbp_v3_2.json (59 anchors, all provenance T)
@@ -467,6 +473,240 @@ func TestLoadDecisions_EmptyPath(t *testing.T) {
 	}
 	if len(got) != 0 {
 		t.Errorf("expected empty slice, got %d elements", len(got))
+	}
+}
+
+// ---- QBP-local D/I/P legacy provenance tests (CTH #88) ----
+
+// TestMigrate_QBPLocal_DefaultsTheory migrates qbp_local_v0_2.json with no
+// decisions supplied.  Verifies that D/I/P anchors receive their conservative
+// defaults and are flagged in DecisionsNeeded.
+func TestMigrate_QBPLocal_DefaultsTheory(t *testing.T) {
+	inv, err := store.LoadInventory(qbpLocalV02Fixture)
+	if err != nil {
+		t.Fatalf("LoadInventory: %v", err)
+	}
+
+	migrated, report, err := Migrate(inv, nil)
+	if err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+
+	// Schema version bumped.
+	if migrated.SchemaVersion != store.SchemaV03 {
+		t.Errorf("schema_version: expected v0.3, got %q", migrated.SchemaVersion)
+	}
+
+	// Expected provenance_kind defaults for D/I/P anchors with no decisions.
+	wantKind := map[string]model.ProvenanceKind{
+		"PROOF-derived-a":  model.ProvenanceKindTheory,          // D → theory
+		"PROOF-derived-b":  model.ProvenanceKindTheory,          // D → theory
+		idInternalComputeA: model.ProvenanceKindInternalCompute, // I → internal-compute
+		idInternalComputeB: model.ProvenanceKindInternalCompute, // I → internal-compute
+		idPhilosophyA:      model.ProvenanceKindTheory,          // P → theory
+		idPhilosophyB:      model.ProvenanceKindTheory,          // P → theory
+	}
+
+	for _, a := range migrated.Anchors {
+		want, relevant := wantKind[a.ID]
+		if !relevant {
+			continue
+		}
+		if a.ProvenanceKind != want {
+			t.Errorf("anchor %s: expected provenance_kind %s, got %s", a.ID, want, a.ProvenanceKind)
+		}
+	}
+
+	// All 6 D/I/P anchors should appear in DecisionsNeeded.
+	needsDecision := map[string]bool{}
+	for _, dp := range report.DecisionsNeeded {
+		needsDecision[dp.AnchorID] = true
+	}
+	for id := range wantKind {
+		if !needsDecision[id] {
+			t.Errorf("anchor %s: expected in DecisionsNeeded, not found", id)
+		}
+	}
+}
+
+// TestMigrate_QBPLocal_WithDecisions verifies that a decisions file mapping
+// I→internal-compute and P→theory (default; partial signal lost under v0.3
+// invariants) is applied correctly. Per Invariant 4, P→theory+partial is
+// rejected; the partial signal can only be carried via the
+// provenance_kind=proof + proof_state=written override path (which requires
+// callers to also supply proof_language + verification stub, exceeding the
+// scope of this test).
+func TestMigrate_QBPLocal_WithDecisions(t *testing.T) {
+	inv, err := store.LoadInventory(qbpLocalV02Fixture)
+	if err != nil {
+		t.Fatalf("LoadInventory: %v", err)
+	}
+
+	decisions := []MigrationDecision{
+		{AnchorID: idInternalComputeA, ProvenanceKind: pkInternalComputeStr},
+		{AnchorID: idInternalComputeB, ProvenanceKind: pkInternalComputeStr},
+		{AnchorID: idPhilosophyA, ProvenanceKind: pkTheoryStr},
+		{AnchorID: idPhilosophyB, ProvenanceKind: pkTheoryStr},
+	}
+
+	migrated, report, err := Migrate(inv, decisions)
+	if err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+
+	anchorByID := map[string]model.Anchor{}
+	for _, a := range migrated.Anchors {
+		anchorByID[a.ID] = a
+	}
+
+	// I → internal-compute.
+	for _, id := range []string{idInternalComputeA, idInternalComputeB} {
+		a, ok := anchorByID[id]
+		if !ok {
+			t.Fatalf("anchor %s not found", id)
+		}
+		if a.ProvenanceKind != model.ProvenanceKindInternalCompute {
+			t.Errorf("anchor %s: expected internal-compute, got %s", id, a.ProvenanceKind)
+		}
+	}
+
+	// P → theory (default-safe; partial signal not carried per Invariant 4).
+	for _, id := range []string{idPhilosophyA, idPhilosophyB} {
+		a, ok := anchorByID[id]
+		if !ok {
+			t.Fatalf("anchor %s not found", id)
+		}
+		if a.ProvenanceKind != model.ProvenanceKindTheory {
+			t.Errorf("anchor %s: expected theory, got %s", id, a.ProvenanceKind)
+		}
+		if a.ProofState != model.ProofStateUnknown {
+			t.Errorf("anchor %s: expected proof_state=unset (Invariant 4), got %s", id, a.ProofState)
+		}
+	}
+
+	// All 4 supplied decisions should appear in DecisionsApplied.
+	applied := map[string]bool{}
+	for _, id := range report.DecisionsApplied {
+		applied[id] = true
+	}
+	for _, dec := range decisions {
+		if !applied[dec.AnchorID] {
+			t.Errorf("anchor %s: expected in DecisionsApplied", dec.AnchorID)
+		}
+	}
+}
+
+// TestMigrate_QBPLocal_DecisionsFile_RoundTrip writes the migrated v0.3 output,
+// reloads it, and verifies all formerly-D/I/P anchors carry canonical
+// provenance_kind values (translation is complete).
+func TestMigrate_QBPLocal_DecisionsFile_RoundTrip(t *testing.T) {
+	inv, err := store.LoadInventory(qbpLocalV02Fixture)
+	if err != nil {
+		t.Fatalf("LoadInventory: %v", err)
+	}
+
+	decisions := []MigrationDecision{
+		{AnchorID: "PROOF-derived-a", ProvenanceKind: pkInternalComputeStr},
+		{AnchorID: "PROOF-derived-b", ProvenanceKind: pkTheoryStr},
+		{AnchorID: idInternalComputeA, ProvenanceKind: pkInternalComputeStr},
+		{AnchorID: idInternalComputeB, ProvenanceKind: pkInternalComputeStr},
+		{AnchorID: idPhilosophyA, ProvenanceKind: pkTheoryStr},
+		{AnchorID: idPhilosophyB, ProvenanceKind: pkTheoryStr},
+	}
+
+	migrated, _, err := Migrate(inv, decisions)
+	if err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+
+	// Write and reload.
+	tmpDir := t.TempDir()
+	outPath := tmpDir + "/qbp_local_v03.json"
+	if err := store.SaveInventory(migrated, outPath); err != nil {
+		t.Fatalf("SaveInventory: %v", err)
+	}
+	reloaded, err := store.LoadInventory(outPath)
+	if err != nil {
+		t.Fatalf("round-trip LoadInventory: %v", err)
+	}
+
+	// All formerly-D/I/P anchors must carry a canonical (non-unknown)
+	// provenance_kind in the v0.3 output (translation is complete).
+	// The legacy provenance field may be retained for audit provenance tracking,
+	// but the canonical classification lives in provenance_kind.
+	legacyIDs := map[string]bool{
+		"PROOF-derived-a": true, "PROOF-derived-b": true,
+		idInternalComputeA: true, idInternalComputeB: true,
+		idPhilosophyA: true, idPhilosophyB: true,
+	}
+	for _, a := range reloaded.Anchors {
+		if !legacyIDs[a.ID] {
+			continue
+		}
+		if a.ProvenanceKind == model.ProvenanceKindUnknown {
+			t.Errorf("anchor %s: v0.3 output has no canonical provenance_kind (translation incomplete)", a.ID)
+		}
+	}
+
+	// Schema is v0.3.
+	if reloaded.SchemaVersion != store.SchemaV03 {
+		t.Errorf("round-trip schema_version: expected v0.3, got %q", reloaded.SchemaVersion)
+	}
+
+	// Anchor count preserved.
+	if len(reloaded.Anchors) != len(inv.Anchors) {
+		t.Errorf("round-trip anchor count: expected %d, got %d", len(inv.Anchors), len(reloaded.Anchors))
+	}
+}
+
+// TestMigrate_DecisionsFile_RejectsUnknownProvenanceKind verifies that a
+// decisions file with an invalid provenance_kind value causes a hard error.
+func TestMigrate_DecisionsFile_RejectsUnknownProvenanceKind(t *testing.T) {
+	inv, err := store.LoadInventory(qbpLocalV02Fixture)
+	if err != nil {
+		t.Fatalf("LoadInventory: %v", err)
+	}
+
+	decisions := []MigrationDecision{
+		{AnchorID: "PROOF-derived-a", ProvenanceKind: "made-up-value"},
+	}
+
+	_, _, err = Migrate(inv, decisions)
+	if err == nil {
+		t.Fatal("expected error for unknown provenance_kind, got nil")
+	}
+	if !strings.Contains(err.Error(), "made-up-value") {
+		t.Errorf("error should cite the unknown value; got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "provenance_kind") {
+		t.Errorf("error should mention provenance_kind; got: %v", err)
+	}
+}
+
+// TestMigrate_DecisionsFile_ProofStateOverride_RejectedOnNonProof verifies
+// that supplying proof_state with a non-proof provenance_kind is rejected
+// per Invariant 4 (design §6 PR #74). The check guards against accidental
+// invariant-violating decisions in caller-edited migration files.
+func TestMigrate_DecisionsFile_ProofStateOverride_RejectedOnNonProof(t *testing.T) {
+	inv, err := store.LoadInventory(qbpLocalV02Fixture)
+	if err != nil {
+		t.Fatalf("LoadInventory: %v", err)
+	}
+
+	// Invalid decision: theory + proof_state. Must error.
+	decisions := []MigrationDecision{
+		{AnchorID: "PROOF-theory-a", ProvenanceKind: pkTheoryStr, ProofState: proofStatePartialDecStr},
+	}
+
+	_, _, err = Migrate(inv, decisions)
+	if err == nil {
+		t.Fatal("expected Invariant-4 error on theory+proof_state decision, got nil")
+	}
+	if !strings.Contains(err.Error(), "Invariant 4") {
+		t.Errorf("error should cite Invariant 4; got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "proof_state") {
+		t.Errorf("error should mention proof_state; got: %v", err)
 	}
 }
 

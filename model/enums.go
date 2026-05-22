@@ -49,11 +49,17 @@ const (
 type Provenance uint8
 
 // Provenance values: T = theoretical, E = experimental, H = hypothesis.
+// D, I, P are QBP-local v0.2 legacy values; accepted at read time only.
+// cth migrate translates these to canonical v0.3 provenance_kind values;
+// v0.3 SaveInventory never writes D/I/P.
 const (
 	ProvenanceUnknown Provenance = iota
 	ProvenanceTheoretical
 	ProvenanceExperimental
 	ProvenanceHypothesis
+	ProvenanceDerived         // "D" — QBP-local v0.2 legacy; CTH #88 read-only
+	ProvenanceInternalCompute // "I" — QBP-local v0.2 legacy; CTH #88 read-only
+	ProvenancePhilosophy      // "P" — QBP-local v0.2 legacy; CTH #88 read-only
 )
 
 // ChainProvenance distinguishes how a chain participates in a confluence.
@@ -157,6 +163,11 @@ func (s *Status) UnmarshalJSON(b []byte) error {
 // ---- Provenance ----
 
 // String returns the canonical string form of a Provenance.
+// D/I/P legacy values are returned as their single-letter codes so that
+// round-trips through JSON preserve the original v0.2 wire form at read time.
+// cth migrate translates these to canonical v0.3 provenance_kind values;
+// v0.3 SaveInventory (which writes only canonical provenance_kind) never
+// serialises D/I/P anchors with a legacy Provenance value.
 func (p Provenance) String() string {
 	switch p {
 	case ProvenanceTheoretical:
@@ -165,12 +176,18 @@ func (p Provenance) String() string {
 		return "E"
 	case ProvenanceHypothesis:
 		return "H"
+	case ProvenanceDerived:
+		return "D"
+	case ProvenanceInternalCompute:
+		return "I"
+	case ProvenancePhilosophy:
+		return "P"
 	default:
 		return ""
 	}
 }
 
-// MarshalJSON encodes a Provenance as T / E / H, or null when unknown.
+// MarshalJSON encodes a Provenance as T / E / H / D / I / P, or null when unknown.
 func (p Provenance) MarshalJSON() ([]byte, error) {
 	v := p.String()
 	if v == "" {
@@ -179,8 +196,10 @@ func (p Provenance) MarshalJSON() ([]byte, error) {
 	return json.Marshal(v)
 }
 
-// UnmarshalJSON decodes a Provenance from T / E / H. Unknown values produce
-// a wrapped error; null and the empty string become ProvenanceUnknown.
+// UnmarshalJSON decodes a Provenance from T / E / H / D / I / P. Unknown values
+// produce a wrapped error; null and the empty string become ProvenanceUnknown.
+// D/I/P are QBP-local v0.2 legacy values (CTH #88); they are accepted here so
+// that v0.2 inventories load successfully into the Go model for migration.
 func (p *Provenance) UnmarshalJSON(b []byte) error {
 	if string(b) == jsonNull {
 		*p = ProvenanceUnknown
@@ -199,6 +218,12 @@ func (p *Provenance) UnmarshalJSON(b []byte) error {
 		*p = ProvenanceExperimental
 	case "H":
 		*p = ProvenanceHypothesis
+	case "D":
+		*p = ProvenanceDerived
+	case "I":
+		*p = ProvenanceInternalCompute
+	case "P":
+		*p = ProvenancePhilosophy
 	default:
 		return fmt.Errorf("provenance: unknown value %q", raw)
 	}
