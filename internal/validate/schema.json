@@ -206,20 +206,17 @@
           },
           "then": {
             "properties": {
+              "proof_state":    { "not": {} },
               "proof_language": { "not": {} },
               "theorems":       { "not": {} },
               "verification":   { "not": {} }
-            },
-            "description": "proof_state is permitted on non-proof anchors (e.g. theory+partial for QBP-local P legacy per CTH #88); proof_language, theorems, and verification remain proof-only."
+            }
           }
         },
         {
           "if": {
-            "properties": {
-              "provenance_kind": { "const": "proof" },
-              "proof_state": { "enum": ["verified", "partial"] }
-            },
-            "required": ["provenance_kind", "proof_state"]
+            "properties": { "proof_state": { "enum": ["verified", "partial"] } },
+            "required": ["proof_state"]
           },
           "then": {
             "required": ["verification"],
@@ -227,8 +224,7 @@
               "verification": {
                 "required": ["toolchain", "libraries", "verified_at", "verifier", "result"]
               }
-            },
-            "description": "For proof-kind anchors only, proof_state verified/partial requires a verification record. Non-proof anchors may carry proof_state informally (CTH #88 QBP-local P legacy)."
+            }
           }
         }
       ]

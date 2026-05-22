@@ -258,7 +258,7 @@ func Migrate(inv model.Inventory, decisions []MigrationDecision) (model.Inventor
 		case model.ProvenancePhilosophy: // "P" — QBP-local v0.2 legacy
 			if err := handleQBPLocalProvenance(a, legacyProvPhilosophy, decisionByID, &report,
 				pkTheoryStr,
-				"QBP-local 'P' (partial-verification); suggest theory + proof_state: partial"); err != nil {
+				"QBP-local 'P' (partial-verification): default 'theory' loses partial signal under v0.3 invariants. If proof_file exists, override via decisions file with provenance_kind=\"proof\" + proof_state=\"written\" + a verification stub (verifier=\"qbp-legacy-P\")."); err != nil {
 				return model.Inventory{}, MigrationReport{}, err
 			}
 
@@ -308,8 +308,14 @@ func applyDecision(a *model.Anchor, dec MigrationDecision) error {
 		return fmt.Errorf("migrate: anchor %s: unknown provenance_kind %q in decision; must be one of {theory, theory-external, internal-compute, hypothesis, philosophy}", a.ID, dec.ProvenanceKind)
 	}
 
-	// Apply optional ProofState override from decisions file.
+	// Apply optional ProofState override from decisions file. Per Invariant 4
+	// (design §6) proof_state is admissible only on provenance_kind="proof"
+	// anchors; reject decisions that pair proof_state with non-proof kinds.
 	if dec.ProofState != "" {
+		if dec.ProvenanceKind != "proof" {
+			return fmt.Errorf("migrate: anchor %s: proof_state %q requires provenance_kind=\"proof\" (Invariant 4); got %q",
+				a.ID, dec.ProofState, dec.ProvenanceKind)
+		}
 		switch dec.ProofState {
 		case proofStateVerifiedDecStr:
 			a.ProofState = model.ProofStateVerified
