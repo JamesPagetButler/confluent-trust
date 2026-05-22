@@ -1,0 +1,188 @@
+{
+  "$comment": "QBP-local v0.2 fixture (CTH #88): exercises all 5 QBP legacy provenance values (T x2, E x1, D x2, I x2, P x2) for cth migrate D/I/P extension tests.",
+  "schema_version": "v0.2",
+  "programme": "QBP-LOCAL-LEGACY",
+  "version": "0.1",
+  "full_name": "QBP local provenance legacy fixture",
+  "timestamp": "2026-05-21T00:00:00Z",
+  "axioms": [
+    {
+      "id": "AXIOM-base",
+      "name": "Base axiom",
+      "statement": "Quaternion algebra underlies the standard model gauge structure.",
+      "derivable": false
+    }
+  ],
+  "anchors": [
+    {
+      "id": "PROOF-theory-a",
+      "name": "Theoretical claim A",
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent",
+      "description": "Internal programme-derived theoretical argument with no external citation.",
+      "prediction_chain": ["AXIOM-base"]
+    },
+    {
+      "id": "PROOF-theory-b",
+      "name": "Theoretical claim B (external)",
+      "tier": 1,
+      "provenance": "T",
+      "status": "coherent",
+      "description": "Relies on Hurwitz 1898 theorem. External authority invoked as foundational result.",
+      "notes": "Hurwitz 1898 classification of real normed division algebras.",
+      "prediction_chain": ["AXIOM-base"]
+    },
+    {
+      "id": "MEAS-experiment-a",
+      "name": "Experimental measurement A",
+      "tier": 2,
+      "provenance": "E",
+      "status": "coherent",
+      "description": "LHC measurement confirming predicted coupling ratio.",
+      "predicted_value": 137.036,
+      "predicted_unit": "dimensionless",
+      "measured_value": 137.035,
+      "measured_error": 0.005,
+      "measured_source": "ATLAS collaboration run-3",
+      "prediction_chain": ["PROOF-theory-a"]
+    },
+    {
+      "id": "PROOF-derived-a",
+      "name": "Programme-derived claim A",
+      "tier": 1,
+      "provenance": "D",
+      "status": "coherent",
+      "description": "Derived within the programme from first principles. Could become theory or internal-compute.",
+      "prediction_chain": ["AXIOM-base"]
+    },
+    {
+      "id": "PROOF-derived-b",
+      "name": "Programme-derived claim B",
+      "tier": 1,
+      "provenance": "D",
+      "status": "untested",
+      "description": "Programme derivation awaiting external corroboration. Likely maps to theory.",
+      "prediction_chain": ["AXIOM-base"]
+    },
+    {
+      "id": "PROOF-internal-compute-a",
+      "name": "Internal computation result A",
+      "tier": 1,
+      "provenance": "I",
+      "status": "coherent",
+      "description": "Numerical computation: eigenvalue spectrum of the exceptional Jordan algebra J3(O). Result confirmed by independent script.",
+      "prediction_chain": ["AXIOM-base"]
+    },
+    {
+      "id": "PROOF-internal-compute-b",
+      "name": "Internal computation result B",
+      "tier": 1,
+      "provenance": "I",
+      "status": "coherent",
+      "description": "Symbolic computation of gauge-coupling ratios from octonion structure constants. Maps cleanly to internal-compute.",
+      "prediction_chain": ["PROOF-internal-compute-a"]
+    },
+    {
+      "id": "PROOF-philosophy-a",
+      "name": "Partially-verified philosophical claim A",
+      "tier": 1,
+      "provenance": "P",
+      "status": "coherent",
+      "description": "Programmatic principle: the unique division algebras select the gauge groups. Partial verification via dimensional argument.",
+      "prediction_chain": ["AXIOM-base"]
+    },
+    {
+      "id": "PROOF-philosophy-b",
+      "name": "Partially-verified philosophical claim B",
+      "tier": 1,
+      "provenance": "P",
+      "status": "contested",
+      "description": "Programmatic commitment to non-associativity as physics. Partially verified via octonion loop argument; contested by standard approach.",
+      "prediction_chain": ["PROOF-philosophy-a"]
+    }
+  ],
+  "chains": [
+    {
+      "id": "CHAIN-base-theory-a",
+      "name": "AXIOM-base -> PROOF-theory-a",
+      "source_ids": ["AXIOM-base"],
+      "target_id": "PROOF-theory-a",
+      "steps": 1,
+      "status": "coherent",
+      "fidelity": 0.99
+    },
+    {
+      "id": "CHAIN-base-theory-b",
+      "name": "AXIOM-base -> PROOF-theory-b",
+      "source_ids": ["AXIOM-base"],
+      "target_id": "PROOF-theory-b",
+      "steps": 1,
+      "status": "coherent",
+      "fidelity": 0.95
+    },
+    {
+      "id": "CHAIN-theory-a-meas",
+      "name": "PROOF-theory-a -> MEAS-experiment-a",
+      "source_ids": ["PROOF-theory-a"],
+      "target_id": "MEAS-experiment-a",
+      "steps": 1,
+      "status": "coherent",
+      "fidelity": 0.98
+    },
+    {
+      "id": "CHAIN-base-derived-a",
+      "name": "AXIOM-base -> PROOF-derived-a",
+      "source_ids": ["AXIOM-base"],
+      "target_id": "PROOF-derived-a",
+      "steps": 1,
+      "status": "coherent",
+      "fidelity": 0.90
+    },
+    {
+      "id": "CHAIN-base-derived-b",
+      "name": "AXIOM-base -> PROOF-derived-b",
+      "source_ids": ["AXIOM-base"],
+      "target_id": "PROOF-derived-b",
+      "steps": 1,
+      "status": "untested",
+      "fidelity": 0.80
+    },
+    {
+      "id": "CHAIN-base-internal-a",
+      "name": "AXIOM-base -> PROOF-internal-compute-a",
+      "source_ids": ["AXIOM-base"],
+      "target_id": "PROOF-internal-compute-a",
+      "steps": 1,
+      "status": "coherent",
+      "fidelity": 0.95
+    },
+    {
+      "id": "CHAIN-internal-a-b",
+      "name": "PROOF-internal-compute-a -> PROOF-internal-compute-b",
+      "source_ids": ["PROOF-internal-compute-a"],
+      "target_id": "PROOF-internal-compute-b",
+      "steps": 1,
+      "status": "coherent",
+      "fidelity": 0.93
+    },
+    {
+      "id": "CHAIN-base-philosophy-a",
+      "name": "AXIOM-base -> PROOF-philosophy-a",
+      "source_ids": ["AXIOM-base"],
+      "target_id": "PROOF-philosophy-a",
+      "steps": 1,
+      "status": "coherent",
+      "fidelity": 0.85
+    },
+    {
+      "id": "CHAIN-philosophy-a-b",
+      "name": "PROOF-philosophy-a -> PROOF-philosophy-b",
+      "source_ids": ["PROOF-philosophy-a"],
+      "target_id": "PROOF-philosophy-b",
+      "steps": 1,
+      "status": "contested",
+      "fidelity": 0.70
+    }
+  ]
+}

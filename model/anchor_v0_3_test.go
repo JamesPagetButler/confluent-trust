@@ -154,16 +154,18 @@ func TestInvariant3_PartialAllowsMixedTheoremStatus_Positive(t *testing.T) {
 	}
 }
 
-// ---- Invariant 4: provenance_kind != proof ⟹ no proof-* fields ----
+// ---- Invariant 4: provenance_kind != proof ⟹ no formal-proof fields ----
+// proof_state is permitted on non-proof anchors since CTH #88 (QBP-local P legacy
+// maps to theory + proof_state: partial to capture partial-verification semantics).
 
-func TestInvariant4_TheoryWithProofState_Negative(t *testing.T) {
-	a := baseAnchor("PROOF-inv4-theory-neg")
+func TestInvariant4_TheoryWithProofState_Positive(t *testing.T) {
+	// CTH #88: proof_state is now allowed on theory anchors (and other
+	// non-proof kinds) to represent partial-verification provenance.
+	a := baseAnchor("PROOF-inv4-theory-ps-pos")
 	a.ProvenanceKind = ProvenanceKindTheory
-	a.ProofState = ProofStateWritten // must be absent
-	if err := a.Validate(); err == nil {
-		t.Error("expected error: theory with proof_state, got nil")
-	} else if !strings.Contains(err.Error(), "proof_state") {
-		t.Errorf("error %q does not mention proof_state", err)
+	a.ProofState = ProofStatePartial // allowed since CTH #88
+	if err := a.Validate(); err != nil {
+		t.Errorf("expected valid theory anchor with proof_state=partial, got: %v", err)
 	}
 }
 

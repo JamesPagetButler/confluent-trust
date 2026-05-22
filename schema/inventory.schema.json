@@ -52,8 +52,8 @@
     },
     "Provenance": {
       "type": "string",
-      "enum": ["T", "E", "H"],
-      "description": "T=theoretical, E=experimental, H=hypothesis."
+      "enum": ["T", "E", "H", "D", "I", "P"],
+      "description": "T=theoretical, E=experimental, H=hypothesis. D/I/P are QBP-local v0.2 legacy values accepted at read time only; cth migrate translates to canonical v0.3 provenance_kind; v0.3 SaveInventory writes only canonical values."
     },
     "ChainProvenance": {
       "type": "string",
@@ -206,17 +206,20 @@
           },
           "then": {
             "properties": {
-              "proof_state":    { "not": {} },
               "proof_language": { "not": {} },
               "theorems":       { "not": {} },
               "verification":   { "not": {} }
-            }
+            },
+            "description": "proof_state is permitted on non-proof anchors (e.g. theory+partial for QBP-local P legacy per CTH #88); proof_language, theorems, and verification remain proof-only."
           }
         },
         {
           "if": {
-            "properties": { "proof_state": { "enum": ["verified", "partial"] } },
-            "required": ["proof_state"]
+            "properties": {
+              "provenance_kind": { "const": "proof" },
+              "proof_state": { "enum": ["verified", "partial"] }
+            },
+            "required": ["provenance_kind", "proof_state"]
           },
           "then": {
             "required": ["verification"],
@@ -224,7 +227,8 @@
               "verification": {
                 "required": ["toolchain", "libraries", "verified_at", "verifier", "result"]
               }
-            }
+            },
+            "description": "For proof-kind anchors only, proof_state verified/partial requires a verification record. Non-proof anchors may carry proof_state informally (CTH #88 QBP-local P legacy)."
           }
         }
       ]

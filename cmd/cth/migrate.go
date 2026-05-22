@@ -17,8 +17,22 @@ import (
 // kept as constants here so the wire form is the single source of truth and
 // to satisfy CI goconst (the strings recur across migrate.go + tests).
 const (
-	pkTheoryStr         = "theory"
-	pkTheoryExternalStr = "theory-external"
+	pkTheoryStr          = "theory"
+	pkTheoryExternalStr  = "theory-external"
+	pkInternalComputeStr = "internal-compute" // v0.3 canonical; also suggested for QBP "I" legacy
+	pkHypothesisStr      = "hypothesis"       // v0.3 canonical
+	pkPhilosophyStr      = "philosophy"       // v0.3 canonical; also suggested for QBP "P" legacy
+
+	// Legacy single-letter codes for the QBP-local v0.2 provenance values.
+	// Used only as human-readable context in suggestion rationale strings.
+	legacyProvDerived         = "D" // programme-derived; maps to theory or internal-compute
+	legacyProvInternalCompute = "I" // calculation-derived; maps to internal-compute
+	legacyProvPhilosophy      = "P" // partial-verification; maps to theory + proof_state: partial
+
+	// Wire-form strings for the decisions-file ProofState field.
+	proofStateVerifiedDecStr = "verified"
+	proofStatePartialDecStr  = "partial"
+	proofStateWrittenDecStr  = "written"
 )
 
 // decisionFile is the top-level shape of the JSON decisions file that callers
@@ -29,17 +43,24 @@ type decisionFile struct {
 }
 
 // MigrationDecision is a per-anchor caller-supplied resolution for ambiguous
-// translations (currently only the "T" → theory/theory-external split).
+// translations.  Extended in CTH #88 to cover QBP-local D/I/P legacy values.
 type MigrationDecision struct {
 	// AnchorID matches Anchor.ID.
 	AnchorID string `json:"id"`
-	// ProvenanceKind must be "theory" or "theory-external"; other values are rejected.
+	// ProvenanceKind must be one of: theory | theory-external | internal-compute |
+	// hypothesis | philosophy.  Other values are rejected.
+	// Previous (PR #75): theory | theory-external only.
 	ProvenanceKind string `json:"provenance_kind"`
 	// TheoryCitation is required when ProvenanceKind == "theory-external".
 	TheoryCitation string `json:"theory_citation,omitempty"`
 	// TheoryDOI and TheoryURL are optional even for theory-external anchors.
 	TheoryDOI string `json:"theory_doi,omitempty"`
 	TheoryURL string `json:"theory_url,omitempty"`
+	// ProofState is an optional per-anchor proof_state override for QBP-local
+	// P → theory+partial translations.  Values: verified | partial | written.
+	// Omitting falls back to migrate default (no proof_state set for non-proof anchors).
+	// Only meaningful when ProvenanceKind is "theory" or related non-proof kind.
+	ProofState string `json:"proof_state,omitempty"`
 }
 
 // MigrationReport summarises a translate pass: which anchors translated
@@ -201,21 +222,8 @@ func Migrate(inv model.Inventory, decisions []MigrationDecision) (model.Inventor
 		case model.ProvenanceTheoretical: // "T"
 			// Per-anchor decision needed: theory vs theory-external.
 			if dec, found := decisionByID[a.ID]; found {
-				switch dec.ProvenanceKind {
-				case pkTheoryExternalStr:
-					if dec.TheoryCitation == "" {
-						return model.Inventory{}, MigrationReport{},
-							fmt.Errorf("migrate: anchor %s: decision theory-external requires non-empty theory_citation", a.ID)
-					}
-					a.ProvenanceKind = model.ProvenanceKindTheoryExternal
-					a.TheoryCitation = dec.TheoryCitation
-					a.TheoryDOI = dec.TheoryDOI
-					a.TheoryURL = dec.TheoryURL
-				case pkTheoryStr, "":
-					a.ProvenanceKind = model.ProvenanceKindTheory
-				default:
-					return model.Inventory{}, MigrationReport{},
-						fmt.Errorf("migrate: anchor %s: unknown provenance_kind %q in decision; must be \"theory\" or \"theory-external\"", a.ID, dec.ProvenanceKind)
+				if err := applyDecision(a, dec); err != nil {
+					return model.Inventory{}, MigrationReport{}, err
 				}
 				report.DecisionsApplied = append(report.DecisionsApplied, a.ID)
 				report.MechanicalCount++
@@ -233,20 +241,133 @@ func Migrate(inv model.Inventory, decisions []MigrationDecision) (model.Inventor
 				report.MechanicalCount++
 			}
 
+		case model.ProvenanceDerived: // "D" — QBP-local v0.2 legacy
+			if err := handleQBPLocalProvenance(a, legacyProvDerived, decisionByID, &report,
+				pkTheoryStr,
+				"QBP-local 'D' (programme-derived); suggest theory or internal-compute"); err != nil {
+				return model.Inventory{}, MigrationReport{}, err
+			}
+
+		case model.ProvenanceInternalCompute: // "I" — QBP-local v0.2 legacy
+			if err := handleQBPLocalProvenance(a, legacyProvInternalCompute, decisionByID, &report,
+				pkInternalComputeStr,
+				"QBP-local 'I' (calculation-derived); suggest internal-compute"); err != nil {
+				return model.Inventory{}, MigrationReport{}, err
+			}
+
+		case model.ProvenancePhilosophy: // "P" — QBP-local v0.2 legacy
+			if err := handleQBPLocalProvenance(a, legacyProvPhilosophy, decisionByID, &report,
+				pkTheoryStr,
+				"QBP-local 'P' (partial-verification); suggest theory + proof_state: partial"); err != nil {
+				return model.Inventory{}, MigrationReport{}, err
+			}
+
 		case model.ProvenanceUnknown:
 			// provenance absent in v0.2 input → leave ProvenanceKind unset.
 			report.MechanicalCount++
 		}
-
-		// Handle QBP-local provenance extensions that LoadInventory accepted
-		// via the permissive v0.2 schema.  These are encoded as the raw string
-		// in the JSON and are decoded via ProvenanceKind's UnmarshalJSON if the
-		// input already carried provenance_kind.  For anchors that only have the
-		// legacy Provenance field these cases can't arise (the Provenance enum
-		// only has T/E/H + Unknown).  Nothing to do here.
 	}
 
 	return out, report, nil
+}
+
+// validProvenanceKinds is the complete set of allowable ProvenanceKind strings
+// in a decisions file.  Hoisted as a constant-like var for goconst compliance
+// and to provide a single source of truth for error messages.
+var validProvenanceKinds = map[string]model.ProvenanceKind{
+	pkTheoryStr:          model.ProvenanceKindTheory,
+	pkTheoryExternalStr:  model.ProvenanceKindTheoryExternal,
+	pkInternalComputeStr: model.ProvenanceKindInternalCompute,
+	pkHypothesisStr:      model.ProvenanceKindHypothesis,
+	pkPhilosophyStr:      model.ProvenanceKindPhilosophy,
+}
+
+// applyDecision applies a caller-supplied MigrationDecision to anchor a.
+// It validates ProvenanceKind, enforces theory-external citation requirement,
+// copies citation fields, and applies an optional ProofState override.
+// Returns an error for any invalid decision field.
+func applyDecision(a *model.Anchor, dec MigrationDecision) error {
+	switch dec.ProvenanceKind {
+	case pkTheoryExternalStr:
+		if dec.TheoryCitation == "" {
+			return fmt.Errorf("migrate: anchor %s: decision theory-external requires non-empty theory_citation", a.ID)
+		}
+		a.ProvenanceKind = model.ProvenanceKindTheoryExternal
+		a.TheoryCitation = dec.TheoryCitation
+		a.TheoryDOI = dec.TheoryDOI
+		a.TheoryURL = dec.TheoryURL
+	case pkTheoryStr, "":
+		a.ProvenanceKind = model.ProvenanceKindTheory
+	case pkInternalComputeStr:
+		a.ProvenanceKind = model.ProvenanceKindInternalCompute
+	case pkHypothesisStr:
+		a.ProvenanceKind = model.ProvenanceKindHypothesis
+	case pkPhilosophyStr:
+		a.ProvenanceKind = model.ProvenanceKindPhilosophy
+	default:
+		return fmt.Errorf("migrate: anchor %s: unknown provenance_kind %q in decision; must be one of {theory, theory-external, internal-compute, hypothesis, philosophy}", a.ID, dec.ProvenanceKind)
+	}
+
+	// Apply optional ProofState override from decisions file.
+	if dec.ProofState != "" {
+		switch dec.ProofState {
+		case proofStateVerifiedDecStr:
+			a.ProofState = model.ProofStateVerified
+		case proofStatePartialDecStr:
+			a.ProofState = model.ProofStatePartial
+		case proofStateWrittenDecStr:
+			a.ProofState = model.ProofStateWritten
+		default:
+			return fmt.Errorf("migrate: anchor %s: unknown proof_state %q in decision; must be one of {verified, partial, written}", a.ID, dec.ProofState)
+		}
+	}
+	return nil
+}
+
+// handleQBPLocalProvenance processes a QBP-local legacy provenance value (D/I/P).
+// If a decision is present for this anchor, it is applied via applyDecision
+// and any invalid ProvenanceKind causes a hard error (consistent with the T
+// branch behaviour).  If no decision is present, the anchor receives the
+// supplied defaultKind and is flagged in DecisionsNeeded with the supplied
+// rationale.  In either case the legacy Provenance field is cleared to
+// ProvenanceUnknown (null in JSON) so that v0.3 output does not carry D/I/P
+// wire values (spec constraint: v0.3 SaveInventory must not write D/I/P).
+// Returns a non-nil error only when an explicit decision is present but
+// invalid; the caller propagates this as a top-level Migrate error.
+func handleQBPLocalProvenance(
+	a *model.Anchor,
+	_ string, // legacyCode: reserved for future diagnostic use
+	decisionByID map[string]MigrationDecision,
+	report *MigrationReport,
+	defaultKind string,
+	rationale string,
+) error {
+	if dec, found := decisionByID[a.ID]; found {
+		if err := applyDecision(a, dec); err != nil {
+			return err
+		}
+		report.DecisionsApplied = append(report.DecisionsApplied, a.ID)
+	} else {
+		a.ProvenanceKind = mustProvenanceKind(defaultKind)
+		report.DecisionsNeeded = append(report.DecisionsNeeded, DecisionPrompt{
+			AnchorID:    a.ID,
+			AnchorName:  a.Name,
+			Description: a.Description,
+			Suggestion:  defaultKind,
+			Rationale:   rationale,
+		})
+	}
+	report.MechanicalCount++
+	return nil
+}
+
+// mustProvenanceKind returns the ProvenanceKind for a known canonical string.
+// Panics on unknown strings — callers must only pass compile-time constants.
+func mustProvenanceKind(s string) model.ProvenanceKind {
+	if pk, ok := validProvenanceKinds[s]; ok {
+		return pk
+	}
+	panic(fmt.Sprintf("mustProvenanceKind: unknown canonical kind %q", s))
 }
 
 // LoadDecisions reads a JSON decisions file.  Returns an empty slice if path

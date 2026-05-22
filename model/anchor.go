@@ -137,11 +137,11 @@ func (a Anchor) Validate() error {
 		return fmt.Errorf("anchor %s: tier %d out of range [1,3]", a.ID, a.Tier)
 	}
 
-	// Invariant 4 (design §6): provenance_kind != "proof" ⟹ proof-* fields absent.
+	// Invariant 4 (design §6): provenance_kind != "proof" ⟹ formal-proof fields absent.
+	// proof_state is allowed on non-proof anchors to represent partial-verification
+	// provenance (e.g. QBP-local "P" legacy migrated to theory+partial per CTH #88).
+	// proof_language, theorems, and verification remain proof-only.
 	if a.ProvenanceKind != ProvenanceKindProof && a.ProvenanceKind != ProvenanceKindUnknown {
-		if a.ProofState != ProofStateUnknown {
-			return fmt.Errorf("anchor %s: provenance_kind %s cannot carry proof_state", a.ID, a.ProvenanceKind)
-		}
 		if a.ProofLanguage != "" {
 			return fmt.Errorf("anchor %s: provenance_kind %s cannot carry proof_language", a.ID, a.ProvenanceKind)
 		}
@@ -162,18 +162,22 @@ func (a Anchor) Validate() error {
 		}
 	}
 
-	// Invariant 2 (design §6): proof_state ∈ {verified, partial} ⟹ verification non-null
-	// + toolchain non-empty + each library has non-empty sha.
-	if a.ProofState == ProofStateVerified || a.ProofState == ProofStatePartial {
-		if a.Verification == nil {
-			return fmt.Errorf("anchor %s: proof_state %s requires verification record", a.ID, a.ProofState)
-		}
-		if a.Verification.Toolchain == "" {
-			return fmt.Errorf("anchor %s: verification requires non-empty toolchain", a.ID)
-		}
-		for lib, ref := range a.Verification.Libraries {
-			if ref.SHA == "" {
-				return fmt.Errorf("anchor %s: verification.libraries[%s] requires non-empty sha", a.ID, lib)
+	// Invariant 2 (design §6): for proof-kind anchors, proof_state ∈ {verified, partial}
+	// requires a verification record with non-empty toolchain and library SHAs.
+	// Non-proof anchors may carry proof_state (CTH #88 QBP-local P legacy) without
+	// a formal verification record; the proof_state is informational in that context.
+	if a.ProvenanceKind == ProvenanceKindProof || a.ProvenanceKind == ProvenanceKindUnknown {
+		if a.ProofState == ProofStateVerified || a.ProofState == ProofStatePartial {
+			if a.Verification == nil {
+				return fmt.Errorf("anchor %s: proof_state %s requires verification record", a.ID, a.ProofState)
+			}
+			if a.Verification.Toolchain == "" {
+				return fmt.Errorf("anchor %s: verification requires non-empty toolchain", a.ID)
+			}
+			for lib, ref := range a.Verification.Libraries {
+				if ref.SHA == "" {
+					return fmt.Errorf("anchor %s: verification.libraries[%s] requires non-empty sha", a.ID, lib)
+				}
 			}
 		}
 	}

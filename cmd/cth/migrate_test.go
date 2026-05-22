@@ -15,6 +15,7 @@ const (
 	qbpV32Fixture      = "../../testdata/qbp_v3_2.json"
 	lifecycleV2Fixture = "../../testdata/predictions_lifecycle.json"
 	lifecycleV3Fixture = "../../testdata/predictions_lifecycle_v0_3.json"
+	qbpLocalV02Fixture = "../../testdata/qbp_local_v0_2.json"
 	// Repeated literals hoisted for goconst.
 	testProofLangLean4 = "lean4"
 )
@@ -467,6 +468,244 @@ func TestLoadDecisions_EmptyPath(t *testing.T) {
 	}
 	if len(got) != 0 {
 		t.Errorf("expected empty slice, got %d elements", len(got))
+	}
+}
+
+// ---- QBP-local D/I/P legacy provenance tests (CTH #88) ----
+
+// TestMigrate_QBPLocal_DefaultsTheory migrates qbp_local_v0_2.json with no
+// decisions supplied.  Verifies that D/I/P anchors receive their conservative
+// defaults and are flagged in DecisionsNeeded.
+func TestMigrate_QBPLocal_DefaultsTheory(t *testing.T) {
+	inv, err := store.LoadInventory(qbpLocalV02Fixture)
+	if err != nil {
+		t.Fatalf("LoadInventory: %v", err)
+	}
+
+	migrated, report, err := Migrate(inv, nil)
+	if err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+
+	// Schema version bumped.
+	if migrated.SchemaVersion != store.SchemaV03 {
+		t.Errorf("schema_version: expected v0.3, got %q", migrated.SchemaVersion)
+	}
+
+	// Expected provenance_kind defaults for D/I/P anchors with no decisions.
+	wantKind := map[string]model.ProvenanceKind{
+		"PROOF-derived-a":          model.ProvenanceKindTheory,          // D → theory
+		"PROOF-derived-b":          model.ProvenanceKindTheory,          // D → theory
+		"PROOF-internal-compute-a": model.ProvenanceKindInternalCompute, // I → internal-compute
+		"PROOF-internal-compute-b": model.ProvenanceKindInternalCompute, // I → internal-compute
+		"PROOF-philosophy-a":       model.ProvenanceKindTheory,          // P → theory
+		"PROOF-philosophy-b":       model.ProvenanceKindTheory,          // P → theory
+	}
+
+	for _, a := range migrated.Anchors {
+		want, relevant := wantKind[a.ID]
+		if !relevant {
+			continue
+		}
+		if a.ProvenanceKind != want {
+			t.Errorf("anchor %s: expected provenance_kind %s, got %s", a.ID, want, a.ProvenanceKind)
+		}
+	}
+
+	// All 6 D/I/P anchors should appear in DecisionsNeeded.
+	needsDecision := map[string]bool{}
+	for _, dp := range report.DecisionsNeeded {
+		needsDecision[dp.AnchorID] = true
+	}
+	for id := range wantKind {
+		if !needsDecision[id] {
+			t.Errorf("anchor %s: expected in DecisionsNeeded, not found", id)
+		}
+	}
+}
+
+// TestMigrate_QBPLocal_WithDecisions verifies that a decisions file mapping
+// I→internal-compute and P→theory+proof_state:partial is applied correctly.
+func TestMigrate_QBPLocal_WithDecisions(t *testing.T) {
+	inv, err := store.LoadInventory(qbpLocalV02Fixture)
+	if err != nil {
+		t.Fatalf("LoadInventory: %v", err)
+	}
+
+	decisions := []MigrationDecision{
+		{AnchorID: "PROOF-internal-compute-a", ProvenanceKind: pkInternalComputeStr},
+		{AnchorID: "PROOF-internal-compute-b", ProvenanceKind: pkInternalComputeStr},
+		{AnchorID: "PROOF-philosophy-a", ProvenanceKind: pkTheoryStr, ProofState: proofStatePartialDecStr},
+		{AnchorID: "PROOF-philosophy-b", ProvenanceKind: pkTheoryStr, ProofState: proofStatePartialDecStr},
+	}
+
+	migrated, report, err := Migrate(inv, decisions)
+	if err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+
+	anchorByID := map[string]model.Anchor{}
+	for _, a := range migrated.Anchors {
+		anchorByID[a.ID] = a
+	}
+
+	// I → internal-compute.
+	for _, id := range []string{"PROOF-internal-compute-a", "PROOF-internal-compute-b"} {
+		a, ok := anchorByID[id]
+		if !ok {
+			t.Fatalf("anchor %s not found", id)
+		}
+		if a.ProvenanceKind != model.ProvenanceKindInternalCompute {
+			t.Errorf("anchor %s: expected internal-compute, got %s", id, a.ProvenanceKind)
+		}
+	}
+
+	// P → theory + proof_state: partial.
+	for _, id := range []string{"PROOF-philosophy-a", "PROOF-philosophy-b"} {
+		a, ok := anchorByID[id]
+		if !ok {
+			t.Fatalf("anchor %s not found", id)
+		}
+		if a.ProvenanceKind != model.ProvenanceKindTheory {
+			t.Errorf("anchor %s: expected theory, got %s", id, a.ProvenanceKind)
+		}
+		if a.ProofState != model.ProofStatePartial {
+			t.Errorf("anchor %s: expected proof_state=partial, got %s", id, a.ProofState)
+		}
+	}
+
+	// All 4 supplied decisions should appear in DecisionsApplied.
+	applied := map[string]bool{}
+	for _, id := range report.DecisionsApplied {
+		applied[id] = true
+	}
+	for _, dec := range decisions {
+		if !applied[dec.AnchorID] {
+			t.Errorf("anchor %s: expected in DecisionsApplied", dec.AnchorID)
+		}
+	}
+}
+
+// TestMigrate_QBPLocal_DecisionsFile_RoundTrip writes the migrated v0.3 output,
+// reloads it, and verifies all formerly-D/I/P anchors carry canonical
+// provenance_kind values (translation is complete).
+func TestMigrate_QBPLocal_DecisionsFile_RoundTrip(t *testing.T) {
+	inv, err := store.LoadInventory(qbpLocalV02Fixture)
+	if err != nil {
+		t.Fatalf("LoadInventory: %v", err)
+	}
+
+	decisions := []MigrationDecision{
+		{AnchorID: "PROOF-derived-a", ProvenanceKind: pkInternalComputeStr},
+		{AnchorID: "PROOF-derived-b", ProvenanceKind: pkTheoryStr},
+		{AnchorID: "PROOF-internal-compute-a", ProvenanceKind: pkInternalComputeStr},
+		{AnchorID: "PROOF-internal-compute-b", ProvenanceKind: pkInternalComputeStr},
+		{AnchorID: "PROOF-philosophy-a", ProvenanceKind: pkTheoryStr, ProofState: proofStatePartialDecStr},
+		{AnchorID: "PROOF-philosophy-b", ProvenanceKind: pkTheoryStr, ProofState: proofStatePartialDecStr},
+	}
+
+	migrated, _, err := Migrate(inv, decisions)
+	if err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+
+	// Write and reload.
+	tmpDir := t.TempDir()
+	outPath := tmpDir + "/qbp_local_v03.json"
+	if err := store.SaveInventory(migrated, outPath); err != nil {
+		t.Fatalf("SaveInventory: %v", err)
+	}
+	reloaded, err := store.LoadInventory(outPath)
+	if err != nil {
+		t.Fatalf("round-trip LoadInventory: %v", err)
+	}
+
+	// All formerly-D/I/P anchors must carry a canonical (non-unknown)
+	// provenance_kind in the v0.3 output (translation is complete).
+	// The legacy provenance field may be retained for audit provenance tracking,
+	// but the canonical classification lives in provenance_kind.
+	legacyIDs := map[string]bool{
+		"PROOF-derived-a": true, "PROOF-derived-b": true,
+		"PROOF-internal-compute-a": true, "PROOF-internal-compute-b": true,
+		"PROOF-philosophy-a": true, "PROOF-philosophy-b": true,
+	}
+	for _, a := range reloaded.Anchors {
+		if !legacyIDs[a.ID] {
+			continue
+		}
+		if a.ProvenanceKind == model.ProvenanceKindUnknown {
+			t.Errorf("anchor %s: v0.3 output has no canonical provenance_kind (translation incomplete)", a.ID)
+		}
+	}
+
+	// Schema is v0.3.
+	if reloaded.SchemaVersion != store.SchemaV03 {
+		t.Errorf("round-trip schema_version: expected v0.3, got %q", reloaded.SchemaVersion)
+	}
+
+	// Anchor count preserved.
+	if len(reloaded.Anchors) != len(inv.Anchors) {
+		t.Errorf("round-trip anchor count: expected %d, got %d", len(inv.Anchors), len(reloaded.Anchors))
+	}
+}
+
+// TestMigrate_DecisionsFile_RejectsUnknownProvenanceKind verifies that a
+// decisions file with an invalid provenance_kind value causes a hard error.
+func TestMigrate_DecisionsFile_RejectsUnknownProvenanceKind(t *testing.T) {
+	inv, err := store.LoadInventory(qbpLocalV02Fixture)
+	if err != nil {
+		t.Fatalf("LoadInventory: %v", err)
+	}
+
+	decisions := []MigrationDecision{
+		{AnchorID: "PROOF-derived-a", ProvenanceKind: "made-up-value"},
+	}
+
+	_, _, err = Migrate(inv, decisions)
+	if err == nil {
+		t.Fatal("expected error for unknown provenance_kind, got nil")
+	}
+	if !strings.Contains(err.Error(), "made-up-value") {
+		t.Errorf("error should cite the unknown value; got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "provenance_kind") {
+		t.Errorf("error should mention provenance_kind; got: %v", err)
+	}
+}
+
+// TestMigrate_DecisionsFile_ProofStateOverride verifies that a T-provenance
+// anchor can receive a proof_state override from the decisions file.
+func TestMigrate_DecisionsFile_ProofStateOverride(t *testing.T) {
+	inv, err := store.LoadInventory(qbpLocalV02Fixture)
+	if err != nil {
+		t.Fatalf("LoadInventory: %v", err)
+	}
+
+	// PROOF-theory-a is a T anchor; supply theory + proof_state: partial.
+	decisions := []MigrationDecision{
+		{AnchorID: "PROOF-theory-a", ProvenanceKind: pkTheoryStr, ProofState: proofStatePartialDecStr},
+	}
+
+	migrated, _, err := Migrate(inv, decisions)
+	if err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+
+	var found *model.Anchor
+	for i := range migrated.Anchors {
+		if migrated.Anchors[i].ID == "PROOF-theory-a" {
+			found = &migrated.Anchors[i]
+			break
+		}
+	}
+	if found == nil {
+		t.Fatal("PROOF-theory-a not found in migrated inventory")
+	}
+	if found.ProvenanceKind != model.ProvenanceKindTheory {
+		t.Errorf("expected provenance_kind=theory, got %s", found.ProvenanceKind)
+	}
+	if found.ProofState != model.ProofStatePartial {
+		t.Errorf("expected proof_state=partial, got %s", found.ProofState)
 	}
 }
 
