@@ -36,9 +36,13 @@ segment    = "anchor" | "tenant"            ; first-segment discriminator
 id-segment = anchor-id | tenant-id
 subpath    = "subgraph" | <future-reserved>
 
-anchor-id  = [A-Z]+ "-" [a-z0-9-]+          ; e.g., PROOF-hurwitz, PRED-glide, MEAS-alpha
+anchor-id  = [A-Z] [A-Z0-9]* "-" [A-Za-z0-9-]+ ; e.g., PROOF-hurwitz, PRED-glide, MEAS-alpha
+                                            ; prefix admits digits: Q27-TOV-limit-from-Fano, Q28-alpha-GUT-from-stabiliser
+                                            ; suffix admits uppercase algebra labels: PROOF-loss-of-commutativity-C-to-H, MEAS-G-bbn, FLAG-J
 tenant-id  = [a-z] [a-z0-9-]*               ; e.g., qbp, sharp-butler, mobius-fusion
 ```
+
+Validation basis: this production admits all 149 anchor IDs in the canonical `confluent-trust-inventory-v5_3.v0.3.json` (verified 2026-06-01). The narrower v0.1 draft `[A-Z]+ "-" [a-z0-9-]+` rejected 22 of them — QBP question-anchors carry digit prefixes (`Q27-`, `Q28-`) and foundations breakdown-chain anchors carry uppercase algebra labels by construction (`-C-to-H`, `-H-to-O`, `-O-to-S`). The earlier "matches testdata/qbp_*.json" claim held only for that narrower fixture subset, not the full inventory (caught in PR #91 §I4 by qbp-implementor).
 
 ### Current grammar in production
 
