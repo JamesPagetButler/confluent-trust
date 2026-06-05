@@ -6,22 +6,36 @@ import "fmt"
 // state at a point in time. It is the unit consumed and produced by the
 // JSON store and the unit on which package compute operates.
 type Inventory struct {
-	Programme         string             `json:"programme"`
-	Version           string             `json:"version"`
-	SchemaVersion     string             `json:"schema_version,omitempty"`
-	FullName          string             `json:"full_name,omitempty"`
-	Timestamp         string             `json:"timestamp,omitempty"`
-	ParentProgrammes  []string           `json:"parent_programmes,omitempty"`
-	MetaAxiom         *MetaAxiom         `json:"meta_axiom,omitempty"`
-	Axioms            []Axiom            `json:"axioms"`
-	DerivedPrinciples []DerivedPrinciple `json:"derived_principles,omitempty"`
-	Anchors           []Anchor           `json:"anchors"`
-	Inputs            []Input            `json:"inputs,omitempty"`
-	Chains            []Chain            `json:"chains"`
-	ConfluencePoints  []ConfluencePoint  `json:"confluence_points,omitempty"`
-	ForkPoints        []ForkPoint        `json:"fork_points,omitempty"`
-	Health            *Health            `json:"health,omitempty"`
-	Changelog         []ChangelogEntry   `json:"changelog,omitempty"`
+	Programme         string                `json:"programme"`
+	Version           string                `json:"version"`
+	SchemaVersion     string                `json:"schema_version,omitempty"`
+	FullName          string                `json:"full_name,omitempty"`
+	Timestamp         string                `json:"timestamp,omitempty"`
+	ParentProgrammes  []string              `json:"parent_programmes,omitempty"`
+	MetaAxiom         *MetaAxiom            `json:"meta_axiom,omitempty"`
+	Axioms            []Axiom               `json:"axioms"`
+	DerivedPrinciples []DerivedPrinciple    `json:"derived_principles,omitempty"`
+	Anchors           []Anchor              `json:"anchors"`
+	Inputs            []Input               `json:"inputs,omitempty"`
+	Chains            []Chain               `json:"chains"`
+	ConfluencePoints  []ConfluencePoint     `json:"confluence_points,omitempty"`
+	ForkPoints        []ForkPoint           `json:"fork_points,omitempty"`
+	Health            *Health               `json:"health,omitempty"`
+	ClassFloors       map[string]ClassFloor `json:"class_floors,omitempty"`
+	Changelog         []ChangelogEntry      `json:"changelog,omitempty"`
+}
+
+// ClassFloor is per-anchor-class evaluation config (v0.3.1; contextus
+// NT_SIGNAL measurement addendum §4.1, PR #32 Q1 ruling). Floor is the
+// minimum measurement-signal confidence required before an automated
+// status change is permitted on anchors of the class. It is set by the
+// anchor-class owner as a governance act — witnessed by this inventory's
+// change control — and read by the evaluator at evaluation time. A class
+// with no entry is fail-closed: no automated status change is permitted
+// for it. Object-valued so per-class config can grow without a breaking
+// schema change.
+type ClassFloor struct {
+	Floor float64 `json:"floor"`
 }
 
 // MetaAxiom is the optional "axiom about axioms" — e.g. "all knowledge is
@@ -99,6 +113,11 @@ func (inv *Inventory) Validate() error {
 	for _, f := range inv.ForkPoints {
 		if err := f.Validate(); err != nil {
 			return fmt.Errorf("inventory %s: %w", inv.Programme, err)
+		}
+	}
+	for class, cf := range inv.ClassFloors {
+		if cf.Floor < 0 || cf.Floor > 1 {
+			return fmt.Errorf("inventory %s: class_floors[%s] floor %v out of range [0,1]", inv.Programme, class, cf.Floor)
 		}
 	}
 	return nil
