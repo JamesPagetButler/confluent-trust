@@ -100,44 +100,55 @@ type DerivedPrinciple struct {
 // it both marks the foundation set and names the batch sign-off covering
 // the anchor).
 type Anchor struct {
-	PredictedValue          *float64                 `json:"predicted_value,omitempty"`
-	SorryCount              *int                     `json:"sorry_count,omitempty"`
-	LastTestedAt            *string                  `json:"last_tested_at,omitempty"`
-	DiscrepancyPct          *float64                 `json:"discrepancy_pct,omitempty"`
-	MeasuredError           *float64                 `json:"measured_error,omitempty"`
-	MeasuredValue           *float64                 `json:"measured_value,omitempty"`
-	Verification            *VerificationRecord      `json:"verification,omitempty"`
-	LeanTheorem             string                   `json:"lean_theorem,omitempty"`
-	BridgeRole              string                   `json:"bridge_role,omitempty"`
-	TheoryURL               string                   `json:"theory_url,omitempty"`
-	TheoryDOI               string                   `json:"theory_doi,omitempty"`
-	ProofFile               string                   `json:"proof_file,omitempty"`
-	InheritedAt             string                   `json:"inherited_at,omitempty"`
-	PredictedUnit           string                   `json:"predicted_unit,omitempty"`
-	BranchID                string                   `json:"branch_id,omitempty"`
-	Notes                   string                   `json:"notes,omitempty"`
-	MeasuredSource          string                   `json:"measured_source,omitempty"`
-	TestableWhen            string                   `json:"testable_when,omitempty"`
-	KilledBy                string                   `json:"killed_by,omitempty"`
-	KilledNote              string                   `json:"killed_note,omitempty"`
-	ReviewFlag              string                   `json:"review_flag,omitempty"`
-	FoundationBatch         string                   `json:"foundation_batch,omitempty"`
-	Description             string                   `json:"description"`
-	InheritedFrom           string                   `json:"inherited_from,omitempty"`
-	TheoryCitation          string                   `json:"theory_citation,omitempty"`
-	ProofSystem             string                   `json:"proof_system,omitempty"`
-	Name                    string                   `json:"name"`
-	ID                      string                   `json:"id"`
-	ProofLanguage           string                   `json:"proof_language,omitempty"`
+	// Pointer fields first (8 bytes each) for optimal struct alignment.
+	PredictedValue *float64            `json:"predicted_value,omitempty"`
+	SorryCount     *int                `json:"sorry_count,omitempty"`
+	LastTestedAt   *string             `json:"last_tested_at,omitempty"`
+	DiscrepancyPct *float64            `json:"discrepancy_pct,omitempty"`
+	MeasuredError  *float64            `json:"measured_error,omitempty"`
+	MeasuredValue  *float64            `json:"measured_value,omitempty"`
+	Verification   *VerificationRecord `json:"verification,omitempty"`
+	// v0.3 sheaf trust: per-axis scores (inter#41 Decision 2).
+	AxisTrust *AxisTrust `json:"axis_trust,omitempty"`
+	// String fields (16 bytes each: pointer + length).
+	LeanTheorem    string `json:"lean_theorem,omitempty"`
+	BridgeRole     string `json:"bridge_role,omitempty"`
+	TheoryURL      string `json:"theory_url,omitempty"`
+	TheoryDOI      string `json:"theory_doi,omitempty"`
+	ProofFile      string `json:"proof_file,omitempty"`
+	InheritedAt    string `json:"inherited_at,omitempty"`
+	PredictedUnit  string `json:"predicted_unit,omitempty"`
+	BranchID       string `json:"branch_id,omitempty"`
+	Notes          string `json:"notes,omitempty"`
+	MeasuredSource string `json:"measured_source,omitempty"`
+	TestableWhen   string `json:"testable_when,omitempty"`
+	// v0.3.1 disposition + foundation fields (#93 / #96 Q1).
+	KilledBy        string `json:"killed_by,omitempty"`
+	KilledNote      string `json:"killed_note,omitempty"`
+	ReviewFlag      string `json:"review_flag,omitempty"`
+	FoundationBatch string `json:"foundation_batch,omitempty"`
+	Description     string `json:"description"`
+	InheritedFrom   string `json:"inherited_from,omitempty"`
+	TheoryCitation  string `json:"theory_citation,omitempty"`
+	ProofSystem     string `json:"proof_system,omitempty"`
+	Name            string `json:"name"`
+	ID              string `json:"id"`
+	ProofLanguage   string `json:"proof_language,omitempty"`
+	// v0.3 sheaf trust: locale domain identifier (Sprint 3 minimum viable locale topology).
+	LocaleDomain string `json:"locale_domain,omitempty"`
+	// Slice fields (24 bytes each).
 	LeanCompanionTheorems   []string                 `json:"lean_companion_theorems,omitempty"`
 	PredictionChain         []string                 `json:"prediction_chain"`
 	AdditionalVerifications []AdditionalVerification `json:"additional_verifications,omitempty"`
 	Theorems                []TheoremRef             `json:"theorems,omitempty"`
-	Tier                    Tier                     `json:"tier"`
-	Provenance              Provenance               `json:"provenance"`
-	Status                  Status                   `json:"status"`
-	ProvenanceKind          ProvenanceKind           `json:"provenance_kind,omitempty"`
-	ProofState              ProofState               `json:"proof_state,omitempty"`
+	// Small enum fields (int8/uint8) at the tail.
+	Tier           Tier           `json:"tier"`
+	Provenance     Provenance     `json:"provenance"`
+	Status         Status         `json:"status"`
+	ProvenanceKind ProvenanceKind `json:"provenance_kind,omitempty"`
+	ProofState     ProofState     `json:"proof_state,omitempty"`
+	// v0.3 sheaf trust: coverage-based cluster state (inter#41 Decision 2).
+	ClusterState ClusterState `json:"cluster_state,omitempty"`
 }
 
 // Validate enforces anchor-level invariants.
@@ -175,6 +186,13 @@ func (a Anchor) Validate() error {
 			if t.Status != TheoremStatusVerified {
 				return fmt.Errorf("anchor %s: proof_state verified requires all theorems verified, got %s for %s", a.ID, t.Status, t.Name)
 			}
+		}
+	}
+
+	// Invariant 5 (inter#41 Decision 2): axis_trust values, when present, must be in [0.0, 1.0].
+	if a.AxisTrust != nil {
+		if err := a.AxisTrust.Validate(); err != nil {
+			return fmt.Errorf("anchor %s: %w", a.ID, err)
 		}
 	}
 
