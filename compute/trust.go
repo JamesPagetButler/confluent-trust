@@ -62,17 +62,15 @@ func glueAxis(acc, next *float64, join bool) *float64 {
 }
 
 // ClusterStateFromAxes derives the coverage-based ClusterState from a
-// glued AxisTrust section. The transition rules follow inter#41 Decision 2:
+// glued AxisTrust section, with independence as the sentinel axis
+// (inter#41 Decision 2):
 //
-//	NASCENT     — independence axis absent or below threshold; or fewer than
-//	              two axes are above threshold across the section.
-//	DEVELOPING  — independence axis above threshold but at least one of the
-//	              four other axes is still below threshold (or absent).
+//	NASCENT     — independence axis absent or below model.ClusterStateThreshold
+//	              (one lab / one perspective; independence section weak).
+//	DEVELOPING  — independence above threshold, but at least one of the four
+//	              other axes is still below threshold or absent.
 //	CONFLUENT   — global section: independence AND all four other axes are
-//	              above model.ClusterStateThreshold.
-//
-// The threshold is model.clusterStateThreshold (0.7) — package-level constant,
-// accessible here through the exported helper AboveClusterThreshold.
+//	              at or above model.ClusterStateThreshold.
 func ClusterStateFromAxes(at model.AxisTrust) model.ClusterState {
 	// Independence is the sentinel axis: weak independence = NASCENT regardless
 	// of the other axes (inter#41 note: "one lab produces weak independence section").
@@ -91,12 +89,8 @@ func ClusterStateFromAxes(at model.AxisTrust) model.ClusterState {
 	return model.ClusterStateDeveloping
 }
 
-// aboveThreshold reports whether val is non-nil and >= clusterStateThreshold.
+// aboveThreshold reports whether val is non-nil and at or above the single
+// source-of-truth threshold model.ClusterStateThreshold.
 func aboveThreshold(val *float64) bool {
-	return val != nil && *val >= clusterThreshold
+	return val != nil && *val >= model.ClusterStateThreshold
 }
-
-// clusterThreshold is the per-axis coverage threshold for cluster state
-// transitions. Mirrors model.clusterStateThreshold (unexported); kept here
-// so compute does not import model constants by name.
-const clusterThreshold = 0.7

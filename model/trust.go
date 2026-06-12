@@ -63,6 +63,11 @@ const (
 	ClusterStateConfluent               // global section across all axes above threshold
 )
 
+// ClusterStateThreshold is the per-axis coverage threshold for cluster-state
+// transitions (inter#41 Decision 2). Single source of truth: compute consumes
+// this exported constant rather than duplicating the literal.
+const ClusterStateThreshold = 0.7
+
 // String returns the canonical JSON string form of a ClusterState.
 func (c ClusterState) String() string {
 	switch c {
