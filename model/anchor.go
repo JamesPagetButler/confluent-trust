@@ -91,6 +91,14 @@ type DerivedPrinciple struct {
 // AdditionalVerifications) are additive. Legacy fields (Provenance,
 // ProofFile, ProofSystem, SorryCount, LeanTheorem, LeanCompanionTheorems)
 // are preserved for transitional dual-field reading per design §7.
+//
+// v0.3.1 fields (all additive-optional, schema-change-propagation §4 minor):
+// KilledBy/KilledNote/ReviewFlag formalize the disposition fields that
+// landed in QBP inventory data via the additionalProperties catch-all
+// (#93, flow-direction 3); FoundationBatch carries the QBP #474
+// property-matrix row id for proven-foundation-theorem anchors (#96 Q1 —
+// it both marks the foundation set and names the batch sign-off covering
+// the anchor).
 type Anchor struct {
 	PredictedValue          *float64                 `json:"predicted_value,omitempty"`
 	SorryCount              *int                     `json:"sorry_count,omitempty"`
@@ -110,6 +118,10 @@ type Anchor struct {
 	Notes                   string                   `json:"notes,omitempty"`
 	MeasuredSource          string                   `json:"measured_source,omitempty"`
 	TestableWhen            string                   `json:"testable_when,omitempty"`
+	KilledBy                string                   `json:"killed_by,omitempty"`
+	KilledNote              string                   `json:"killed_note,omitempty"`
+	ReviewFlag              string                   `json:"review_flag,omitempty"`
+	FoundationBatch         string                   `json:"foundation_batch,omitempty"`
 	Description             string                   `json:"description"`
 	InheritedFrom           string                   `json:"inherited_from,omitempty"`
 	TheoryCitation          string                   `json:"theory_citation,omitempty"`

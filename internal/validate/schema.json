@@ -1,8 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/JamesPagetButler/confluent-trust/schema/inventory.schema.json",
+  "$id": "https://github.com/JamesPagetButler/confluent-trust/schema/inventory.schema.v0.3.1.json",
+  "x-schema-semver": "0.3.1",
   "title": "CTH Inventory",
-  "description": "Confluent Trust Hypergraph inventory document. Conforms to Theory v0.2 §4.1 plus the §2.9 fork extension. Both v0.1 (path_a/path_b) and v0.2 (paths[]) confluence shapes are accepted; the Go store normalizes to N-ary on load.",
+  "description": "Confluent Trust Hypergraph inventory document. Conforms to Theory v0.2 §4.1 plus the §2.9 fork extension. Both v0.1 (path_a/path_b) and v0.2 (paths[]) confluence shapes are accepted; the Go store normalizes to N-ary on load. The schema-document semver (x-schema-semver, mirrored in $id) is distinct from both the programme content version and the schema_version generation — see doc/design/schema-change-propagation.md §4. 0.3.1 (minor, additive): killed_by/killed_note/review_flag (#93), foundation_batch (#96), class_floors (contextus PR #32 Q1).",
   "type": "object",
   "required": ["programme", "version", "axioms", "anchors", "chains"],
   "additionalProperties": true,
@@ -43,6 +44,11 @@
     "confluence_points":  { "type": "array", "items": { "$ref": "#/$defs/ConfluencePoint" } },
     "fork_points":        { "type": "array", "items": { "$ref": "#/$defs/ForkPoint" } },
     "health":             { "$ref": "#/$defs/Health" },
+    "class_floors": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/ClassFloor" },
+      "description": "Per-anchor-class evaluation config, keyed by anchor-class prefix (e.g. \"PRED\", \"MEAS\"). Set by the anchor-class owner as a governance act, witnessed by this inventory's change control; read by the evaluator at evaluation time (contextus NT_SIGNAL measurement addendum §4.1). A class with no entry is fail-closed: no automated status change is permitted for it."
+    },
     "changelog":          { "type": "array", "items": { "$ref": "#/$defs/ChangelogEntry" } }
   },
   "$defs": {
@@ -187,6 +193,10 @@
         "testable_when":             { "type": "string" },
         "notes":                     { "type": "string" },
         "branch_id":                 { "type": "string" },
+        "killed_by":                 { "type": "string", "description": "Reference to the artifact (analysis report, disposition record, WISDOM anchor) that killed/falsified this anchor. Formalized from QBP catch-all usage (#93)." },
+        "killed_note":               { "type": "string", "description": "Free-text rationale for the kill/falsification disposition (#93)." },
+        "review_flag":               { "type": "string", "description": "Free-text flag that this anchor needs re-evaluation (e.g. a dependency went incoherent), with the reason (#93)." },
+        "foundation_batch":          { "type": "string", "description": "QBP #474 property-matrix row id for proven-foundation-theorem anchors (#96 Q1). Marks the anchor as foundation-proving-stream output and names the batch sign-off that covers it." },
         "provenance_kind":           { "$ref": "#/$defs/ProvenanceKind" },
         "proof_state":               { "$ref": "#/$defs/ProofState" },
         "proof_language":            { "type": "string" },
@@ -372,6 +382,19 @@
         "tier_breakdown":       { "type": "object", "additionalProperties": { "type": "integer" } },
         "top_bridge":           { "type": "string" },
         "highest_value_eddy":   { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "ClassFloor": {
+      "type": "object",
+      "required": ["floor"],
+      "properties": {
+        "floor": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Minimum measurement-signal confidence required for an automated status change on anchors of this class."
+        }
       },
       "additionalProperties": true
     },
