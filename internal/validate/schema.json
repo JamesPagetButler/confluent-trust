@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/JamesPagetButler/confluent-trust/schema/inventory.schema.v0.3.2.json",
-  "x-schema-semver": "0.3.2",
+  "$id": "https://github.com/JamesPagetButler/confluent-trust/schema/inventory.schema.v0.3.3.json",
+  "x-schema-semver": "0.3.3",
   "title": "CTH Inventory",
-  "description": "Confluent Trust Hypergraph inventory document. Conforms to Theory v0.2 §4.1 plus the §2.9 fork extension. Both v0.1 (path_a/path_b) and v0.2 (paths[]) confluence shapes are accepted; the Go store normalizes to N-ary on load. The schema-document semver (x-schema-semver, mirrored in $id) is distinct from both the programme content version and the schema_version generation — see doc/design/schema-change-propagation.md §4. 0.3.1 (minor, additive): killed_by/killed_note/review_flag (#93), foundation_batch (#96), class_floors (contextus PR #32 Q1). 0.3.2 (minor, additive): axis_trust/locale_domain/cluster_state (sheaf trust, #95/inter#41 Decision 2).",
+  "description": "Confluent Trust Hypergraph inventory document. Conforms to Theory v0.2 §4.1 plus the §2.9 fork extension. Both v0.1 (path_a/path_b) and v0.2 (paths[]) confluence shapes are accepted; the Go store normalizes to N-ary on load. The schema-document semver (x-schema-semver, mirrored in $id) is distinct from both the programme content version and the schema_version generation — see doc/design/schema-change-propagation.md §4. 0.3.1 (minor, additive): killed_by/killed_note/review_flag (#93), foundation_batch (#96), class_floors (contextus PR #32 Q1). 0.3.2 (minor, additive): axis_trust/locale_domain/cluster_state (sheaf trust, #95/inter#41 Decision 2). 0.3.3 (minor, additive): 'derivation' provenance_kind + C1 relaxed to admit proof-fields (proof_state/proof_language/theorems/verification) on {proof, derivation} so a kernel-verified derivation can SHOW its Lean (FAULT-S4-005 burn-down, QBP#621; cth-implementor ruling live-test seq=1041).",
   "type": "object",
   "required": ["programme", "version", "axioms", "anchors", "chains"],
   "additionalProperties": true,
@@ -71,8 +71,8 @@
     },
     "ProvenanceKind": {
       "type": "string",
-      "enum": ["proof", "theory", "theory-external", "experiment", "hypothesis", "internal-compute", "philosophy"],
-      "description": "v0.3 fine-grained provenance classifier per design §2."
+      "enum": ["proof", "theory", "theory-external", "experiment", "hypothesis", "internal-compute", "philosophy", "derivation"],
+      "description": "v0.3 fine-grained provenance classifier per design §2. 'derivation' (0.3.3): a kernel-verified derived result — the Lean/Agda backbone is proven but the full claim is a derivation/interpretation, not a foundational proof; may carry verification (see Anchor C1). Never flips inter#57 to PROVEN (that needs provenance_kind:proof AND status:coherent)."
     },
     "ProofState": {
       "type": "string",
@@ -214,7 +214,7 @@
       "allOf": [
         {
           "if": {
-            "properties": { "provenance_kind": { "not": { "const": "proof" } } },
+            "properties": { "provenance_kind": { "not": { "enum": ["proof", "derivation"] } } },
             "required": ["provenance_kind"]
           },
           "then": {

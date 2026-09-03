@@ -355,6 +355,7 @@ const (
 	ProvenanceKindHypothesis                     // tentative claim awaiting evidence
 	ProvenanceKindInternalCompute                // numerical/symbolic computation
 	ProvenanceKindPhilosophy                     // conceptual framing / programmatic principle
+	ProvenanceKindDerivation                     // kernel-verified derived result: proven backbone, derived claim (0.3.3, may carry verification per Anchor C1; never PROVEN)
 )
 
 // String returns the canonical JSON string form of a ProvenanceKind.
@@ -374,6 +375,8 @@ func (p ProvenanceKind) String() string {
 		return "internal-compute"
 	case ProvenanceKindPhilosophy:
 		return "philosophy"
+	case ProvenanceKindDerivation:
+		return "derivation"
 	default:
 		return ""
 	}
@@ -416,6 +419,8 @@ func (p *ProvenanceKind) UnmarshalJSON(b []byte) error {
 		*p = ProvenanceKindInternalCompute
 	case "philosophy":
 		*p = ProvenanceKindPhilosophy
+	case "derivation":
+		*p = ProvenanceKindDerivation
 	default:
 		return fmt.Errorf("provenance_kind: unknown value %q", raw)
 	}
