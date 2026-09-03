@@ -91,6 +91,7 @@ func TestProvenanceKind_RoundTrip(t *testing.T) {
 		{`"hypothesis"`, ProvenanceKindHypothesis},
 		{`"internal-compute"`, ProvenanceKindInternalCompute},
 		{`"philosophy"`, ProvenanceKindPhilosophy},
+		{`"derivation"`, ProvenanceKindDerivation},
 	}
 	for _, c := range cases {
 		t.Run(c.wantJSON, func(t *testing.T) {

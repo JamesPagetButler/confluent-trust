@@ -112,3 +112,39 @@ func TestSchemaVersion(t *testing.T) {
 		})
 	}
 }
+
+// TestC1_DerivationMayCarryVerification exercises the 0.3.3 C1 relaxation:
+// verification-fields are admitted on {proof, derivation}, still forbidden on
+// every other provenance_kind (FAULT-S4-005 burn-down; cth-implementor ruling).
+func TestC1_DerivationMayCarryVerification(t *testing.T) {
+	const verif = `"proof_system":"lean4","proof_file":"proofs/X.lean","proof_state":"verified","sorry_count":0,` +
+		`"verification":{"toolchain":"leanprover/lean4:v4.30.0","libraries":{"mathlib":{"ref":"abc123","sha":"abc123"}},` +
+		`"verified_at":"2026-01-01T00:00:00Z","verifier":"ci","result":"verified","axiom_closure":["propext","Classical.choice","Quot.sound"]}`
+	doc := func(pk, extra string) string {
+		return `{"programme":"X","version":"0.1","schema_version":"v0.3","axioms":[],"chains":[],"anchors":[{` +
+			`"id":"A-x","name":"x","tier":1,"provenance":"T","status":"coherent","description":"d","prediction_chain":[],` +
+			`"provenance_kind":"` + pk + `"` + extra + `}]}`
+	}
+	tests := []struct {
+		name    string
+		data    string
+		wantErr bool
+	}{
+		{"derivation WITH verification is admitted (the relaxation)", doc("derivation", ","+verif), false},
+		{"bare derivation (no proof-fields) is fine", doc("derivation", ""), false},
+		{"proof WITH verification still admitted", doc("proof", ","+verif), false},
+		{"theory WITH verification still forbidden (C1 holds elsewhere)", doc("theory", `,"verification":{"toolchain":"t","libraries":{},"verified_at":"2026-01-01T00:00:00Z","verifier":"ci","result":"verified"}`), true},
+		{"experiment WITH proof_state still forbidden", doc("experiment", `,"proof_state":"verified"`), true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := Inventory([]byte(tt.data))
+			if tt.wantErr && err == nil {
+				t.Fatalf("expected schema violation, got nil (C1 relaxation over-broad)")
+			}
+			if !tt.wantErr && err != nil {
+				t.Fatalf("expected valid, got error: %v", err)
+			}
+		})
+	}
+}
