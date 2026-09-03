@@ -49,6 +49,8 @@ empirically, must not ship the result to federation as confirmed).
 
 ## 4. Cadence (Q3)
 
+> **⚠ SUPERSEDED (applies to §4 and §5).** The **push-driven** cadence and flow below are root-cause **(3)** of FAULT-S4-005: a batch fires only when the proving stream *emits* — nothing *pulls* — so when emits lapse, sign-off goes silently dormant. This is **amended by corrective C3** (the pull-based, sha-pointer CI trigger-gate: canonical carries the last-anchored HEAD; a foundation merge introducing an anchor-worthy theorem trips a visible drift-gate) in a follow-up PR, after qbp-cu#66-Step-1 lands + qbp-architecture co-signs C3 §5. Read §4–§5 as the historical AC3-of-record cadence, **not** the live enforcement.
+
 Sign-off is **per-batch**, one batch per QBP #474 property-matrix row (~14 Phase-1
 batches). Per-theorem sign-off is rejected: it couples CTH review cadence to proof
 tempo — the exact mismatch the two-stream firewall exists to prevent.
