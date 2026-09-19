@@ -148,3 +148,51 @@ func TestC1_DerivationMayCarryVerification(t *testing.T) {
 		})
 	}
 }
+
+// TestDecisionState_FourBucket exercises the 0.3.4 four-bucket root fields
+// (#654 D3): decision_state + kill_condition (array<object>) on roots, the
+// OpenNeedsKill invariant (open ⇒ non-empty kill_condition), the per-entry
+// closure/discharge conditional, and the four QBP-general top-level root lists
+// (cth-implementor, confluent-trust #102/#103).
+func TestDecisionState_FourBucket(t *testing.T) {
+	ax := func(extra string) string {
+		return `{"programme":"X","version":"0.1","schema_version":"v0.3","chains":[],"anchors":[],"axioms":[{` +
+			`"id":"AXIOM-1","name":"a","statement":"s","derivable":false` + extra + `}]}`
+	}
+	const killRuling = `,"decision_state":"open","kill_condition":[{"kill":"a real ledger-observable falsifier","closure":"ruling-rescope"}]`
+	const killDeriv = `,"decision_state":"open","kill_condition":[{"kill":"a real ledger-observable falsifier","closure":"derivation","discharge":"PROOF-y"}]`
+	lists := `{"programme":"X","version":"0.1","schema_version":"v0.3","chains":[],"anchors":[],"axioms":[],` +
+		`"meta_principles":[{"id":"META-2","name":"m","statement":"s","decision_state":"open","kill_condition":[{"kill":"a real meta falsifier text","closure":"ruling-rescope"}]}],` +
+		`"interpretations":[{"id":"INTERP-x","name":"i","statement":"s","provenance_kind":"philosophy","decision_state":"open","kill_condition":[{"kill":"a real interp falsifier text","closure":"ruling-rescope"}]}],` +
+		`"retired_axioms":[{"id":"AXIOM-2","name":"r","statement":"s","notes":"content re-rooted to POST-x"}],` +
+		`"retired_principles":[{"id":"DERIV-h","name":"r","statement":"s","notes":"editorial split"}]}`
+	tests := []struct {
+		name    string
+		data    string
+		wantErr bool
+	}{
+		{"open + ruling-rescope kill, no discharge", ax(killRuling), false},
+		{"open + derivation kill + discharge", ax(killDeriv), false},
+		{"settled, no kill", ax(`,"decision_state":"settled"`), false},
+		{"plain axiom (no decision fields)", ax(``), false},
+		{"four top-level root lists", lists, false},
+		{"open with NO kill_condition (OpenNeedsKill fires)", ax(`,"decision_state":"open"`), true},
+		{"open with EMPTY kill_condition", ax(`,"decision_state":"open","kill_condition":[]`), true},
+		{"closure=derivation WITHOUT discharge", ax(`,"decision_state":"open","kill_condition":[{"kill":"a real falsifier text","closure":"derivation"}]`), true},
+		{"kill entry missing closure", ax(`,"decision_state":"open","kill_condition":[{"kill":"a real falsifier text"}]`), true},
+		{"kill too short (placeholder guard)", ax(`,"decision_state":"open","kill_condition":[{"kill":"short","closure":"ruling-rescope"}]`), true},
+		{"bad decision_state value", ax(`,"decision_state":"maybe","kill_condition":[{"kill":"a real falsifier text","closure":"ruling-rescope"}]`), true},
+		{"bad closure value", ax(`,"decision_state":"open","kill_condition":[{"kill":"a real falsifier text","closure":"vibes"}]`), true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := Inventory([]byte(tt.data))
+			if tt.wantErr && err == nil {
+				t.Fatalf("expected schema violation, got nil")
+			}
+			if !tt.wantErr && err != nil {
+				t.Fatalf("expected valid, got error: %v", err)
+			}
+		})
+	}
+}

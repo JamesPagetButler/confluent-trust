@@ -49,14 +49,69 @@ type AdditionalVerification struct {
 // DerivedFromAxioms populated; in that case it is "stated as an axiom
 // for architectural convenience" and the Validate() invariant relaxes.
 type Axiom struct {
-	ID                string   `json:"id"`
-	Name              string   `json:"name"`
-	Statement         string   `json:"statement"`
-	InheritedFrom     string   `json:"inherited_from,omitempty"`
-	Notes             string   `json:"notes,omitempty"`
-	DerivedFromAxioms []string `json:"derived_from_axioms,omitempty"`
-	Layer             int      `json:"layer,omitempty"`
-	Derivable         bool     `json:"derivable"`
+	ID                string               `json:"id"`
+	Name              string               `json:"name"`
+	Statement         string               `json:"statement"`
+	InheritedFrom     string               `json:"inherited_from,omitempty"`
+	Notes             string               `json:"notes,omitempty"`
+	DerivedFromAxioms []string             `json:"derived_from_axioms,omitempty"`
+	KillCondition     []KillConditionEntry `json:"kill_condition,omitempty"`
+	Layer             int                  `json:"layer,omitempty"`
+	Derivable         bool                 `json:"derivable"`
+	DecisionState     DecisionState        `json:"decision_state,omitempty"`
+}
+
+// KillConditionEntry is one Impasse Record on a root (v0.3.4, #654 D3): the
+// ledger-observable falsifier that fires the kill, plus how the open question
+// would close. Array-only per confluent-trust #102 — one entry per open
+// question, a single question is a one-element list. Closure is one of
+// "derivation" | "measurement" | "ruling-rescope"; Discharge is required (and
+// names a resolving id/issue) when Closure is derivation/measurement, and is
+// legitimately absent for ruling-rescope (schema-enforced).
+type KillConditionEntry struct {
+	Kill         string `json:"kill"`
+	Closure      string `json:"closure"`
+	Discharge    string `json:"discharge,omitempty"`
+	Question     string `json:"question,omitempty"`
+	TriggerIssue string `json:"trigger_issue,omitempty"`
+}
+
+// MetaPrinciple is an epistemic root beyond the single meta_axiom (v0.3.4,
+// #654 D3; META-*). The canonical meta_axiom is one object; further epistemic
+// roots live in the top-level meta_principles list. May carry an Impasse Record.
+type MetaPrinciple struct {
+	ID            string               `json:"id"`
+	Name          string               `json:"name"`
+	Statement     string               `json:"statement"`
+	Notes         string               `json:"notes,omitempty"`
+	KillCondition []KillConditionEntry `json:"kill_condition,omitempty"`
+	Derivable     bool                 `json:"derivable,omitempty"`
+	DecisionState DecisionState        `json:"decision_state,omitempty"`
+}
+
+// Interpretation is a programme-level interpretation record (v0.3.4, #654 D3;
+// INTERP-*): an interpretive/semantic claim, ProvenanceKind Philosophy (no new
+// provenance_kind). Distinct from BranchInterpretation, a fork-point sub-record.
+type Interpretation struct {
+	ID             string               `json:"id"`
+	Name           string               `json:"name"`
+	Statement      string               `json:"statement"`
+	Notes          string               `json:"notes,omitempty"`
+	DerivedFrom    []string             `json:"derived_from,omitempty"`
+	KillCondition  []KillConditionEntry `json:"kill_condition,omitempty"`
+	ProvenanceKind ProvenanceKind       `json:"provenance_kind,omitempty"`
+	DecisionState  DecisionState        `json:"decision_state,omitempty"`
+}
+
+// RetiredRecord is a root or principle retired by an editorial/re-rooting move
+// (v0.3.4, #654 D3 bucket-4), kept verbatim with a dated Notes saying where its
+// content went — nothing is deleted; the record is the audit trail. Used for
+// both retired_axioms and retired_principles.
+type RetiredRecord struct {
+	ID        string `json:"id"`
+	Name      string `json:"name,omitempty"`
+	Statement string `json:"statement,omitempty"`
+	Notes     string `json:"notes"`
 }
 
 // Validate enforces the Tier 0 derivability invariant: an axiom marked

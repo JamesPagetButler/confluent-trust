@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/JamesPagetButler/confluent-trust/schema/inventory.schema.v0.3.3.json",
-  "x-schema-semver": "0.3.3",
+  "$id": "https://github.com/JamesPagetButler/confluent-trust/schema/inventory.schema.v0.3.4.json",
+  "x-schema-semver": "0.3.4",
   "title": "CTH Inventory",
-  "description": "Confluent Trust Hypergraph inventory document. Conforms to Theory v0.2 §4.1 plus the §2.9 fork extension. Both v0.1 (path_a/path_b) and v0.2 (paths[]) confluence shapes are accepted; the Go store normalizes to N-ary on load. The schema-document semver (x-schema-semver, mirrored in $id) is distinct from both the programme content version and the schema_version generation — see doc/design/schema-change-propagation.md §4. 0.3.1 (minor, additive): killed_by/killed_note/review_flag (#93), foundation_batch (#96), class_floors (contextus PR #32 Q1). 0.3.2 (minor, additive): axis_trust/locale_domain/cluster_state (sheaf trust, #95/inter#41 Decision 2). 0.3.3 (minor, additive): 'derivation' provenance_kind + C1 relaxed to admit proof-fields (proof_state/proof_language/theorems/verification) on {proof, derivation} so a kernel-verified derivation can SHOW its Lean (FAULT-S4-005 burn-down, QBP#621; cth-implementor ruling live-test seq=1041).",
+  "description": "Confluent Trust Hypergraph inventory document. Conforms to Theory v0.2 §4.1 plus the §2.9 fork extension. Both v0.1 (path_a/path_b) and v0.2 (paths[]) confluence shapes are accepted; the Go store normalizes to N-ary on load. The schema-document semver (x-schema-semver, mirrored in $id) is distinct from both the programme content version and the schema_version generation — see doc/design/schema-change-propagation.md §4. 0.3.1 (minor, additive): killed_by/killed_note/review_flag (#93), foundation_batch (#96), class_floors (contextus PR #32 Q1). 0.3.2 (minor, additive): axis_trust/locale_domain/cluster_state (sheaf trust, #95/inter#41 Decision 2). 0.3.3 (minor, additive): 'derivation' provenance_kind + C1 relaxed to admit proof-fields (proof_state/proof_language/theorems/verification) on {proof, derivation} so a kernel-verified derivation can SHOW its Lean (FAULT-S4-005 burn-down, QBP#621; cth-implementor ruling live-test seq=1041). 0.3.4 (minor, additive): decision_state (open|settled) + kill_condition (array of {kill, closure, discharge} Impasse Records) on roots; four QBP-general top-level root lists (meta_principles, interpretations, retired_axioms, retired_principles) promoted to $defs; the decision_state:open ⇒ non-empty kill_condition invariant is schema-enforced (FAULT-S4-005 four-bucket / #654 D3; cth-implementor, confluent-trust #102/#103).",
   "type": "object",
   "required": ["programme", "version", "axioms", "anchors", "chains"],
   "additionalProperties": true,
@@ -49,6 +49,10 @@
       "additionalProperties": { "$ref": "#/$defs/ClassFloor" },
       "description": "Per-anchor-class evaluation config, keyed by anchor-class prefix (e.g. \"PRED\", \"MEAS\"). Set by the anchor-class owner as a governance act, witnessed by this inventory's change control; read by the evaluator at evaluation time (contextus NT_SIGNAL measurement addendum §4.1). A class with no entry is fail-closed: no automated status change is permitted for it."
     },
+    "meta_principles":    { "type": "array", "items": { "$ref": "#/$defs/MetaPrinciple" } },
+    "interpretations":    { "type": "array", "items": { "$ref": "#/$defs/Interpretation" } },
+    "retired_axioms":     { "type": "array", "items": { "$ref": "#/$defs/RetiredRecord" } },
+    "retired_principles": { "type": "array", "items": { "$ref": "#/$defs/RetiredRecord" } },
     "changelog":          { "type": "array", "items": { "$ref": "#/$defs/ChangelogEntry" } }
   },
   "$defs": {
@@ -73,6 +77,35 @@
       "type": "string",
       "enum": ["proof", "theory", "theory-external", "experiment", "hypothesis", "internal-compute", "philosophy", "derivation"],
       "description": "v0.3 fine-grained provenance classifier per design §2. 'derivation' (0.3.3): a kernel-verified derived result — the Lean/Agda backbone is proven but the full claim is a derivation/interpretation, not a foundational proof; may carry verification (see Anchor C1). Never flips inter#57 to PROVEN (that needs provenance_kind:proof AND status:coherent)."
+    },
+    "DecisionState": {
+      "type": "string",
+      "enum": ["open", "settled"],
+      "description": "Decision lifecycle of a root that carries an Impasse Record (v0.3.4, #654 D3 four-bucket). Distinct from the coherence Status enum: 'open' = an open question with a stated falsifier (bucket 3); 'settled' = proved/forced (bucket 1/2) with its forcing anchor or prior ruling cited (named 'settled' not 'ruled' — the settled state is reached by proof/force, per the 'derived, not ruled' principle). A root is 'open' while any of its questions is open. Invariant (cth-implementor): decision_state:open REQUIRES a non-empty kill_condition — nothing parks open without a kill."
+    },
+    "KillConditionEntry": {
+      "type": "object",
+      "description": "One Impasse Record on a root: the ledger-observable event that fires the kill, plus how the open question would close (v0.3.4, #654 D3; array-only per cth-implementor confluent-trust #102 — one entry per open question, a single question is a one-element list).",
+      "required": ["kill", "closure"],
+      "properties": {
+        "kill":          { "type": "string", "minLength": 8, "description": "The falsifier: the ledger-observable event that fires this kill. Non-placeholder (minLength guard; root_audit adds the placeholder-token check)." },
+        "closure":       { "type": "string", "enum": ["derivation", "measurement", "ruling-rescope"], "description": "How this open question would close. 'derivation'/'measurement' name a resolving anchor in 'discharge'; 'ruling-rescope' closes only when the kill fires (a constitutional change), so 'discharge' is legitimately absent. Required so 'forgot to declare how this closes' fails rather than passing as kill-only." },
+        "discharge":     { "type": "string", "description": "The resolving route when closure is 'derivation'/'measurement' — an id/issue the route resolves to (presence is the schema's check; semantic resolution is root_audit's). Absent for 'ruling-rescope'." },
+        "question":      { "type": "string" },
+        "trigger_issue": { "type": "string" }
+      },
+      "additionalProperties": true,
+      "allOf": [
+        {
+          "if":   { "properties": { "closure": { "enum": ["derivation", "measurement"] } }, "required": ["closure"] },
+          "then": { "required": ["discharge"] }
+        }
+      ]
+    },
+    "OpenNeedsKill": {
+      "description": "Shared conditional (v0.3.4): a root with decision_state 'open' must carry a non-empty kill_condition. Referenced from the allOf of Axiom, MetaPrinciple and Interpretation.",
+      "if":   { "properties": { "decision_state": { "const": "open" } }, "required": ["decision_state"] },
+      "then": { "required": ["kill_condition"], "properties": { "kill_condition": { "type": "array", "minItems": 1 } } }
     },
     "ProofState": {
       "type": "string",
@@ -141,14 +174,17 @@
         "derivable":            { "type": "boolean" },
         "derived_from_axioms":  { "type": "array", "items": { "type": "string" } },
         "inherited_from":       { "type": "string" },
-        "notes":                { "type": "string" }
+        "notes":                { "type": "string" },
+        "decision_state":       { "$ref": "#/$defs/DecisionState" },
+        "kill_condition":       { "type": "array", "items": { "$ref": "#/$defs/KillConditionEntry" } }
       },
       "additionalProperties": true,
       "allOf": [
         {
           "if":   { "properties": { "derivable": { "const": true } }, "required": ["derivable"] },
           "then": { "required": ["derived_from_axioms"] }
-        }
+        },
+        { "$ref": "#/$defs/OpenNeedsKill" }
       ]
     },
     "DerivedPrinciple": {
@@ -160,6 +196,51 @@
         "statement":    { "type": "string" },
         "derived_from": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
         "layer":        { "type": "integer", "minimum": 1, "maximum": 1 }
+      },
+      "additionalProperties": true
+    },
+    "MetaPrinciple": {
+      "type": "object",
+      "description": "An epistemic root beyond the single meta_axiom (v0.3.4, #654 D3; META-*). The canonical meta_axiom is one object; a programme with more than one epistemic root lists the rest here. May carry an Impasse Record (decision_state + kill_condition).",
+      "required": ["id", "name", "statement"],
+      "properties": {
+        "id":              { "type": "string", "minLength": 1 },
+        "name":            { "type": "string" },
+        "statement":       { "type": "string" },
+        "derivable":       { "type": "boolean" },
+        "notes":           { "type": "string" },
+        "decision_state":  { "$ref": "#/$defs/DecisionState" },
+        "kill_condition":  { "type": "array", "items": { "$ref": "#/$defs/KillConditionEntry" } }
+      },
+      "additionalProperties": true,
+      "allOf": [ { "$ref": "#/$defs/OpenNeedsKill" } ]
+    },
+    "Interpretation": {
+      "type": "object",
+      "description": "A programme-level interpretation record (v0.3.4, #654 D3; INTERP-*): an interpretive/semantic claim, not proof-apt, so provenance_kind is 'philosophy' (cth-implementor ruling — no new provenance_kind). Distinct from BranchInterpretation, which is a fork-point sub-record under BranchObservation. May carry an Impasse Record.",
+      "required": ["id", "name", "statement"],
+      "properties": {
+        "id":              { "type": "string", "minLength": 1 },
+        "name":            { "type": "string" },
+        "statement":       { "type": "string" },
+        "provenance_kind": { "$ref": "#/$defs/ProvenanceKind" },
+        "derived_from":    { "type": "array", "items": { "type": "string" } },
+        "notes":           { "type": "string" },
+        "decision_state":  { "$ref": "#/$defs/DecisionState" },
+        "kill_condition":  { "type": "array", "items": { "$ref": "#/$defs/KillConditionEntry" } }
+      },
+      "additionalProperties": true,
+      "allOf": [ { "$ref": "#/$defs/OpenNeedsKill" } ]
+    },
+    "RetiredRecord": {
+      "type": "object",
+      "description": "A root or principle retired by an editorial/re-rooting move (v0.3.4, #654 D3 bucket-4), kept verbatim with a dated 'notes' saying where its content went — nothing is deleted; the record is the audit trail. Used for both retired_axioms and retired_principles.",
+      "required": ["id", "notes"],
+      "properties": {
+        "id":        { "type": "string", "minLength": 1 },
+        "name":      { "type": "string" },
+        "statement": { "type": "string" },
+        "notes":     { "type": "string", "minLength": 1 }
       },
       "additionalProperties": true
     },

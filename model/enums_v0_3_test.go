@@ -113,6 +113,44 @@ func TestProvenanceKind_RoundTrip(t *testing.T) {
 	}
 }
 
+// TestDecisionState_RoundTrip verifies marshal/unmarshal round-trip for the
+// canonical DecisionState values (v0.3.4, #654 D3).
+func TestDecisionState_RoundTrip(t *testing.T) {
+	cases := []struct {
+		wantJSON string
+		value    DecisionState
+	}{
+		{`"open"`, DecisionStateOpen},
+		{`"settled"`, DecisionStateSettled},
+	}
+	for _, c := range cases {
+		t.Run(c.wantJSON, func(t *testing.T) {
+			b, err := json.Marshal(c.value)
+			if err != nil {
+				t.Fatalf("marshal %v: %v", c.value, err)
+			}
+			if string(b) != c.wantJSON {
+				t.Errorf("marshal: got %s, want %s", b, c.wantJSON)
+			}
+			var got DecisionState
+			if err := json.Unmarshal(b, &got); err != nil {
+				t.Fatalf("unmarshal %s: %v", b, err)
+			}
+			if got != c.value {
+				t.Errorf("round-trip drift: %v -> %s -> %v", c.value, b, got)
+			}
+		})
+	}
+}
+
+// TestDecisionState_UnknownRejectsValue verifies an unknown decision_state value is rejected.
+func TestDecisionState_UnknownRejectsValue(t *testing.T) {
+	var d DecisionState
+	if err := json.Unmarshal([]byte(`"maybe"`), &d); err == nil {
+		t.Fatal("expected error for unknown decision_state, got nil")
+	}
+}
+
 // TestProvenanceKind_NullRoundTrip verifies that ProvenanceKindUnknown
 // marshals to null and null unmarshals back to ProvenanceKindUnknown.
 func TestProvenanceKind_NullRoundTrip(t *testing.T) {
