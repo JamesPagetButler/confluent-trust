@@ -49,19 +49,16 @@ type AdditionalVerification struct {
 // DerivedFromAxioms populated; in that case it is "stated as an axiom
 // for architectural convenience" and the Validate() invariant relaxes.
 type Axiom struct {
-	ID                string   `json:"id"`
-	Name              string   `json:"name"`
-	Statement         string   `json:"statement"`
-	InheritedFrom     string   `json:"inherited_from,omitempty"`
-	Notes             string   `json:"notes,omitempty"`
-	DerivedFromAxioms []string `json:"derived_from_axioms,omitempty"`
-	Layer             int      `json:"layer,omitempty"`
-	Derivable         bool     `json:"derivable"`
-
-	// v0.3.4 (#654 D3): a root axiom (e.g. a POST-* postulate) may carry an
-	// Impasse Record. DecisionState Open requires a non-empty KillCondition.
-	DecisionState DecisionState        `json:"decision_state,omitempty"`
-	KillCondition []KillConditionEntry `json:"kill_condition,omitempty"`
+	ID                string               `json:"id"`
+	Name              string               `json:"name"`
+	Statement         string               `json:"statement"`
+	InheritedFrom     string               `json:"inherited_from,omitempty"`
+	Notes             string               `json:"notes,omitempty"`
+	DerivedFromAxioms []string             `json:"derived_from_axioms,omitempty"`
+	KillCondition     []KillConditionEntry `json:"kill_condition,omitempty"`
+	Layer             int                  `json:"layer,omitempty"`
+	Derivable         bool                 `json:"derivable"`
+	DecisionState     DecisionState        `json:"decision_state,omitempty"`
 }
 
 // KillConditionEntry is one Impasse Record on a root (v0.3.4, #654 D3): the
@@ -86,10 +83,10 @@ type MetaPrinciple struct {
 	ID            string               `json:"id"`
 	Name          string               `json:"name"`
 	Statement     string               `json:"statement"`
-	Derivable     bool                 `json:"derivable,omitempty"`
 	Notes         string               `json:"notes,omitempty"`
-	DecisionState DecisionState        `json:"decision_state,omitempty"`
 	KillCondition []KillConditionEntry `json:"kill_condition,omitempty"`
+	Derivable     bool                 `json:"derivable,omitempty"`
+	DecisionState DecisionState        `json:"decision_state,omitempty"`
 }
 
 // Interpretation is a programme-level interpretation record (v0.3.4, #654 D3;
@@ -99,11 +96,11 @@ type Interpretation struct {
 	ID             string               `json:"id"`
 	Name           string               `json:"name"`
 	Statement      string               `json:"statement"`
-	ProvenanceKind ProvenanceKind       `json:"provenance_kind,omitempty"`
-	DerivedFrom    []string             `json:"derived_from,omitempty"`
 	Notes          string               `json:"notes,omitempty"`
-	DecisionState  DecisionState        `json:"decision_state,omitempty"`
+	DerivedFrom    []string             `json:"derived_from,omitempty"`
 	KillCondition  []KillConditionEntry `json:"kill_condition,omitempty"`
+	ProvenanceKind ProvenanceKind       `json:"provenance_kind,omitempty"`
+	DecisionState  DecisionState        `json:"decision_state,omitempty"`
 }
 
 // RetiredRecord is a root or principle retired by an editorial/re-rooting move
