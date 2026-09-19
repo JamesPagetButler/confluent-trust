@@ -15,6 +15,10 @@ type Inventory struct {
 	MetaAxiom         *MetaAxiom            `json:"meta_axiom,omitempty"`
 	Axioms            []Axiom               `json:"axioms"`
 	DerivedPrinciples []DerivedPrinciple    `json:"derived_principles,omitempty"`
+	MetaPrinciples    []MetaPrinciple       `json:"meta_principles,omitempty"`
+	Interpretations   []Interpretation      `json:"interpretations,omitempty"`
+	RetiredAxioms     []RetiredRecord       `json:"retired_axioms,omitempty"`
+	RetiredPrinciples []RetiredRecord       `json:"retired_principles,omitempty"`
 	Anchors           []Anchor              `json:"anchors"`
 	Inputs            []Input               `json:"inputs,omitempty"`
 	Chains            []Chain               `json:"chains"`

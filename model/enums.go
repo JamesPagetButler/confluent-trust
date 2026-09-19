@@ -427,6 +427,67 @@ func (p *ProvenanceKind) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// ---- DecisionState (v0.3.4) ----
+
+// DecisionState is the decision lifecycle of a root that carries an Impasse
+// Record (#654 D3 four-bucket). Distinct from the coherence Status: Open = an
+// open question with a stated falsifier (bucket 3); Ruled = settled (bucket
+// 1/2). A root is Open while any of its questions is open; Open REQUIRES a
+// non-empty kill_condition (schema OpenNeedsKill, cth-implementor invariant).
+type DecisionState uint8
+
+// DecisionState values per #654 D3.
+const (
+	DecisionStateUnknown DecisionState = iota // absent/null
+	DecisionStateOpen                         // open question with a stated falsifier
+	DecisionStateRuled                        // settled: proved/forced, with the forcing anchor or ruling cited
+)
+
+// String returns the canonical JSON string form of a DecisionState.
+func (d DecisionState) String() string {
+	switch d {
+	case DecisionStateOpen:
+		return "open"
+	case DecisionStateRuled:
+		return "ruled"
+	default:
+		return ""
+	}
+}
+
+// MarshalJSON encodes a DecisionState as its canonical string, or null when unknown.
+func (d DecisionState) MarshalJSON() ([]byte, error) {
+	v := d.String()
+	if v == "" {
+		return []byte(jsonNull), nil
+	}
+	return json.Marshal(v)
+}
+
+// UnmarshalJSON decodes a DecisionState from its canonical string. Unknown
+// values produce a wrapped error; null and empty string become Unknown.
+func (d *DecisionState) UnmarshalJSON(b []byte) error {
+	if string(b) == jsonNull {
+		*d = DecisionStateUnknown
+		return nil
+	}
+	var raw string
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return fmt.Errorf("decision_state: %w", err)
+	}
+	switch raw {
+	case "":
+		*d = DecisionStateUnknown
+	case "open":
+		*d = DecisionStateOpen
+	case "ruled":
+		*d = DecisionStateRuled
+	default:
+		return fmt.Errorf("decision_state: unknown value %q", raw)
+	}
+	return nil
+}
+
 // ---- ProofState (v0.3) ----
 
 // ProofState is the rollup state of a proof-bearing anchor (design §4.1).
