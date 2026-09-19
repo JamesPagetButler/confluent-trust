@@ -173,7 +173,7 @@ func TestDecisionState_FourBucket(t *testing.T) {
 	}{
 		{"open + ruling-rescope kill, no discharge", ax(killRuling), false},
 		{"open + derivation kill + discharge", ax(killDeriv), false},
-		{"ruled, no kill", ax(`,"decision_state":"ruled"`), false},
+		{"settled, no kill", ax(`,"decision_state":"settled"`), false},
 		{"plain axiom (no decision fields)", ax(``), false},
 		{"four top-level root lists", lists, false},
 		{"open with NO kill_condition (OpenNeedsKill fires)", ax(`,"decision_state":"open"`), true},

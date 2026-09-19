@@ -121,7 +121,7 @@ func TestDecisionState_RoundTrip(t *testing.T) {
 		value    DecisionState
 	}{
 		{`"open"`, DecisionStateOpen},
-		{`"ruled"`, DecisionStateRuled},
+		{`"settled"`, DecisionStateSettled},
 	}
 	for _, c := range cases {
 		t.Run(c.wantJSON, func(t *testing.T) {

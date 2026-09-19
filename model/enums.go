@@ -431,7 +431,7 @@ func (p *ProvenanceKind) UnmarshalJSON(b []byte) error {
 
 // DecisionState is the decision lifecycle of a root that carries an Impasse
 // Record (#654 D3 four-bucket). Distinct from the coherence Status: Open = an
-// open question with a stated falsifier (bucket 3); Ruled = settled (bucket
+// open question with a stated falsifier (bucket 3); Settled = proved/forced (bucket
 // 1/2). A root is Open while any of its questions is open; Open REQUIRES a
 // non-empty kill_condition (schema OpenNeedsKill, cth-implementor invariant).
 type DecisionState uint8
@@ -440,7 +440,7 @@ type DecisionState uint8
 const (
 	DecisionStateUnknown DecisionState = iota // absent/null
 	DecisionStateOpen                         // open question with a stated falsifier
-	DecisionStateRuled                        // settled: proved/forced, with the forcing anchor or ruling cited
+	DecisionStateSettled                      // settled: proved/forced, with the forcing anchor or ruling cited
 )
 
 // String returns the canonical JSON string form of a DecisionState.
@@ -448,8 +448,8 @@ func (d DecisionState) String() string {
 	switch d {
 	case DecisionStateOpen:
 		return "open"
-	case DecisionStateRuled:
-		return "ruled"
+	case DecisionStateSettled:
+		return "settled"
 	default:
 		return ""
 	}
@@ -480,8 +480,8 @@ func (d *DecisionState) UnmarshalJSON(b []byte) error {
 		*d = DecisionStateUnknown
 	case "open":
 		*d = DecisionStateOpen
-	case "ruled":
-		*d = DecisionStateRuled
+	case "settled":
+		*d = DecisionStateSettled
 	default:
 		return fmt.Errorf("decision_state: unknown value %q", raw)
 	}
