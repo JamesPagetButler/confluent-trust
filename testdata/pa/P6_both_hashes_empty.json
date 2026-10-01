@@ -1,0 +1,48 @@
+{
+  "claim": "PROOF-probe-p6",
+  "consumer": "qbp#692-ci",
+  "proof_assistants": [
+    {
+      "assistant": "lean4",
+      "evidence_ref": "proofs/QBP/P.lean@p1#t",
+      "producer": "qbp-oppenheimer",
+      "declared": {
+        "mode": "decide",
+        "axioms": [
+          "propext"
+        ],
+        "exit_code": 0,
+        "output_hash": ""
+      },
+      "derived": {
+        "tactics_used": [
+          "decide"
+        ],
+        "axioms": [
+          "propext"
+        ],
+        "exit_code": 0,
+        "output_hash": "",
+        "kernel_clean": true
+      },
+      "trust_check": "pass",
+      "attestation": {
+        "signer": "unknown",
+        "role": "none",
+        "method": "unsigned"
+      }
+    }
+  ],
+  "correspondence": {
+    "corresponds": false,
+    "basis": "",
+    "checked_by": "",
+    "checked_at": ""
+  },
+  "corroborated_by": [],
+  "expected_pa": 0,
+  "flags": [
+    "no_evidence",
+    "hash_mismatch"
+  ]
+}

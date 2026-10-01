@@ -29,6 +29,7 @@
     "claim_id": { "type": "string", "minLength": 1 },
     "source_ref": { "type": "string", "minLength": 1, "description": "owner/repo@path to the source the claim lives in (a real, resolvable path)." },
     "source_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$", "description": "The 40-hex pinned sha the gate evaluated." },
+    "detail": { "type": "string", "description": "Optional short human string (locked v1.3)." },
     "artifact_digest": { "type": ["string", "null"], "description": "null EXCEPT artifact_tie_mismatch, where it is the shipped-bytes digest." },
     "required_pa": { "type": "integer", "minimum": 0, "maximum": 2 },
     "current_pa": { "type": ["integer", "null"], "description": "null for artifact_tie_mismatch (the shipped thing is not the proven thing); a 0-2 integer otherwise." },

@@ -91,6 +91,16 @@ func TestNotaryRequestSeam_ConditionalBites(t *testing.T) {
 	}
 }
 
+// TestNotaryRequestSeam_DetailAccepted (R5): the optional detail field of locked
+// v1.3 must validate — the schema was blocking it via additionalProperties:false.
+func TestNotaryRequestSeam_DetailAccepted(t *testing.T) {
+	s := compileNotaryRequestSchema(t)
+	withDetail := `{"schema_version":"1","ledger_version":"6.13.0","emitter":"cth-pa-engine","emitted_at":"2026-10-01T00:00:00Z","reason":"pa_shortfall","claim_id":"PROOF-x","source_ref":"o/r@p","source_sha":"a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0","detail":"short human note","artifact_digest":null,"required_pa":2,"current_pa":0,"pinning_consumer":[],"stale":false}`
+	if err := validateInstance(t, s, []byte(withDetail)); err != nil {
+		t.Errorf("record with detail rejected: %v", err)
+	}
+}
+
 // TestNotaryRequestSeam_EngineEmitsConforming proves the engine's own returned
 // record conforms to the shared schema: a pa_shortfall and a staleness request,
 // once stamped with emit metadata, both validate.
@@ -108,7 +118,11 @@ func TestNotaryRequestSeam_EngineEmitsConforming(t *testing.T) {
 		name  string
 		stale bool
 	}{{"pa_shortfall", false}, {"staleness", true}} {
-		r := pa.RequestFor(c, pa.PA0, pa.PA2, meta, tc.stale)
+		res := pa.Result{ClaimID: c.ID}
+		if tc.stale {
+			res.Flags = []string{"lean4:" + pa.FlagStale}
+		}
+		r := pa.RequestFor(c, res, pa.PA0, pa.PA2, meta)
 		if r == nil {
 			t.Fatalf("%s: RequestFor returned nil", tc.name)
 		}

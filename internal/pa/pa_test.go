@@ -269,7 +269,10 @@ func TestRequestFor(t *testing.T) {
 		PinningConsumer: []string{"roms/octonion_idx.hex", "roms/octonion_signs.hex"},
 	}
 
-	if r := pa.RequestFor(c, pa.PA1, pa.PA2, meta, false); r == nil {
+	clean := pa.Result{ClaimID: c.ID}
+	staleRes := pa.Result{ClaimID: c.ID, Flags: []string{"lean4:" + pa.FlagStale}}
+
+	if r := pa.RequestFor(c, clean, pa.PA1, pa.PA2, meta); r == nil {
 		t.Error("below required: want a request, got nil")
 	} else {
 		if r.Reason != pa.ReasonPAShortfall {
@@ -289,12 +292,14 @@ func TestRequestFor(t *testing.T) {
 		}
 	}
 
-	if r := pa.RequestFor(c, pa.PA2, pa.PA2, meta, false); r != nil {
+	if r := pa.RequestFor(c, clean, pa.PA2, pa.PA2, meta); r != nil {
 		t.Errorf("met required, not stale: want nil, got %+v", r)
 	}
 
-	if r := pa.RequestFor(c, pa.PA2, pa.PA2, meta, true); r == nil {
-		t.Error("stale: want a request even when grade meets required, got nil")
+	// Staleness is derived from the grade's flags, not a separate argument: a
+	// stale grade that still meets required PA must still emit a staleness request.
+	if r := pa.RequestFor(c, staleRes, pa.PA2, pa.PA2, meta); r == nil {
+		t.Error("stale grade: want a request even when effective PA meets required, got nil")
 	} else if r.Reason != pa.ReasonStaleness || !r.Stale {
 		t.Errorf("stale request must be reason=staleness + Stale: %+v", r)
 	}

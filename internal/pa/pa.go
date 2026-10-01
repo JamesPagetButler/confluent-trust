@@ -14,7 +14,12 @@
 // The package is stdlib-only apart from the attestation interface.
 package pa
 
-import "github.com/JamesPagetButler/confluent-trust/attestation"
+import (
+	"slices"
+	"strings"
+
+	"github.com/JamesPagetButler/confluent-trust/attestation"
+)
 
 // Grade is a PA level: PA0, PA1, or PA2 (the gate).
 type Grade int
@@ -110,21 +115,29 @@ const (
 	FlagSelfAttestedCorrespond = "self_attested_correspondence"
 	FlagUncorresponded         = "uncorresponded"
 	FlagStale                  = "stale"
+	FlagReexecFailed           = "reexec_failed"
+	FlagNoEvidence             = "no_evidence"
 )
 
 // assistantCounts reports whether a contributes to PA, deriving the verdict and
 // never trusting Declared or a bare TrustCheck:pass. It appends any flags.
 func assistantCounts(a Assistant, pinnedSHA string, pol Policy, v attestation.Verifier, flags *[]string) bool {
 	ok := true
-	// Staleness (notary#3): evidence produced against a source sha that no longer
-	// matches the claim's currently pinned sha is stale and counts 0, so a changed
-	// proof cannot keep an old pass. Only checked when both shas are known.
-	if pinnedSHA != "" && a.SourceSHA != "" && a.SourceSHA != pinnedSHA {
+	// Every guard below REQUIRES a good value rather than rejecting a bad one, and
+	// fails closed on a missing field — a producer who omits a field must not pass
+	// (confluent-trust#110 §I4: the declare-to-pass hole derive-don't-declare closes).
+	//
+	// Staleness (notary#3), fail closed: a pinned claim's evidence MUST carry the
+	// source sha it was produced against AND it must match the pinned sha. Unknown
+	// provenance (empty source_sha) can't prove freshness, so it counts 0.
+	if pinnedSHA != "" && (a.SourceSHA == "" || a.SourceSHA != pinnedSHA) {
 		*flags = append(*flags, a.Assistant+":"+FlagStale)
 		ok = false
 	}
-	// AC3: kernel-cleanliness is derived.
-	if !a.Derived.KernelClean {
+	// AC3: kernel-cleanliness is DERIVED by the engine from the assistant's own
+	// axioms and tactics (a per-assistant whitelist) — never taken from the
+	// producer's kernel_clean bool, which may only further reject, never grant.
+	if !derivedKernelClean(a) {
 		*flags = append(*flags, a.Assistant+":"+FlagNotKernelClean)
 		ok = false
 	}
@@ -133,13 +146,28 @@ func assistantCounts(a Assistant, pinnedSHA string, pol Policy, v attestation.Ve
 		*flags = append(*flags, a.Assistant+":"+FlagDeclaredMismatch)
 		ok = false
 	}
-	// AC3: the output hash must reproduce (declared == derived hash).
-	if a.Declared.OutputHash != "" && a.Declared.OutputHash != a.Derived.OutputHash {
+	// AC6/R2: the re-execution must have SUCCEEDED (exit 0), else nothing was proven.
+	if a.Derived.ExitCode != 0 {
+		*flags = append(*flags, a.Assistant+":"+FlagReexecFailed)
+		ok = false
+	}
+	// R3: fail closed on missing evidence — an empty derived output hash means
+	// nothing re-executed, so the assistant cannot count.
+	if a.Derived.OutputHash == "" {
+		*flags = append(*flags, a.Assistant+":"+FlagNoEvidence)
+		ok = false
+	}
+	// AC2/R3: the output hash must reproduce. A MISSING declared hash can't
+	// reproduce (fail closed); a present one must equal the derived hash.
+	if a.Declared.OutputHash == "" || a.Declared.OutputHash != a.Derived.OutputHash {
 		*flags = append(*flags, a.Assistant+":"+FlagHashMismatch)
 		ok = false
 	}
-	// AC2: trust_check is VETO-ONLY — a fail zeroes it; a pass grants nothing on its own.
-	if a.TrustCheck == "fail" {
+	// AC2/R4: trust_check must be exactly "pass". Any other value — including a
+	// missing one or "pending" — does not count. It stays veto-only in the sense
+	// that matters: a "pass" is necessary, never sufficient (the derived guards
+	// above still have to hold).
+	if a.TrustCheck != "pass" {
 		*flags = append(*flags, a.Assistant+":"+FlagTrustCheckFail)
 		ok = false
 	}
@@ -183,6 +211,41 @@ func declaredMismatch(a Assistant) bool {
 		return true
 	}
 	return false
+}
+
+// derivedKernelClean computes AC3 cleanliness from the assistant's OWN derived
+// axioms and tactics (R1) — the engine decides, it does not read the producer's
+// kernel_clean bool for the grant. A compiled-path tactic or an axiom outside the
+// per-assistant whitelist makes it unclean; the kernel_clean input can only
+// further reject (so a producer can mark something dirty, never clean).
+func derivedKernelClean(a Assistant) bool {
+	if slices.ContainsFunc(a.Derived.TacticsUsed, isCompiledPath) {
+		return false
+	}
+	if !axiomsClean(a.Assistant, a.Derived.Axioms) {
+		return false
+	}
+	return a.Derived.KernelClean
+}
+
+// axiomsClean reports whether an assistant's derived axiom closure is acceptable.
+// lean4: axioms ⊆ the standard-safe set. coq/agda: a closed context (no axioms/
+// postulates). An unknown assistant fails closed.
+func axiomsClean(assistant string, axioms []string) bool {
+	switch assistant {
+	case "lean4":
+		allowed := map[string]bool{"propext": true, "Classical.choice": true, "Quot.sound": true}
+		for _, ax := range axioms {
+			if !allowed[ax] {
+				return false
+			}
+		}
+		return true
+	case "coq", "agda":
+		return len(axioms) == 0
+	default:
+		return false
+	}
 }
 
 // isCompiledPath reports whether a tactic is a trust-shortcut (PA-0) tactic.
@@ -318,6 +381,7 @@ type NotaryRequest struct {
 	ClaimID         string   `json:"claim_id"`
 	SourceRef       string   `json:"source_ref"`
 	SourceSHA       string   `json:"source_sha"`
+	Detail          string   `json:"detail,omitempty"` // optional short human string (locked v1.3)
 	PinningConsumer []string `json:"pinning_consumer"` // [] for unpinned
 	RequiredPA      Grade    `json:"required_pa"`
 	Stale           bool     `json:"stale"`
@@ -337,20 +401,37 @@ func (n NotaryRequest) DedupeKey() string {
 
 // RequestMeta carries the pin/version context the engine stamps onto a returned
 // record (the grading inputs don't include it). PinningConsumer is a list ([] for
-// an unpinned critical claim); EmittedAt is an RFC3339 timestamp.
+// an unpinned critical claim); EmittedAt is an RFC3339 timestamp; Detail is an
+// optional short human string.
 type RequestMeta struct {
 	LedgerVersion   string
 	SourceRef       string
 	SourceSHA       string
 	EmittedAt       string
+	Detail          string
 	PinningConsumer []string
 }
 
+// ResultIsStale reports whether a graded Result carries a staleness flag on any
+// assistant — so a caller derives the emit's stale/reason from the grade itself
+// rather than passing a separate bool that could disagree with it (§I4 non-block).
+func ResultIsStale(r Result) bool {
+	for _, f := range r.Flags {
+		if f == FlagStale || strings.HasSuffix(f, ":"+FlagStale) {
+			return true
+		}
+	}
+	return false
+}
+
 // RequestFor returns a notary-request when a pinned/critical claim is below its
-// required effective PA or its evidence is stale, else nil. It emits
-// reason=staleness when stale, else pa_shortfall; it never emits
-// artifact_tie_mismatch (that is #77's). The caller emits the returned record.
-func RequestFor(c Claim, effectivePA, required Grade, meta RequestMeta, stale bool) *NotaryRequest {
+// required effective PA or its evidence is stale, else nil. Staleness is taken
+// from the target claim's own grade (r), not a separate argument, so the emitted
+// reason can't disagree with the grade. It emits reason=staleness when the grade
+// is stale, else pa_shortfall; it never emits artifact_tie_mismatch (that is
+// #77's). The engine returns the record; the caller emits it.
+func RequestFor(c Claim, r Result, effectivePA, required Grade, meta RequestMeta) *NotaryRequest {
+	stale := ResultIsStale(r)
 	if effectivePA >= required && !stale {
 		return nil
 	}
@@ -372,6 +453,7 @@ func RequestFor(c Claim, effectivePA, required Grade, meta RequestMeta, stale bo
 		ClaimID:         c.ID,
 		SourceRef:       meta.SourceRef,
 		SourceSHA:       meta.SourceSHA,
+		Detail:          meta.Detail,
 		ArtifactDigest:  nil,
 		RequiredPA:      required,
 		CurrentPA:       &cur,

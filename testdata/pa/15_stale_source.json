@@ -40,20 +40,16 @@
       "producer": "deming",
       "source_sha": "1111111111111111111111111111111111111111",
       "declared": {
-        "mode": "decide",
-        "axioms": [
-          "propext"
-        ],
+        "mode": "reflexivity",
+        "axioms": [],
         "exit_code": 0,
         "output_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
       },
       "derived": {
         "tactics_used": [
-          "decide"
+          "reflexivity"
         ],
-        "axioms": [
-          "propext"
-        ],
+        "axioms": [],
         "exit_code": 0,
         "output_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
         "kernel_clean": true
