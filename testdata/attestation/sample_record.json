@@ -1,0 +1,16 @@
+{
+  "description": "One evidence record and the verify() Result each fake returns for it. Consumer tests load the record bytes, call Verify(record, claimed_signer), and assert the documented Result. The authoritative behaviour is in package attestationtest; this file pins it as data.",
+  "record": {
+    "claim": "PROOF-hessian",
+    "evidence_ref": "proofs/QBP/Foundations/Hessian.lean@abc1234#hessian_psd",
+    "producer": "qbp-oppenheimer"
+  },
+  "claimed_signer": "notary-implementor",
+  "expected": {
+    "StubV0":         { "verified": false, "signer": "unknown",            "role": "none",   "method": "unsigned" },
+    "AlwaysUnsigned": { "verified": false, "signer": "unknown",            "role": "none",   "method": "unsigned" },
+    "ValidNotary":    { "verified": true,  "signer": "notary-implementor", "role": "notary", "method": "gitsign"  },
+    "WrongRole":      { "verified": true,  "signer": "notary-implementor", "role": "none",   "method": "gitsign"  },
+    "Forged":         { "verified": false, "signer": "unknown",            "role": "none",   "method": "gitsign"  }
+  }
+}
