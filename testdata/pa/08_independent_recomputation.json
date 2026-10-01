@@ -1,0 +1,52 @@
+{
+  "claim": "PROOF-recompute",
+  "consumer": "qbp#692-ci",
+  "policy": {
+    "require_signature": false
+  },
+  "proof_assistants": [
+    {
+      "assistant": "lean4",
+      "evidence_ref": "proofs/QBP/Recompute.lean@iiii888#recomp",
+      "producer": "qbp-oppenheimer",
+      "declared": {
+        "mode": "native_decide",
+        "axioms": [
+          "ofReduceBool"
+        ],
+        "exit_code": 0,
+        "output_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "derived": {
+        "tactics_used": [
+          "native_decide"
+        ],
+        "axioms": [
+          "ofReduceBool"
+        ],
+        "exit_code": 0,
+        "output_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "kernel_clean": false
+      },
+      "trust_check": "pass",
+      "attestation": {
+        "signer": "unknown",
+        "role": "none",
+        "method": "unsigned"
+      }
+    }
+  ],
+  "correspondence": {
+    "corresponds": false,
+    "basis": "",
+    "checked_by": "",
+    "checked_at": ""
+  },
+  "corroborated_by": [
+    "disjoint-tcb-recompute@aabbccdd"
+  ],
+  "expected_pa": 0,
+  "flags": [
+    "not_kernel_clean"
+  ]
+}

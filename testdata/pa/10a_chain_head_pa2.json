@@ -1,0 +1,74 @@
+{
+  "claim": "PROOF-chain-A",
+  "consumer": "qbp#692-ci",
+  "policy": {
+    "require_signature": false
+  },
+  "proof_assistants": [
+    {
+      "assistant": "lean4",
+      "evidence_ref": "proofs/QBP/CA1.lean@a1#x",
+      "producer": "qbp-oppenheimer",
+      "declared": {
+        "mode": "decide",
+        "axioms": [
+          "propext"
+        ],
+        "exit_code": 0,
+        "output_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "derived": {
+        "tactics_used": [
+          "decide"
+        ],
+        "axioms": [
+          "propext"
+        ],
+        "exit_code": 0,
+        "output_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "kernel_clean": true
+      },
+      "trust_check": "pass",
+      "attestation": {
+        "signer": "unknown",
+        "role": "none",
+        "method": "unsigned"
+      }
+    },
+    {
+      "assistant": "coq",
+      "evidence_ref": "proofs/QBP/CA2.v@a2#y",
+      "producer": "deming",
+      "declared": {
+        "mode": "reflexivity",
+        "axioms": [],
+        "exit_code": 0,
+        "output_hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "derived": {
+        "tactics_used": [
+          "reflexivity"
+        ],
+        "axioms": [],
+        "exit_code": 0,
+        "output_hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "kernel_clean": true
+      },
+      "trust_check": "pass",
+      "attestation": {
+        "signer": "unknown",
+        "role": "none",
+        "method": "unsigned"
+      }
+    }
+  ],
+  "correspondence": {
+    "corresponds": true,
+    "basis": "49/49 table entries identical + same doubling convention + same ∀-quantifier",
+    "checked_by": "qbp-architecture",
+    "checked_at": "cccc333"
+  },
+  "corroborated_by": [],
+  "expected_pa": 2,
+  "flags": []
+}
