@@ -11,15 +11,22 @@
 // testdata/attestation/.
 package attestationtest
 
-import (
-	"testing"
+import "github.com/JamesPagetButler/confluent-trust/attestation"
 
-	"github.com/JamesPagetButler/confluent-trust/attestation"
-)
+// Reporter is the minimal slice of testing.TB that Contract reports through.
+// Taking an interface (rather than *testing.T) lets a test pass a recorder to
+// verify Contract itself catches bad verifiers — otherwise a weakened contract
+// check would leave every consumer's suite green while accepting, say, an
+// unsigned record reported as verified (confluent-trust#109 §I4, mutant M3).
+type Reporter interface {
+	Helper()
+	Errorf(format string, args ...any)
+}
 
 // AlwaysUnsigned behaves like the v0 stub: every record is unsigned.
 type AlwaysUnsigned struct{}
 
+// Verify reports every record as unsigned, matching the v0 stub.
 func (AlwaysUnsigned) Verify(_ []byte, _ string) attestation.Result {
 	return attestation.Result{
 		Verified: false,
@@ -33,6 +40,7 @@ func (AlwaysUnsigned) Verify(_ []byte, _ string) attestation.Result {
 // ValidNotary returns a valid notary-role signature bound to claimedSigner.
 type ValidNotary struct{}
 
+// Verify returns a valid notary-role signature bound to claimedSigner.
 func (ValidNotary) Verify(_ []byte, claimedSigner string) attestation.Result {
 	return attestation.Result{
 		Verified: true,
@@ -47,6 +55,7 @@ func (ValidNotary) Verify(_ []byte, claimedSigner string) attestation.Result {
 // notary — the AC6 case a PA consumer must reject even though Verified is true.
 type WrongRole struct{}
 
+// Verify returns a valid signature whose role is not notary (the AC6 case).
 func (WrongRole) Verify(_ []byte, claimedSigner string) attestation.Result {
 	return attestation.Result{
 		Verified: true,
@@ -61,6 +70,7 @@ func (WrongRole) Verify(_ []byte, claimedSigner string) attestation.Result {
 // the claimed signer: verification fails and attribution is unknown.
 type Forged struct{}
 
+// Verify reports a record whose signature does not bind the claimed signer.
 func (Forged) Verify(_ []byte, _ string) attestation.Result {
 	return attestation.Result{
 		Verified: false,
@@ -91,7 +101,7 @@ var (
 //
 // It deliberately does NOT assert any particular verdict: that is each
 // Verifier's own business. It asserts only the shape every caller may rely on.
-func Contract(t *testing.T, name string, v attestation.Verifier) {
+func Contract(t Reporter, name string, v attestation.Verifier) {
 	t.Helper()
 	inputs := []struct {
 		record string

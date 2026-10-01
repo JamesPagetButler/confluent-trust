@@ -50,17 +50,89 @@ func TestFakes_DistinctVerdicts(t *testing.T) {
 	const signer = "notary-implementor"
 
 	vn := attestationtest.ValidNotary{}.Verify(nil, signer)
-	if !(vn.Verified && vn.Role == attestation.RoleNotary && vn.Signer == signer) {
+	if !vn.Verified || vn.Role != attestation.RoleNotary || vn.Signer != signer {
 		t.Errorf("ValidNotary: want verified+notary+%s, got %+v", signer, vn)
 	}
 
 	wr := attestationtest.WrongRole{}.Verify(nil, signer)
-	if !(wr.Verified && wr.Role != attestation.RoleNotary) {
+	if !wr.Verified || wr.Role == attestation.RoleNotary {
 		t.Errorf("WrongRole: want verified with role != notary, got %+v", wr)
 	}
 
 	fg := attestationtest.Forged{}.Verify(nil, signer)
 	if fg.Verified || fg.Signer == signer {
 		t.Errorf("Forged: want not-verified and signer not bound to %s, got %+v", signer, fg)
+	}
+}
+
+// --- Meta-tests for the contract runner itself (confluent-trust#109 §I4 M3) ---
+// Contract() guards consumers; these guard Contract(). Without them a weakened
+// contract check would leave every consumer's suite green while accepting a bad
+// verifier. recorder captures whether Contract reports a failure.
+
+type recorder struct{ failures int }
+
+func (r *recorder) Helper()               {}
+func (r *recorder) Errorf(string, ...any) { r.failures++ }
+
+// Each bad verifier violates exactly one contract invariant, so removing that
+// one check turns exactly its sub-test red.
+
+type unsignedButVerified struct{}
+
+func (unsignedButVerified) Verify([]byte, string) attestation.Result {
+	return attestation.Result{Verified: true, Signer: "x", Role: attestation.RoleNone, Method: attestation.MethodUnsigned}
+}
+
+type badRole struct{}
+
+func (badRole) Verify([]byte, string) attestation.Result {
+	return attestation.Result{Signer: "x", Role: attestation.Role("bogus"), Method: attestation.MethodUnsigned}
+}
+
+type badMethod struct{}
+
+func (badMethod) Verify([]byte, string) attestation.Result {
+	return attestation.Result{Signer: "x", Role: attestation.RoleNone, Method: attestation.Method("bogus")}
+}
+
+type emptySigner struct{}
+
+func (emptySigner) Verify([]byte, string) attestation.Result {
+	return attestation.Result{Signer: "", Role: attestation.RoleNone, Method: attestation.MethodUnsigned}
+}
+
+// nondeterministic returns a different result on each call (pointer receiver), so
+// the two calls Contract makes on the same input disagree.
+type nondeterministic struct{ n int }
+
+func (nd *nondeterministic) Verify([]byte, string) attestation.Result {
+	nd.n++
+	sig := "a"
+	if nd.n%2 == 0 {
+		sig = "b"
+	}
+	return attestation.Result{Signer: sig, Role: attestation.RoleNone, Method: attestation.MethodUnsigned}
+}
+
+// TestContract_RejectsBadVerifiers: Contract must report a failure for every
+// verifier that breaks an invariant. Removing any single contract check turns
+// exactly that sub-test red (mutation table in the PR body).
+func TestContract_RejectsBadVerifiers(t *testing.T) {
+	bad := map[string]attestation.Verifier{
+		"unsigned-but-verified": unsignedButVerified{},
+		"role-out-of-set":       badRole{},
+		"method-out-of-set":     badMethod{},
+		"empty-signer":          emptySigner{},
+		"non-deterministic":     &nondeterministic{},
+	}
+	for name, v := range bad {
+		t.Run(name, func(t *testing.T) {
+			rec := &recorder{}
+			attestationtest.Contract(rec, name, v)
+			if rec.failures == 0 {
+				t.Errorf("Contract accepted a bad verifier (%s); it must report a failure", name)
+			}
+		})
 	}
 }

@@ -16,6 +16,7 @@ package attestation
 // (a Verðandi grant); it is not inferred from the signature itself.
 type Role string
 
+// The authority roles a signer may hold.
 const (
 	RoleNotary    Role = "notary"
 	RoleBeekeeper Role = "beekeeper"
@@ -25,6 +26,7 @@ const (
 // Method is how a record was signed (or that it was not).
 type Method string
 
+// The signing methods a record may carry (or that it was not signed).
 const (
 	MethodUnsigned Method = "unsigned"
 	MethodGitsign  Method = "gitsign"
@@ -37,11 +39,11 @@ const SignerUnknown = "unknown"
 
 // Result is the verdict returned by Verify, in the inter#149 shape.
 type Result struct {
-	Verified bool   `json:"verified"` // signature valid for the claimed signer
-	Signer   string `json:"signer"`   // seat-id, or SignerUnknown
+	Signer   string `json:"signer"`
 	Role     Role   `json:"role"`
 	Method   Method `json:"method"`
 	Reason   string `json:"reason"`
+	Verified bool   `json:"verified"`
 }
 
 // Verifier verifies that recordBytes carries a valid signature for
