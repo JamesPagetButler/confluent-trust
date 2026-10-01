@@ -126,15 +126,28 @@ func (a Axiom) Validate() error {
 	return nil
 }
 
+// ProofAssistant is a proof-assistant attestation on a proof or derivation
+// record (confluent-trust#108 AC1 / inter#150 PA grading): which assistant
+// checked the claim and a pointer to its re-executable evidence. The PA count
+// is DERIVED by the engine from the evidence at EvidenceRef — never from this
+// record alone; TrustCheck ("pass"/"fail") is veto-only. Richer notary-emitted
+// fields ride as the evidence format (testdata/pa/), not on this ledger record.
+type ProofAssistant struct {
+	Assistant   string `json:"assistant"`    // lean4 | coq | agda
+	EvidenceRef string `json:"evidence_ref"` // pinned, re-executable: path@sha#theorem
+	TrustCheck  string `json:"trust_check"`  // pass | fail (veto-only)
+}
+
 // DerivedPrinciple is a Tier 1 named derivation, conventionally with id DERIV-*.
 // It is a high-level corollary of axioms and proofs that gets a stable name
 // rather than being buried in a chain.
 type DerivedPrinciple struct {
-	ID          string   `json:"id"`
-	Name        string   `json:"name"`
-	Statement   string   `json:"statement"`
-	DerivedFrom []string `json:"derived_from"`
-	Layer       int      `json:"layer,omitempty"`
+	ID              string           `json:"id"`
+	Name            string           `json:"name"`
+	Statement       string           `json:"statement"`
+	DerivedFrom     []string         `json:"derived_from"`
+	ProofAssistants []ProofAssistant `json:"proof_assistants,omitempty"`
+	Layer           int              `json:"layer,omitempty"`
 }
 
 // Anchor is a Tier 1–3 node: a proof, measurement, prediction, or observation.
@@ -196,6 +209,7 @@ type Anchor struct {
 	PredictionChain         []string                 `json:"prediction_chain"`
 	AdditionalVerifications []AdditionalVerification `json:"additional_verifications,omitempty"`
 	Theorems                []TheoremRef             `json:"theorems,omitempty"`
+	ProofAssistants         []ProofAssistant         `json:"proof_assistants,omitempty"`
 	// Small enum fields (int8/uint8) at the tail.
 	Tier           Tier           `json:"tier"`
 	Provenance     Provenance     `json:"provenance"`
