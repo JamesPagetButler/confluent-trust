@@ -1,0 +1,47 @@
+{
+  "claim": "PROOF-probe-p8",
+  "consumer": "qbp#692-ci",
+  "proof_assistants": [
+    {
+      "assistant": "coq",
+      "evidence_ref": "proofs/QBP/P8.v@p8#t",
+      "producer": "deming",
+      "declared": {
+        "mode": "reflexivity",
+        "axioms": [
+          "Classical_Prop.classic"
+        ],
+        "exit_code": 0,
+        "output_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "derived": {
+        "tactics_used": [
+          "reflexivity"
+        ],
+        "axioms": [
+          "Classical_Prop.classic"
+        ],
+        "exit_code": 0,
+        "output_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "kernel_clean": true
+      },
+      "trust_check": "pass",
+      "attestation": {
+        "signer": "unknown",
+        "role": "none",
+        "method": "unsigned"
+      }
+    }
+  ],
+  "correspondence": {
+    "corresponds": false,
+    "basis": "",
+    "checked_by": "",
+    "checked_at": ""
+  },
+  "corroborated_by": [],
+  "expected_pa": 0,
+  "flags": [
+    "not_kernel_clean"
+  ]
+}
