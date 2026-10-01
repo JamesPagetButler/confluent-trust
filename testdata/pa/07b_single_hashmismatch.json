@@ -1,0 +1,46 @@
+{
+  "claim": "PROOF-single-hm",
+  "consumer": "qbp#692-ci",
+  "policy": {
+    "require_signature": false
+  },
+  "proof_assistants": [
+    {
+      "assistant": "coq",
+      "evidence_ref": "proofs/QBP/B2.v@bbbb777#lemma_b2",
+      "producer": "deming",
+      "declared": {
+        "mode": "reflexivity",
+        "axioms": [],
+        "exit_code": 0,
+        "output_hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "derived": {
+        "tactics_used": [
+          "reflexivity"
+        ],
+        "axioms": [],
+        "exit_code": 0,
+        "output_hash": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "kernel_clean": true
+      },
+      "trust_check": "pass",
+      "attestation": {
+        "signer": "unknown",
+        "role": "none",
+        "method": "unsigned"
+      }
+    }
+  ],
+  "correspondence": {
+    "corresponds": false,
+    "basis": "",
+    "checked_by": "",
+    "checked_at": ""
+  },
+  "corroborated_by": [],
+  "expected_pa": 0,
+  "flags": [
+    "hash_mismatch"
+  ]
+}

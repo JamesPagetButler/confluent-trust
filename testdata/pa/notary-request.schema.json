@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/JamesPagetButler/confluent-trust/testdata/pa/notary-request.schema.json",
+  "title": "notary-request",
+  "description": "The locked notary#3 v1.3 emit record. One JSON object per shortfall/staleness/tie event, appended as JSON lines to a CI artifact the filer consumes. Canonical copy lives in confluent-trust (architecture R4-Q4); other repos vendor it under a byte-identity CI check. Dedupe key = (claim_id, source_sha, reason, artifact_digest).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ledger_version",
+    "emitter",
+    "emitted_at",
+    "reason",
+    "claim_id",
+    "source_ref",
+    "source_sha",
+    "artifact_digest",
+    "required_pa",
+    "current_pa",
+    "pinning_consumer",
+    "stale"
+  ],
+  "properties": {
+    "schema_version": { "const": "1" },
+    "ledger_version": { "type": "string", "minLength": 1, "description": "PA is computed against this ledger version; an emitter rejects a claim_id that does not resolve here (R3, no phantom ids)." },
+    "emitter": { "enum": ["cth-pa-engine", "qbp-pa-reconcile", "qbp-cu-silicon-gate"] },
+    "emitted_at": { "type": "string", "format": "date-time" },
+    "reason": { "enum": ["pa_shortfall", "staleness", "artifact_tie_mismatch"] },
+    "claim_id": { "type": "string", "minLength": 1 },
+    "source_ref": { "type": "string", "minLength": 1, "description": "owner/repo@path to the source the claim lives in (a real, resolvable path)." },
+    "source_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$", "description": "The 40-hex pinned sha the gate evaluated." },
+    "detail": { "type": "string", "description": "Optional short human string (locked v1.3)." },
+    "artifact_digest": { "type": ["string", "null"], "description": "null EXCEPT artifact_tie_mismatch, where it is the shipped-bytes digest." },
+    "required_pa": { "type": "integer", "minimum": 0, "maximum": 2 },
+    "current_pa": { "type": ["integer", "null"], "description": "null for artifact_tie_mismatch (the shipped thing is not the proven thing); a 0-2 integer otherwise." },
+    "pinning_consumer": { "type": "array", "items": { "type": "string" }, "description": "The consumers pinning this claim; [] for an unpinned critical claim, non-empty when the reason involves a pin." },
+    "stale": { "type": "boolean" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "reason": { "const": "artifact_tie_mismatch" } } },
+      "then": {
+        "properties": {
+          "current_pa": { "type": "null" },
+          "artifact_digest": { "type": "string", "minLength": 1 }
+        }
+      },
+      "else": {
+        "properties": {
+          "current_pa": { "type": "integer", "minimum": 0, "maximum": 2 },
+          "artifact_digest": { "type": "null" }
+        }
+      }
+    }
+  ]
+}

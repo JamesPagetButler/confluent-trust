@@ -1,0 +1,16 @@
+{
+  "target": "PROOF-chain-A",
+  "expected_effective_pa": 1,
+  "edges": [
+    {
+      "from": "PROOF-chain-A",
+      "to": "PROOF-chain-B",
+      "type": "derivation"
+    },
+    {
+      "from": "PROOF-chain-A",
+      "to": "PROOF-chain-C",
+      "type": "relevance"
+    }
+  ]
+}

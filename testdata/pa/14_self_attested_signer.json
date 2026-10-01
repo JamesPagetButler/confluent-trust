@@ -1,0 +1,76 @@
+{
+  "claim": "PROOF-selfsign",
+  "consumer": "qbp#692-ci",
+  "policy": {
+    "require_signature": false
+  },
+  "proof_assistants": [
+    {
+      "assistant": "lean4",
+      "evidence_ref": "proofs/QBP/S1.lean@s1#x",
+      "producer": "qbp-oppenheimer",
+      "declared": {
+        "mode": "decide",
+        "axioms": [
+          "propext"
+        ],
+        "exit_code": 0,
+        "output_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "derived": {
+        "tactics_used": [
+          "decide"
+        ],
+        "axioms": [
+          "propext"
+        ],
+        "exit_code": 0,
+        "output_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "kernel_clean": true
+      },
+      "trust_check": "pass",
+      "attestation": {
+        "signer": "qbp-oppenheimer",
+        "role": "notary",
+        "method": "gitsign"
+      }
+    },
+    {
+      "assistant": "coq",
+      "evidence_ref": "proofs/QBP/S2.v@s2#y",
+      "producer": "deming",
+      "declared": {
+        "mode": "reflexivity",
+        "axioms": [],
+        "exit_code": 0,
+        "output_hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "derived": {
+        "tactics_used": [
+          "reflexivity"
+        ],
+        "axioms": [],
+        "exit_code": 0,
+        "output_hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "kernel_clean": true
+      },
+      "trust_check": "pass",
+      "attestation": {
+        "signer": "deming",
+        "role": "notary",
+        "method": "gitsign"
+      }
+    }
+  ],
+  "correspondence": {
+    "corresponds": true,
+    "basis": "49/49 table entries identical + same doubling convention + same ∀-quantifier",
+    "checked_by": "qbp-architecture",
+    "checked_at": "cccc333"
+  },
+  "corroborated_by": [],
+  "expected_pa": 0,
+  "flags": [
+    "self_attested"
+  ]
+}

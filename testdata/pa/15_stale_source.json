@@ -1,0 +1,76 @@
+{
+  "claim": "PROOF-cd-structure-constant-tables",
+  "consumer": "qbp#692-ci",
+  "pinned_sha": "2222222222222222222222222222222222222222",
+  "proof_assistants": [
+    {
+      "assistant": "lean4",
+      "evidence_ref": "proofs/QBP/Foundations/CDAlg.lean@1111111111111111111111111111111111111111#mulCoeff_three_eq_fano",
+      "producer": "qbp-oppenheimer",
+      "source_sha": "1111111111111111111111111111111111111111",
+      "declared": {
+        "mode": "decide",
+        "axioms": [
+          "propext"
+        ],
+        "exit_code": 0,
+        "output_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "derived": {
+        "tactics_used": [
+          "decide"
+        ],
+        "axioms": [
+          "propext"
+        ],
+        "exit_code": 0,
+        "output_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "kernel_clean": true
+      },
+      "trust_check": "pass",
+      "attestation": {
+        "signer": "unknown",
+        "role": "none",
+        "method": "unsigned"
+      }
+    },
+    {
+      "assistant": "coq",
+      "evidence_ref": "proofs/QBP/Foundations/FanoOrientationF3.v@1111111111111111111111111111111111111111#fanoTableF4_eq_cayleyDickson",
+      "producer": "deming",
+      "source_sha": "1111111111111111111111111111111111111111",
+      "declared": {
+        "mode": "reflexivity",
+        "axioms": [],
+        "exit_code": 0,
+        "output_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "derived": {
+        "tactics_used": [
+          "reflexivity"
+        ],
+        "axioms": [],
+        "exit_code": 0,
+        "output_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "kernel_clean": true
+      },
+      "trust_check": "pass",
+      "attestation": {
+        "signer": "unknown",
+        "role": "none",
+        "method": "unsigned"
+      }
+    }
+  ],
+  "correspondence": {
+    "corresponds": true,
+    "basis": "49/49 table entries identical",
+    "checked_by": "qbp-architecture",
+    "checked_at": "2222222222222222222222222222222222222222"
+  },
+  "corroborated_by": [],
+  "expected_pa": 0,
+  "flags": [
+    "stale"
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "claim": "PROOF-ignore-expected",
+  "consumer": "qbp#692-ci",
+  "policy": {
+    "require_signature": false
+  },
+  "proof_assistants": [
+    {
+      "assistant": "lean4",
+      "evidence_ref": "proofs/QBP/Foundations/A.lean@aaaa111#lemma_a",
+      "producer": "qbp-oppenheimer",
+      "declared": {
+        "mode": "decide",
+        "axioms": [
+          "propext"
+        ],
+        "exit_code": 0,
+        "output_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "derived": {
+        "tactics_used": [
+          "decide"
+        ],
+        "axioms": [
+          "propext"
+        ],
+        "exit_code": 0,
+        "output_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "kernel_clean": true
+      },
+      "trust_check": "pass",
+      "attestation": {
+        "signer": "unknown",
+        "role": "none",
+        "method": "unsigned"
+      }
+    }
+  ],
+  "correspondence": {
+    "corresponds": false,
+    "basis": "",
+    "checked_by": "",
+    "checked_at": ""
+  },
+  "corroborated_by": [],
+  "expected_pa": 2,
+  "flags": [],
+  "true_pa_do_not_read": 1
+}
