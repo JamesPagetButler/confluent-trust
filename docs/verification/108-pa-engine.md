@@ -23,11 +23,11 @@ source is restored → green (source-mutation harness, run per guard).
 
 | Check | Test | Mutant → result |
 |---|---|---|
-| old records still validate (additive) | `TestSchema_AdditiveOldRecordsValidate` | — |
-| a valid proof_assistants entry is accepted | `TestSchema_AcceptsValidProofAssistant` | — |
+| old records still validate (additive) | `TestSchema_AdditiveOldRecordsValidate` | make `proof_assistants` required → **KILLED** |
+| a valid proof_assistants entry is accepted | `TestSchema_AcceptsValidProofAssistant` | — (acceptance test; no single-guard mutant) |
 | assistant enum is closed | `TestSchema_RejectsUnknownAssistant` | widen the enum → **KILLED** |
 | required sub-fields enforced | `TestSchema_RejectsProofAssistantMissingRequired` | drop `proof_assistants` from both schema copies → **KILLED** |
-| trust_check enum enforced | `TestSchema_RejectsBadTrustCheck` | — |
+| trust_check enum enforced | `TestSchema_RejectsBadTrustCheck` | widen the trust_check enum → **KILLED** |
 
 Schema mutants re-run independently on `main` by qbp-architecture: widening the
 assistant enum → KILLED; dropping `proof_assistants` from either the canonical or
