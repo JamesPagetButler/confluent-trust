@@ -14,7 +14,7 @@ func TestReadToolchain_ReturnsString(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadToolchain: %v", err)
 	}
-	const want = "leanprover/lean4:v4.30.0-rc2"
+	const want = "leanprover/lean4:v4.30.0"
 	if tc != want {
 		t.Errorf("ReadToolchain: want %q, got %q", want, tc)
 	}
