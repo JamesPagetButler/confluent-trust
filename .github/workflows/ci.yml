@@ -7,7 +7,8 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Superseded PR runs cancel; every main commit gets a completed run (inter#104 baseline §4.2.1).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -37,4 +38,32 @@ jobs:
           go-version: '1.24'
       - uses: golangci/golangci-lint-action@v7
         with:
-          version: latest
+          version: v2.12.2
+
+  tidy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - run: go mod tidy
+      - name: go.mod / go.sum are tidy
+        run: git diff --exit-code go.mod go.sum
+
+  ci-gate:
+    name: CI Gate
+    runs-on: ubuntu-latest
+    needs: [build-and-test, lint, tidy]
+    if: always()
+    steps:
+      # The always-running gate path-filtered jobs can be required through.
+      # A skipped (path-filtered) dependency counts as success; only a real
+      # failure or cancellation reddens the gate.
+      - name: gate on dependency results
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: |
+          echo "CI Gate: a required dependency failed or was cancelled — ${{ join(needs.*.result, ', ') }}"
+          exit 1
+      - name: all dependencies passed or were skipped
+        run: echo "CI Gate green — ${{ join(needs.*.result, ', ') }}"
