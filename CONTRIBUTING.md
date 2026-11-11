@@ -1,12 +1,10 @@
 # Contributing to CTH
 
-CTH follows the same conventions as the Helpful Engineering BMA project.
-The two binding documents are:
-
-- [`go-coding-guide.md`](../../BMA/doc/go-coding-guide.md) — Go style, package design, error handling, testing
-- [`github-practices.md`](../../BMA/doc/github-practices.md) — branching, commits, issues, CI, signing
-
-This file summarizes the parts that matter most for first-time contributors.
+CTH follows the Helpful Engineering BMA project's conventions in spirit.
+The two documents this originally pointed to (`go-coding-guide.md`,
+`github-practices.md`) don't currently exist at any resolvable path —
+this file, not those, is the actual binding reference for this repo.
+Everything below is what CI and review here actually enforce.
 
 ## Dev setup
 
