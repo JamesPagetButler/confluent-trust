@@ -109,7 +109,7 @@ func Reconcile(inv model.Inventory, theorems []TheoremDecl, spec ToolchainSpec) 
 
 		refs := collectTheoremRefs(a)
 		for _, name := range refs {
-			referencedNames[name] = true
+			referencedNames[bareTheoremName(name)] = true
 		}
 
 		if a.ProofFile == "" {
@@ -443,14 +443,30 @@ func filterByFile(decls []TheoremDecl, proofFile string) []TheoremDecl {
 	return out
 }
 
-// findByName returns the first TheoremDecl with the given name, or nil.
+// findByName returns the first TheoremDecl with the given name, or nil. name
+// may be a bare declaration name, or a "<module>::<theorem>" join key per
+// doc/design/proven-theorem-anchoring.md §3.4 — only the bare theorem part
+// is matched, since decls is already filtered to the anchor's proof_file by
+// the caller (CTH #124).
 func findByName(decls []TheoremDecl, name string) *TheoremDecl {
+	bare := bareTheoremName(name)
 	for i := range decls {
-		if decls[i].Name == name {
+		if decls[i].Name == bare {
 			return &decls[i]
 		}
 	}
 	return nil
+}
+
+// bareTheoremName strips an optional "<module>::" join-key prefix (per
+// doc/design/proven-theorem-anchoring.md §3.4), returning the declaration
+// name as the parser actually captures it. A ref with no "::" is returned
+// unchanged.
+func bareTheoremName(ref string) string {
+	if idx := strings.LastIndex(ref, "::"); idx >= 0 {
+		return ref[idx+2:]
+	}
+	return ref
 }
 
 // statusOf returns the TheoremStatus for a specific theorem name in an anchor.

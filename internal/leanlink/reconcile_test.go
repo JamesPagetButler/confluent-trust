@@ -135,6 +135,60 @@ func TestReconcile_StaleRef_TheoremNotFound(t *testing.T) {
 	}
 }
 
+// 4b. Module::theorem join key (CTH #124): doc/design/proven-theorem-anchoring.md
+// §3.4 specifies "<module>::<theorem>" as the join key for lean_theorem; the
+// parser only ever captures bare declaration names, so the anchor must still
+// resolve to Proven (not StaleRef), and the bare name must not also appear
+// as an orphan.
+func TestReconcile_ModuleJoinKeyResolves(t *testing.T) {
+	t.Parallel()
+	anchor := model.Anchor{
+		ID:              "PROOF-GL-JOINKEY",
+		Name:            "PROOF-GL-JOINKEY",
+		Description:     "join-key test anchor",
+		Tier:            model.TierProof,
+		Status:          model.StatusCoherent,
+		ProvenanceKind:  model.ProvenanceKindProof,
+		ProofLanguage:   "lean4",
+		ProofFile:       "Gleipnir/OctonionRank/RankEighteen.lean",
+		ProofState:      model.ProofStateWritten,
+		SorryCount:      intPtr(0),
+		LeanTheorem:     "Gleipnir.OctonionRank.RankEighteen::tensorRank_T_O_ge_eighteen",
+		PredictionChain: []string{},
+	}
+	theorems := []leanlink.TheoremDecl{
+		synthTheorem("tensorRank_T_O_ge_eighteen", "Gleipnir/OctonionRank/RankEighteen.lean", 0),
+	}
+	inv := makeInventory([]model.Anchor{anchor})
+
+	r := leanlink.Reconcile(inv, theorems, leanlink.ToolchainSpec{})
+
+	foundProven := false
+	foundStale := false
+	for _, cl := range r.Classifications {
+		if cl.AnchorID != "PROOF-GL-JOINKEY" {
+			continue
+		}
+		switch cl.Class {
+		case leanlink.ClassProven:
+			foundProven = true
+		case leanlink.ClassStaleRef:
+			foundStale = true
+		}
+	}
+	if !foundProven {
+		t.Errorf("expected ClassProven for module::theorem join key, got classifications: %v", r.Classifications)
+	}
+	if foundStale {
+		t.Errorf("did not expect ClassStaleRef for a valid module::theorem join key, got: %v", r.Classifications)
+	}
+	for _, o := range r.Orphans {
+		if o.Name == "tensorRank_T_O_ge_eighteen" {
+			t.Errorf("tensorRank_T_O_ge_eighteen is wired via a join-key ref but still reported as orphan: %v", r.Orphans)
+		}
+	}
+}
+
 // 5. Drift case.
 func TestReconcile_DriftCase(t *testing.T) {
 	t.Parallel()
