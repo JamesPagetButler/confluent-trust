@@ -33,15 +33,18 @@ type TheoremDecl struct {
 
 var (
 	// reDeclStart matches the start of a theorem/lemma/example/def declaration.
-	// Group 1 = kind, group 2 = name.
-	reDeclStart = regexp.MustCompile(`(?m)^\s*(theorem|lemma|example|def)\s+([A-Za-z_][A-Za-z0-9_'.]*)`)
+	// Group 1 = kind, group 2 = name. The name class uses \p{L}/\p{N} rather
+	// than ASCII ranges so Lean identifiers carrying Unicode subscripts
+	// (B₁, B₂, ...) or Greek letters parse as distinct names instead of
+	// truncating at the first non-ASCII rune (CTH #125).
+	reDeclStart = regexp.MustCompile(`(?m)^\s*(theorem|lemma|example|def)\s+([\p{L}_][\p{L}\p{N}_'.!?]*)`)
 
 	// reSorry matches the sorry keyword as a whole word.
 	reSorry = regexp.MustCompile(`\bsorry\b`)
 
 	// reAxiomDecl matches an inline axiom declaration and captures the name.
-	// Group 1 = axiom name.
-	reAxiomDecl = regexp.MustCompile(`\baxiom\s+([A-Za-z_][A-Za-z0-9_'.]*)`)
+	// Group 1 = axiom name. Same Unicode-aware class as reDeclStart (CTH #125).
+	reAxiomDecl = regexp.MustCompile(`\baxiom\s+([\p{L}_][\p{L}\p{N}_'.!?]*)`)
 )
 
 // ParseLeanFile parses one .lean file and returns all TheoremDecl entries.

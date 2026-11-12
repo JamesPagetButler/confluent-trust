@@ -135,6 +135,44 @@ def gamma := 42
 	}
 }
 
+func TestParseLeanFile_UnicodeSubscriptsStayDistinct(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "subscripts.lean")
+	// CTH #125: B₁/B₂/B₃ used to all truncate to "Segre4SliceWitness.B".
+	src := `def Segre4SliceWitness.B₁ := 1
+def Segre4SliceWitness.B₂ := 2
+def Segre4SliceWitness.B₃ := 3
+`
+	if err := os.WriteFile(path, []byte(src), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	decls, err := leanlink.ParseLeanFile(path, dir)
+	if err != nil {
+		t.Fatalf("ParseLeanFile: %v", err)
+	}
+	if len(decls) != 3 {
+		t.Fatalf("expected 3 decls, got %d: %v", len(decls), decls)
+	}
+	wantNames := []string{
+		"Segre4SliceWitness.B₁",
+		"Segre4SliceWitness.B₂",
+		"Segre4SliceWitness.B₃",
+	}
+	seen := make(map[string]bool, len(decls))
+	for _, d := range decls {
+		seen[d.Name] = true
+	}
+	for _, want := range wantNames {
+		if !seen[want] {
+			t.Errorf("expected distinct declaration %q, got names: %v", want, decls)
+		}
+	}
+	if len(seen) != 3 {
+		t.Errorf("expected 3 distinct names (no subscript collapse), got %d: %v", len(seen), seen)
+	}
+}
+
 func TestWalkCorpus_FindsAllTheorems(t *testing.T) {
 	t.Parallel()
 	// Use the checked-in testdata/lean fixture corpus.
