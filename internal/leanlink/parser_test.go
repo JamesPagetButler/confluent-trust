@@ -173,6 +173,39 @@ def Segre4SliceWitness.B₃ := 3
 	}
 }
 
+func TestParseLeanFile_AxiomUsagesAcceptUnicodeSubscripts(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "axioms.lean")
+	// Harlequin's §I4 on #128: reAxiomDecl had the same ASCII-only class as
+	// reDeclStart, but no test exercised it at all, so a mutant reverting
+	// reAxiomDecl to the old class still passed every test in this package.
+	src := `theorem uses_axioms : True := trivial
+axiom ax₁ : True
+axiom ax₂ : True
+`
+	if err := os.WriteFile(path, []byte(src), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	decls, err := leanlink.ParseLeanFile(path, dir)
+	if err != nil {
+		t.Fatalf("ParseLeanFile: %v", err)
+	}
+	if len(decls) != 1 {
+		t.Fatalf("expected 1 decl, got %d: %v", len(decls), decls)
+	}
+	want := []string{"ax₁", "ax₂"}
+	got := decls[0].AxiomUsages
+	if len(got) != len(want) {
+		t.Fatalf("AxiomUsages: want %v, got %v", want, got)
+	}
+	for i, w := range want {
+		if got[i] != w {
+			t.Errorf("AxiomUsages[%d]: want %q, got %q", i, w, got[i])
+		}
+	}
+}
+
 func TestWalkCorpus_FindsAllTheorems(t *testing.T) {
 	t.Parallel()
 	// Use the checked-in testdata/lean fixture corpus.
