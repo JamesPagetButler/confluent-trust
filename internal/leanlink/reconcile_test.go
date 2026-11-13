@@ -9,6 +9,8 @@ import (
 
 // helpers to build minimal anchors for reconcile tests.
 
+const testLeanLanguage = "lean4"
+
 func proofAnchor(id, proofFile string, sorryCount *int, theorems []model.TheoremRef) model.Anchor {
 	return model.Anchor{
 		ID:              id,
@@ -17,7 +19,7 @@ func proofAnchor(id, proofFile string, sorryCount *int, theorems []model.Theorem
 		Tier:            model.TierProof,
 		Status:          model.StatusCoherent,
 		ProvenanceKind:  model.ProvenanceKindProof,
-		ProofLanguage:   "lean4",
+		ProofLanguage:   testLeanLanguage,
 		ProofFile:       proofFile,
 		ProofState:      model.ProofStateWritten,
 		SorryCount:      sorryCount,
@@ -149,7 +151,7 @@ func TestReconcile_ModuleJoinKeyResolves(t *testing.T) {
 		Tier:            model.TierProof,
 		Status:          model.StatusCoherent,
 		ProvenanceKind:  model.ProvenanceKindProof,
-		ProofLanguage:   "lean4",
+		ProofLanguage:   testLeanLanguage,
 		ProofFile:       "Gleipnir/OctonionRank/RankEighteen.lean",
 		ProofState:      model.ProofStateWritten,
 		SorryCount:      intPtr(0),
@@ -203,7 +205,7 @@ func TestReconcile_ModuleJoinKeyWrongModuleIsStale(t *testing.T) {
 		Tier:            model.TierProof,
 		Status:          model.StatusCoherent,
 		ProvenanceKind:  model.ProvenanceKindProof,
-		ProofLanguage:   "lean4",
+		ProofLanguage:   testLeanLanguage,
 		ProofFile:       "Gleipnir/OctonionRank/RankEighteen.lean",
 		ProofState:      model.ProofStateWritten,
 		SorryCount:      intPtr(0),
@@ -235,6 +237,100 @@ func TestReconcile_ModuleJoinKeyWrongModuleIsStale(t *testing.T) {
 	}
 	if !foundStale {
 		t.Errorf("expected ClassStaleRef for a wrong-module join key, got: %v", r.Classifications)
+	}
+}
+
+// 4d. Module::theorem join key with an EXTRA LEADING SEGMENT (CTH #124,
+// second fix round, qbp-architecture): a claimed module path must never be
+// allowed to be longer than the real file's path just because the real
+// path happens to be its tail. This is the exact case a reverted
+// strings.HasSuffix(expected, file) mutant would wrongly accept — this test
+// must kill that mutant.
+func TestReconcile_ModuleJoinKeyExtraLeadingSegmentIsStale(t *testing.T) {
+	t.Parallel()
+	anchor := model.Anchor{
+		ID:              "PROOF-GL-EXTRASEG",
+		Name:            "PROOF-GL-EXTRASEG",
+		Description:     "extra-leading-segment join-key test anchor",
+		Tier:            model.TierProof,
+		Status:          model.StatusCoherent,
+		ProvenanceKind:  model.ProvenanceKindProof,
+		ProofLanguage:   testLeanLanguage,
+		ProofFile:       "Gleipnir/OctonionRank/RankEighteen.lean",
+		ProofState:      model.ProofStateWritten,
+		SorryCount:      intPtr(0),
+		LeanTheorem:     "Evil.Gleipnir.OctonionRank.RankEighteen::tensorRank_T_O_ge_eighteen",
+		PredictionChain: []string{},
+	}
+	theorems := []leanlink.TheoremDecl{
+		synthTheorem("tensorRank_T_O_ge_eighteen", "Gleipnir/OctonionRank/RankEighteen.lean", 0),
+	}
+	inv := makeInventory([]model.Anchor{anchor})
+
+	r := leanlink.Reconcile(inv, theorems, leanlink.ToolchainSpec{})
+
+	for _, cl := range r.Classifications {
+		if cl.AnchorID != "PROOF-GL-EXTRASEG" {
+			continue
+		}
+		if cl.Class == leanlink.ClassProven {
+			t.Errorf("a module with an extra leading segment must not resolve to ClassProven, got: %v", r.Classifications)
+		}
+	}
+	found := false
+	for _, cl := range r.Classifications {
+		if cl.AnchorID == "PROOF-GL-EXTRASEG" && cl.Class == leanlink.ClassStaleRef {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected ClassStaleRef for an extra-leading-segment module, got: %v", r.Classifications)
+	}
+}
+
+// 4e. Module::theorem join key with a PARTIAL COMPONENT OVERLAP (CTH #124,
+// second fix round): "Rank" must not match inside "OctonionRank" just
+// because the tail characters happen to line up — the comparison has to
+// respect path-component boundaries, not raw string suffixes.
+func TestReconcile_ModuleJoinKeyPartialComponentOverlapIsStale(t *testing.T) {
+	t.Parallel()
+	anchor := model.Anchor{
+		ID:              "PROOF-GL-PARTIALSEG",
+		Name:            "PROOF-GL-PARTIALSEG",
+		Description:     "partial-component-overlap join-key test anchor",
+		Tier:            model.TierProof,
+		Status:          model.StatusCoherent,
+		ProvenanceKind:  model.ProvenanceKindProof,
+		ProofLanguage:   testLeanLanguage,
+		ProofFile:       "Gleipnir/OctonionRank/RankEighteen.lean",
+		ProofState:      model.ProofStateWritten,
+		SorryCount:      intPtr(0),
+		LeanTheorem:     "Rank.RankEighteen::tensorRank_T_O_ge_eighteen",
+		PredictionChain: []string{},
+	}
+	theorems := []leanlink.TheoremDecl{
+		synthTheorem("tensorRank_T_O_ge_eighteen", "Gleipnir/OctonionRank/RankEighteen.lean", 0),
+	}
+	inv := makeInventory([]model.Anchor{anchor})
+
+	r := leanlink.Reconcile(inv, theorems, leanlink.ToolchainSpec{})
+
+	for _, cl := range r.Classifications {
+		if cl.AnchorID != "PROOF-GL-PARTIALSEG" {
+			continue
+		}
+		if cl.Class == leanlink.ClassProven {
+			t.Errorf("a module matching only a partial path component must not resolve to ClassProven, got: %v", r.Classifications)
+		}
+	}
+	found := false
+	for _, cl := range r.Classifications {
+		if cl.AnchorID == "PROOF-GL-PARTIALSEG" && cl.Class == leanlink.ClassStaleRef {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected ClassStaleRef for a partial-component-overlap module, got: %v", r.Classifications)
 	}
 }
 

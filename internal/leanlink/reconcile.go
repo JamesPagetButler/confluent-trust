@@ -500,21 +500,47 @@ func moduleToPath(module string) string {
 }
 
 // joinKeyModuleMismatch reports whether ref is a join key whose module part
-// does NOT resolve (as a path suffix, matching filterByFile's own suffix
-// convention) to file. A bare name never mismatches. The module part of a
-// join key is an identity claim (design §3.4), not decoration — skipping
-// this check would let a wrong-module key silently certify an identity that
-// was never actually checked.
+// does NOT resolve to file. A bare name never mismatches. The module part
+// of a join key is an identity claim (design §3.4), not decoration —
+// skipping this check would let a wrong-module key silently certify an
+// identity that was never actually checked.
+//
+// Comparison is one direction only (file must end with the module's path),
+// compared on whole path components: file may legitimately be longer than
+// the module's path (e.g. an absolute proof_file vs. a corpus-relative
+// module), but the module's path may never be longer than file, and a
+// partial component ("Rank" inside "OctonionRank") never counts as a
+// match (CTH #124, second fix round — both directions of a plain
+// strings.HasSuffix let a wrong module slip through).
 func joinKeyModuleMismatch(ref, file string) (module string, mismatch bool) {
 	module, _, ok := splitJoinKey(ref)
 	if !ok {
 		return "", false
 	}
-	expected := moduleToPath(module)
-	if strings.HasSuffix(file, expected) || strings.HasSuffix(expected, file) {
+	if pathHasComponentSuffix(file, moduleToPath(module)) {
 		return module, false
 	}
 	return module, true
+}
+
+// pathHasComponentSuffix reports whether path's trailing path components
+// equal suffix's components exactly, component by component — never a
+// partial-component match, and never true when suffix has more components
+// than path (which would mean accepting a longer claimed path merely
+// because the real, shorter path happens to be its tail).
+func pathHasComponentSuffix(path, suffix string) bool {
+	pathParts := strings.Split(path, "/")
+	suffixParts := strings.Split(suffix, "/")
+	if len(suffixParts) > len(pathParts) {
+		return false
+	}
+	offset := len(pathParts) - len(suffixParts)
+	for i, part := range suffixParts {
+		if pathParts[offset+i] != part {
+			return false
+		}
+	}
+	return true
 }
 
 // statusOf returns the TheoremStatus for a specific theorem name in an anchor.
