@@ -109,7 +109,7 @@ func Reconcile(inv model.Inventory, theorems []TheoremDecl, spec ToolchainSpec) 
 
 		refs := collectTheoremRefs(a)
 		for _, name := range refs {
-			referencedNames[name] = true
+			referencedNames[bareTheoremName(name)] = true
 		}
 
 		if a.ProofFile == "" {
@@ -133,6 +133,22 @@ func Reconcile(inv model.Inventory, theorems []TheoremDecl, spec ToolchainSpec) 
 					Class:       ClassStaleRef,
 					TheoremName: ref,
 					Detail:      fmt.Sprintf("theorem %s not found in %s", ref, a.ProofFile),
+				})
+				continue
+			}
+
+			// A "<module>::<theorem>" join key's module part is an identity
+			// claim (design §3.4), not decoration: if present, it must
+			// resolve to the file the bare name was actually found in, or
+			// a wrong-module key would silently certify an identity that
+			// was never checked (CTH #124 fix-round finding).
+			if module, mismatch := joinKeyModuleMismatch(ref, found.File); mismatch {
+				r.Classifications = append(r.Classifications, AnchorClassification{
+					AnchorID:    a.ID,
+					Class:       ClassStaleRef,
+					TheoremName: ref,
+					Detail: fmt.Sprintf("join-key module %q does not resolve to %s (theorem found in %s)",
+						module, moduleToPath(module), found.File),
 				})
 				continue
 			}
@@ -443,14 +459,88 @@ func filterByFile(decls []TheoremDecl, proofFile string) []TheoremDecl {
 	return out
 }
 
-// findByName returns the first TheoremDecl with the given name, or nil.
+// findByName returns the first TheoremDecl with the given name, or nil. name
+// may be a bare declaration name, or a "<module>::<theorem>" join key per
+// doc/design/proven-theorem-anchoring.md §3.4 — only the bare theorem part
+// is matched here, since decls is already filtered to the anchor's
+// proof_file by the caller (CTH #124). The module part, when present, is
+// validated separately by joinKeyModuleMismatch.
 func findByName(decls []TheoremDecl, name string) *TheoremDecl {
+	bare := bareTheoremName(name)
 	for i := range decls {
-		if decls[i].Name == name {
+		if decls[i].Name == bare {
 			return &decls[i]
 		}
 	}
 	return nil
+}
+
+// splitJoinKey splits a "<module>::<theorem>" ref into its module and bare
+// theorem parts, per doc/design/proven-theorem-anchoring.md §3.4. ok is
+// false for a bare name (no "::"), in which case bare == ref.
+func splitJoinKey(ref string) (module, bare string, ok bool) {
+	idx := strings.LastIndex(ref, "::")
+	if idx < 0 {
+		return "", ref, false
+	}
+	return ref[:idx], ref[idx+2:], true
+}
+
+// bareTheoremName returns just the declaration-name part of ref, stripping
+// an optional "<module>::" join-key prefix.
+func bareTheoremName(ref string) string {
+	_, bare, _ := splitJoinKey(ref)
+	return bare
+}
+
+// moduleToPath converts a Lean module path ("A.B.C") to the relative file
+// path lean-link expects it to resolve to ("A/B/C.lean").
+func moduleToPath(module string) string {
+	return strings.ReplaceAll(module, ".", "/") + ".lean"
+}
+
+// joinKeyModuleMismatch reports whether ref is a join key whose module part
+// does NOT resolve to file. A bare name never mismatches. The module part
+// of a join key is an identity claim (design §3.4), not decoration —
+// skipping this check would let a wrong-module key silently certify an
+// identity that was never actually checked.
+//
+// Comparison is one direction only (file must end with the module's path),
+// compared on whole path components: file may legitimately be longer than
+// the module's path (e.g. an absolute proof_file vs. a corpus-relative
+// module), but the module's path may never be longer than file, and a
+// partial component ("Rank" inside "OctonionRank") never counts as a
+// match (CTH #124, second fix round — both directions of a plain
+// strings.HasSuffix let a wrong module slip through).
+func joinKeyModuleMismatch(ref, file string) (module string, mismatch bool) {
+	module, _, ok := splitJoinKey(ref)
+	if !ok {
+		return "", false
+	}
+	if pathHasComponentSuffix(file, moduleToPath(module)) {
+		return module, false
+	}
+	return module, true
+}
+
+// pathHasComponentSuffix reports whether path's trailing path components
+// equal suffix's components exactly, component by component — never a
+// partial-component match, and never true when suffix has more components
+// than path (which would mean accepting a longer claimed path merely
+// because the real, shorter path happens to be its tail).
+func pathHasComponentSuffix(path, suffix string) bool {
+	pathParts := strings.Split(path, "/")
+	suffixParts := strings.Split(suffix, "/")
+	if len(suffixParts) > len(pathParts) {
+		return false
+	}
+	offset := len(pathParts) - len(suffixParts)
+	for i, part := range suffixParts {
+		if pathParts[offset+i] != part {
+			return false
+		}
+	}
+	return true
 }
 
 // statusOf returns the TheoremStatus for a specific theorem name in an anchor.
