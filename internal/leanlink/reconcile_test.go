@@ -189,6 +189,55 @@ func TestReconcile_ModuleJoinKeyResolves(t *testing.T) {
 	}
 }
 
+// 4c. Module::theorem join key with the WRONG module (CTH #124 fix-round
+// finding, qbp-architecture): the module part of a join key is an identity
+// claim, not decoration. A key whose module does not resolve to the
+// anchor's proof_file must come out stale, not proven — otherwise the tool
+// certifies an identity it never checked.
+func TestReconcile_ModuleJoinKeyWrongModuleIsStale(t *testing.T) {
+	t.Parallel()
+	anchor := model.Anchor{
+		ID:              "PROOF-GL-WRONGMOD",
+		Name:            "PROOF-GL-WRONGMOD",
+		Description:     "wrong-module join-key test anchor",
+		Tier:            model.TierProof,
+		Status:          model.StatusCoherent,
+		ProvenanceKind:  model.ProvenanceKindProof,
+		ProofLanguage:   "lean4",
+		ProofFile:       "Gleipnir/OctonionRank/RankEighteen.lean",
+		ProofState:      model.ProofStateWritten,
+		SorryCount:      intPtr(0),
+		LeanTheorem:     "Gleipnir.Wrong.Module::tensorRank_T_O_ge_eighteen",
+		PredictionChain: []string{},
+	}
+	theorems := []leanlink.TheoremDecl{
+		synthTheorem("tensorRank_T_O_ge_eighteen", "Gleipnir/OctonionRank/RankEighteen.lean", 0),
+	}
+	inv := makeInventory([]model.Anchor{anchor})
+
+	r := leanlink.Reconcile(inv, theorems, leanlink.ToolchainSpec{})
+
+	foundProven := false
+	foundStale := false
+	for _, cl := range r.Classifications {
+		if cl.AnchorID != "PROOF-GL-WRONGMOD" {
+			continue
+		}
+		switch cl.Class {
+		case leanlink.ClassProven:
+			foundProven = true
+		case leanlink.ClassStaleRef:
+			foundStale = true
+		}
+	}
+	if foundProven {
+		t.Errorf("a wrong-module join key must not resolve to ClassProven, got: %v", r.Classifications)
+	}
+	if !foundStale {
+		t.Errorf("expected ClassStaleRef for a wrong-module join key, got: %v", r.Classifications)
+	}
+}
+
 // 5. Drift case.
 func TestReconcile_DriftCase(t *testing.T) {
 	t.Parallel()

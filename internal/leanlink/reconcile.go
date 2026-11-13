@@ -137,6 +137,22 @@ func Reconcile(inv model.Inventory, theorems []TheoremDecl, spec ToolchainSpec) 
 				continue
 			}
 
+			// A "<module>::<theorem>" join key's module part is an identity
+			// claim (design §3.4), not decoration: if present, it must
+			// resolve to the file the bare name was actually found in, or
+			// a wrong-module key would silently certify an identity that
+			// was never checked (CTH #124 fix-round finding).
+			if module, mismatch := joinKeyModuleMismatch(ref, found.File); mismatch {
+				r.Classifications = append(r.Classifications, AnchorClassification{
+					AnchorID:    a.ID,
+					Class:       ClassStaleRef,
+					TheoremName: ref,
+					Detail: fmt.Sprintf("join-key module %q does not resolve to %s (theorem found in %s)",
+						module, moduleToPath(module), found.File),
+				})
+				continue
+			}
+
 			// Invariant 5: not_started + theorem present in file = phantom-artifact.
 			if statusOf(a, ref) == model.TheoremStatusNotStarted {
 				r.Classifications = append(r.Classifications, AnchorClassification{
@@ -446,8 +462,9 @@ func filterByFile(decls []TheoremDecl, proofFile string) []TheoremDecl {
 // findByName returns the first TheoremDecl with the given name, or nil. name
 // may be a bare declaration name, or a "<module>::<theorem>" join key per
 // doc/design/proven-theorem-anchoring.md §3.4 — only the bare theorem part
-// is matched, since decls is already filtered to the anchor's proof_file by
-// the caller (CTH #124).
+// is matched here, since decls is already filtered to the anchor's
+// proof_file by the caller (CTH #124). The module part, when present, is
+// validated separately by joinKeyModuleMismatch.
 func findByName(decls []TheoremDecl, name string) *TheoremDecl {
 	bare := bareTheoremName(name)
 	for i := range decls {
@@ -458,15 +475,46 @@ func findByName(decls []TheoremDecl, name string) *TheoremDecl {
 	return nil
 }
 
-// bareTheoremName strips an optional "<module>::" join-key prefix (per
-// doc/design/proven-theorem-anchoring.md §3.4), returning the declaration
-// name as the parser actually captures it. A ref with no "::" is returned
-// unchanged.
-func bareTheoremName(ref string) string {
-	if idx := strings.LastIndex(ref, "::"); idx >= 0 {
-		return ref[idx+2:]
+// splitJoinKey splits a "<module>::<theorem>" ref into its module and bare
+// theorem parts, per doc/design/proven-theorem-anchoring.md §3.4. ok is
+// false for a bare name (no "::"), in which case bare == ref.
+func splitJoinKey(ref string) (module, bare string, ok bool) {
+	idx := strings.LastIndex(ref, "::")
+	if idx < 0 {
+		return "", ref, false
 	}
-	return ref
+	return ref[:idx], ref[idx+2:], true
+}
+
+// bareTheoremName returns just the declaration-name part of ref, stripping
+// an optional "<module>::" join-key prefix.
+func bareTheoremName(ref string) string {
+	_, bare, _ := splitJoinKey(ref)
+	return bare
+}
+
+// moduleToPath converts a Lean module path ("A.B.C") to the relative file
+// path lean-link expects it to resolve to ("A/B/C.lean").
+func moduleToPath(module string) string {
+	return strings.ReplaceAll(module, ".", "/") + ".lean"
+}
+
+// joinKeyModuleMismatch reports whether ref is a join key whose module part
+// does NOT resolve (as a path suffix, matching filterByFile's own suffix
+// convention) to file. A bare name never mismatches. The module part of a
+// join key is an identity claim (design §3.4), not decoration — skipping
+// this check would let a wrong-module key silently certify an identity that
+// was never actually checked.
+func joinKeyModuleMismatch(ref, file string) (module string, mismatch bool) {
+	module, _, ok := splitJoinKey(ref)
+	if !ok {
+		return "", false
+	}
+	expected := moduleToPath(module)
+	if strings.HasSuffix(file, expected) || strings.HasSuffix(expected, file) {
+		return module, false
+	}
+	return module, true
 }
 
 // statusOf returns the TheoremStatus for a specific theorem name in an anchor.
