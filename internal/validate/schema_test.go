@@ -365,3 +365,36 @@ func TestRemediationBothShas(t *testing.T) {
 	}
 	runValidateCases(t, tests)
 }
+
+// TestAdverseFindingRequired exercises the v0.3.7 adverse_finding[] field
+// (inter#238 R11.1'; confluent-trust#132 AC6): record_kind:"finding" requires
+// filer, severity (the full vector, not a bare class word), severity_class,
+// affects{from,to,provenance} and state, plus at least one of
+// reproducer/external_ref. A record missing any of those is only ever
+// record_kind:"flag" — R11.1': "a report missing these is a flag, never a
+// hold" — so the same payload without a severity vector still validates, as
+// long as it's declared a flag rather than a finding.
+func TestAdverseFindingRequired(t *testing.T) {
+	fullFinding := `"record_kind":"finding","filer":"deming","reproducer":"boxrun-log-7","severity":"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0","provenance":"introduced at abc111, removed at def222"},"state":"reported"`
+	tests := []struct {
+		name    string
+		data    string
+		wantErr bool
+	}{
+		{"full finding, all required fields present (the boundary)", anchorDoc(`,"adverse_finding":[{` + fullFinding + `}]`), false},
+		{"finding with external_ref instead of reproducer is valid", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","filer":"deming","external_ref":"GHSA-xxxx","severity":"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0","provenance":"advisory boundary"},"state":"reported"}]`), false},
+		{"critical finding with NO severity vector is rejected (bare class word is not the vector)", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","filer":"deming","reproducer":"boxrun-log-7","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0","provenance":"introduced at abc111, removed at def222"},"state":"reported"}]`), true},
+		{"finding with NO filer is rejected", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","reproducer":"boxrun-log-7","severity":"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0","provenance":"introduced at abc111, removed at def222"},"state":"reported"}]`), true},
+		{"finding with NO affects is rejected", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","filer":"deming","reproducer":"boxrun-log-7","severity":"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","severity_class":"critical","state":"reported"}]`), true},
+		{"finding with affects MISSING provenance is rejected", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","filer":"deming","reproducer":"boxrun-log-7","severity":"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0"},"state":"reported"}]`), true},
+		{"finding with NEITHER reproducer NOR external_ref is rejected", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","filer":"deming","severity":"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0","provenance":"introduced at abc111, removed at def222"},"state":"reported"}]`), true},
+		{"finding with NO state is rejected", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","filer":"deming","reproducer":"boxrun-log-7","severity":"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0","provenance":"introduced at abc111, removed at def222"}}]`), true},
+		{"the same critical-but-incomplete payload validates as a flag (missing fields still validate as a flag)", anchorDoc(`,"adverse_finding":[{"record_kind":"flag","severity_class":"critical"}]`), false},
+		{"bare note with no other fields validates as a flag", anchorDoc(`,"adverse_finding":[{"record_kind":"flag","note":"saw something odd, not yet a finding"}]`), false},
+		{"missing record_kind entirely is rejected", anchorDoc(`,"adverse_finding":[{"filer":"deming","state":"reported"}]`), true},
+		{"bad record_kind enum", anchorDoc(`,"adverse_finding":[{"record_kind":"maybe"}]`), true},
+		{"bad state enum", anchorDoc(`,"adverse_finding":[{` + fullFinding[:len(fullFinding)-len(`"state":"reported"`)] + `"state":"sorta-fixed"}]`), true},
+		{"empty-string severity is rejected (minLength, not just non-null)", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","filer":"deming","reproducer":"boxrun-log-7","severity":"","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0","provenance":"introduced at abc111, removed at def222"},"state":"reported"}]`), true},
+	}
+	runValidateCases(t, tests)
+}

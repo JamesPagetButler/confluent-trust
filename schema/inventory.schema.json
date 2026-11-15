@@ -1,9 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/JamesPagetButler/confluent-trust/schema/inventory.schema.v0.3.6.json",
-  "x-schema-semver": "0.3.6",
+  "$id": "https://github.com/JamesPagetButler/confluent-trust/schema/inventory.schema.v0.3.7.json",
+  "x-schema-semver": "0.3.7",
   "title": "CTH Inventory",
-  "description": "Confluent Trust Hypergraph inventory document. Conforms to Theory v0.2 §4.1 plus the §2.9 fork extension. Both v0.1 (path_a/path_b) and v0.2 (paths[]) confluence shapes are accepted; the Go store normalizes to N-ary on load. The schema-document semver (x-schema-semver, mirrored in $id) is distinct from both the programme content version and the schema_version generation — see doc/design/schema-change-propagation.md §4. 0.3.1 (minor, additive): killed_by/killed_note/review_flag (#93), foundation_batch (#96), class_floors (contextus PR #32 Q1). 0.3.2 (minor, additive): axis_trust/locale_domain/cluster_state (sheaf trust, #95/inter#41 Decision 2). 0.3.3 (minor, additive): 'derivation' provenance_kind + C1 relaxed to admit proof-fields (proof_state/proof_language/theorems/verification) on {proof, derivation} so a kernel-verified derivation can SHOW its Lean (FAULT-S4-005 burn-down, QBP#621; cth-implementor ruling live-test seq=1041). 0.3.4 (minor, additive): decision_state (open|settled) + kill_condition (array of {kill, closure, discharge} Impasse Records) on roots; four QBP-general top-level root lists (meta_principles, interpretations, retired_axioms, retired_principles) promoted to $defs; the decision_state:open ⇒ non-empty kill_condition invariant is schema-enforced (FAULT-S4-005 four-bucket / #654 D3; cth-implementor, confluent-trust #102/#103). 0.3.5 (minor, additive): proof_assistants [{assistant∈{lean4,coq,agda}, evidence_ref, trust_check}] on proof + derivation anchors — PA (proof-assistant count) grading, DERIVED from Notary evidence at evidence_ref, never typed; trust_check is veto-only (confluent-trust#108 / inter#150 PA grading; cth-implementor). 0.3.6 (minor, additive, partial — inter#238 landing, confluent-trust#132 AC1/AC2/AC5/AC7; AC3/AC4/AC6/AC8 follow once the cross-repo leg-graph design note with Edda lands): e_axis (EAxis: unconfronted/consistent/validated/falsified, post_hoc/tension flags, sigma_pred/trials; post_hoc never validated, no sigma_pred caps at consistent) and evidence_ref[] (EvidenceRecord: internal/external, value/uncertainty/coverage/systematics/threshold/measurement_chain; pre_registered:true requires pre_reg_ref on either kind, external additionally requires a timestamp) on Anchor — both additive and optional. trl[] (TRLRecord: environment∈{lab,relevant,operational} required except at trl_criterion.level 1-2, environment:lab caps level at 4, trl_criterion{level,text}, satisfies as a required non-empty string, fl_at_sha, optional release_id/evidence_ref[]) and remediation[] (RemediationRecord: unfixed_ref+fixed_ref+scope_review_ref required, reproducible:false requires soak_ref in place of regression_test_ref, otherwise regression_test_ref is required) on Anchor (qbp-architecture §I4 fix round, confluent-trust#133).",
+  "description": "Confluent Trust Hypergraph inventory document. Conforms to Theory v0.2 §4.1 plus the §2.9 fork extension. Both v0.1 (path_a/path_b) and v0.2 (paths[]) confluence shapes are accepted; the Go store normalizes to N-ary on load. The schema-document semver (x-schema-semver, mirrored in $id) is distinct from both the programme content version and the schema_version generation — see doc/design/schema-change-propagation.md §4. 0.3.1 (minor, additive): killed_by/killed_note/review_flag (#93), foundation_batch (#96), class_floors (contextus PR #32 Q1). 0.3.2 (minor, additive): axis_trust/locale_domain/cluster_state (sheaf trust, #95/inter#41 Decision 2). 0.3.3 (minor, additive): 'derivation' provenance_kind + C1 relaxed to admit proof-fields (proof_state/proof_language/theorems/verification) on {proof, derivation} so a kernel-verified derivation can SHOW its Lean (FAULT-S4-005 burn-down, QBP#621; cth-implementor ruling live-test seq=1041). 0.3.4 (minor, additive): decision_state (open|settled) + kill_condition (array of {kill, closure, discharge} Impasse Records) on roots; four QBP-general top-level root lists (meta_principles, interpretations, retired_axioms, retired_principles) promoted to $defs; the decision_state:open ⇒ non-empty kill_condition invariant is schema-enforced (FAULT-S4-005 four-bucket / #654 D3; cth-implementor, confluent-trust #102/#103). 0.3.5 (minor, additive): proof_assistants [{assistant∈{lean4,coq,agda}, evidence_ref, trust_check}] on proof + derivation anchors — PA (proof-assistant count) grading, DERIVED from Notary evidence at evidence_ref, never typed; trust_check is veto-only (confluent-trust#108 / inter#150 PA grading; cth-implementor). 0.3.6 (minor, additive, partial — inter#238 landing, confluent-trust#132 AC1/AC2/AC5/AC7; AC3/AC4/AC6/AC8 follow once the cross-repo leg-graph design note with Edda lands): e_axis (EAxis: unconfronted/consistent/validated/falsified, post_hoc/tension flags, sigma_pred/trials; post_hoc never validated, no sigma_pred caps at consistent) and evidence_ref[] (EvidenceRecord: internal/external, value/uncertainty/coverage/systematics/threshold/measurement_chain; pre_registered:true requires pre_reg_ref on either kind, external additionally requires a timestamp) on Anchor — both additive and optional. trl[] (TRLRecord: environment∈{lab,relevant,operational} required except at trl_criterion.level 1-2, environment:lab caps level at 4, trl_criterion{level,text}, satisfies as a required non-empty string, fl_at_sha, optional release_id/evidence_ref[]) and remediation[] (RemediationRecord: unfixed_ref+fixed_ref+scope_review_ref required, reproducible:false requires soak_ref in place of regression_test_ref, otherwise regression_test_ref is required) on Anchor (qbp-architecture §I4 fix round, confluent-trust#133). 0.3.7 (minor, additive — inter#238 R11.1'; confluent-trust#132 AC6): adverse_finding[] (AdverseFindingRecord: record_kind∈{finding,flag}; record_kind:finding requires filer, severity (the full vector of the cited scale, e.g. a complete CVSS string, never a bare class word), severity_class∈{critical,major,minor}, affects {from,to,provenance}, state∈{reported,confirmed,dismissed,not-reproduced}, and at least one of reproducer/external_ref — a record missing any of these is only ever record_kind:flag, per R11.1' 'a report missing these is a flag, never a hold') on Anchor.",
   "type": "object",
   "required": ["programme", "version", "axioms", "anchors", "chains"],
   "additionalProperties": true,
@@ -374,6 +374,44 @@
         }
       ]
     },
+    "AdverseFindingRecord": {
+      "type": "object",
+      "description": "An adverse finding against this anchor (v0.3.7, inter#238 R11.1'; confluent-trust#132 AC6). A finding takes effect only when a seat files it as record_kind:'finding' — external or tool-fetched text (a web page, an issue body, a research result) is evidence attached to a record, never a filer itself. record_kind:'finding' requires filer, severity (the full vector of the cited scale, e.g. a complete CVSS string, never a bare class word), severity_class (the triage anchor used by the cap table: critical/major/minor), affects (the version or release-id range with provenance), state, and at least one of reproducer/external_ref. A record missing any of those is only ever record_kind:'flag' — R11.1': 'a report missing these is a flag, never a hold.' A flag carries no cap (R11.2') and never blocks.",
+      "required": ["record_kind"],
+      "properties": {
+        "record_kind":    { "type": "string", "enum": ["finding", "flag"] },
+        "filer":          { "type": "string", "minLength": 1, "description": "The seat of record that filed this finding." },
+        "reproducer":     { "type": "string" },
+        "external_ref":   { "type": "string", "description": "In place of a reproducer: an advisory id or an incident report." },
+        "severity":       { "type": "string", "minLength": 1, "description": "The full severity vector of the cited scale (e.g. a complete CVSS vector string) — never a bare class word." },
+        "severity_class": { "type": "string", "enum": ["critical", "major", "minor"] },
+        "affects": {
+          "type": "object",
+          "required": ["from", "to", "provenance"],
+          "properties": {
+            "from":              { "type": "string" },
+            "to":                { "type": "string" },
+            "provenance":        { "type": "string", "description": "A boundary-version reproduction, or a code-provenance argument (the introducing and removing commits)." },
+            "sha256sums_sha256": { "type": "string", "description": "For host-installed tools: the range is of release ids, provenanced by the sha256 of SHA256SUMS." }
+          },
+          "additionalProperties": true
+        },
+        "state": { "type": "string", "enum": ["reported", "confirmed", "dismissed", "not-reproduced"] }
+      },
+      "additionalProperties": true,
+      "allOf": [
+        {
+          "if":   { "properties": { "record_kind": { "const": "finding" } }, "required": ["record_kind"] },
+          "then": {
+            "required": ["filer", "severity", "severity_class", "affects", "state"],
+            "anyOf": [
+              { "required": ["reproducer"] },
+              { "required": ["external_ref"] }
+            ]
+          }
+        }
+      ]
+    },
     "Anchor": {
       "type": "object",
       "description": "A Tier 1-3 node: proof, measurement, prediction, or hypothesis. The `id` field follows the workspace ID-prefix convention (see schema docs): `PROOF-*` for Tier 1 theoretical proofs, `MEAS-*` for Tier 2 measurements, `PRED-*` for Tier 3 predictions awaiting observation (or Tier 2 once the observation arrives and the anchor is scored via `compute.ScorePrediction`), `FLAG-*` / `KILLED-*` for special states. The prefix is convention, not schema-enforced.",
@@ -424,7 +462,8 @@
         "e_axis":                    { "$ref": "#/$defs/EAxis" },
         "evidence_ref":              { "type": "array", "items": { "$ref": "#/$defs/EvidenceRecord" } },
         "trl":                       { "type": "array", "items": { "$ref": "#/$defs/TRLRecord" } },
-        "remediation":               { "type": "array", "items": { "$ref": "#/$defs/RemediationRecord" } }
+        "remediation":               { "type": "array", "items": { "$ref": "#/$defs/RemediationRecord" } },
+        "adverse_finding":           { "type": "array", "items": { "$ref": "#/$defs/AdverseFindingRecord" } }
       },
       "additionalProperties": true,
       "allOf": [
