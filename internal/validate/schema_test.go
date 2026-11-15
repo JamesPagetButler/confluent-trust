@@ -367,13 +367,16 @@ func TestRemediationBothShas(t *testing.T) {
 }
 
 // TestAdverseFindingRequired exercises the v0.3.7 adverse_finding[] field
-// (inter#238 R11.1'; confluent-trust#132 AC6): record_kind:"finding" requires
-// filer, severity (the full vector, not a bare class word), severity_class,
-// affects{from,to,provenance} and state, plus at least one of
-// reproducer/external_ref. A record missing any of those is only ever
-// record_kind:"flag" — R11.1': "a report missing these is a flag, never a
-// hold" — so the same payload without a severity vector still validates, as
-// long as it's declared a flag rather than a finding.
+// (inter#238 R11.1'; confluent-trust#132 AC6, qbp-architecture §I4 fix
+// round): record_kind:"finding" requires filer, severity (the full vector,
+// structurally requiring a ':' or '/' so a bare class word like "critical"
+// can't pass), severity_class, affects{from,to,provenance} and state, plus
+// at least one of reproducer/external_ref — none of those string fields may
+// be the empty string. state:"dismissed" additionally requires
+// dismissal_evidence. A record missing any of the finding-path requirements
+// is only ever record_kind:"flag" — R11.1': "a report missing these is a
+// flag, never a hold" — so the same payload without a severity vector still
+// validates, as long as it's declared a flag rather than a finding.
 func TestAdverseFindingRequired(t *testing.T) {
 	fullFinding := `"record_kind":"finding","filer":"deming","reproducer":"boxrun-log-7","severity":"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0","provenance":"introduced at abc111, removed at def222"},"state":"reported"`
 	tests := []struct {
@@ -384,6 +387,13 @@ func TestAdverseFindingRequired(t *testing.T) {
 		{"full finding, all required fields present (the boundary)", anchorDoc(`,"adverse_finding":[{` + fullFinding + `}]`), false},
 		{"finding with external_ref instead of reproducer is valid", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","filer":"deming","external_ref":"GHSA-xxxx","severity":"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0","provenance":"advisory boundary"},"state":"reported"}]`), false},
 		{"critical finding with NO severity vector is rejected (bare class word is not the vector)", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","filer":"deming","reproducer":"boxrun-log-7","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0","provenance":"introduced at abc111, removed at def222"},"state":"reported"}]`), true},
+		{"finding with severity literally \"critical\" (bare class word) is rejected, even though non-empty", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","filer":"deming","reproducer":"boxrun-log-7","severity":"critical","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0","provenance":"introduced at abc111, removed at def222"},"state":"reported"}]`), true},
+		{"finding with empty-string reproducer is rejected (and no external_ref to fall back on)", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","filer":"deming","reproducer":"","severity":"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0","provenance":"introduced at abc111, removed at def222"},"state":"reported"}]`), true},
+		{"finding with empty-string external_ref is rejected (and no reproducer to fall back on)", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","filer":"deming","external_ref":"","severity":"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0","provenance":"introduced at abc111, removed at def222"},"state":"reported"}]`), true},
+		{"finding with affects.provenance as empty string is rejected", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","filer":"deming","reproducer":"boxrun-log-7","severity":"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0","provenance":""},"state":"reported"}]`), true},
+		{"finding with state:dismissed and NO dismissal_evidence is rejected", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","filer":"deming","reproducer":"boxrun-log-7","severity":"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0","provenance":"introduced at abc111, removed at def222"},"state":"dismissed"}]`), true},
+		{"finding with state:dismissed AND dismissal_evidence is valid (the boundary)", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","filer":"deming","reproducer":"boxrun-log-7","severity":"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0","provenance":"introduced at abc111, removed at def222"},"state":"dismissed","dismissal_evidence":"reproduction attempted under the stated conditions 3x, not reproduced"}]`), false},
+		{"flag with state:dismissed and no dismissal_evidence is still valid (dismissal_evidence only binds on record_kind:finding)", anchorDoc(`,"adverse_finding":[{"record_kind":"flag","state":"dismissed"}]`), false},
 		{"finding with NO filer is rejected", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","reproducer":"boxrun-log-7","severity":"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0","provenance":"introduced at abc111, removed at def222"},"state":"reported"}]`), true},
 		{"finding with NO affects is rejected", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","filer":"deming","reproducer":"boxrun-log-7","severity":"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","severity_class":"critical","state":"reported"}]`), true},
 		{"finding with affects MISSING provenance is rejected", anchorDoc(`,"adverse_finding":[{"record_kind":"finding","filer":"deming","reproducer":"boxrun-log-7","severity":"CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H","severity_class":"critical","affects":{"from":"v1.2.0","to":"v1.4.0"},"state":"reported"}]`), true},
