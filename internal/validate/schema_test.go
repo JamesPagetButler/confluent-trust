@@ -247,9 +247,10 @@ func TestEAxisSchema(t *testing.T) {
 }
 
 // TestEvidenceRefExternalPrereg exercises the v0.3.6 evidence_ref[] field
-// (inter#238 R3; confluent-trust#132 AC2): an external record claiming a
-// pre-registration must point to a timestamped pre-reg artefact; an internal
-// record needs no timestamp.
+// (inter#238 R3; confluent-trust#132 AC2, qbp-architecture §I4 fix round
+// confluent-trust#133): a record of EITHER kind claiming a pre-registration
+// must point to it (pre_reg_ref); external additionally needs a timestamp
+// predating the result's public release.
 func TestEvidenceRefExternalPrereg(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -257,9 +258,14 @@ func TestEvidenceRefExternalPrereg(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			"internal record needs no timestamp (the boundary)",
-			anchorDoc(`,"evidence_ref":[{"kind":"internal","value":1.0,"pre_reg_ref":"repo/path@sha"}]`),
+			"internal + pre_registered WITH pre_reg_ref needs no timestamp (the boundary)",
+			anchorDoc(`,"evidence_ref":[{"kind":"internal","value":1.0,"pre_registered":true,"pre_reg_ref":"repo/path@sha"}]`),
 			false,
+		},
+		{
+			"internal + pre_registered WITHOUT pre_reg_ref is rejected (laundering)",
+			anchorDoc(`,"evidence_ref":[{"kind":"internal","value":1.0,"pre_registered":true}]`),
+			true,
 		},
 		{
 			"external + pre_registered WITHOUT timestamp is rejected",
@@ -283,8 +289,11 @@ func TestEvidenceRefExternalPrereg(t *testing.T) {
 }
 
 // TestTRLRecordShape exercises the v0.3.6 trl[] field (inter#238 R9';
-// confluent-trust#132 AC5): environment is required except at the
-// documentary TRL 1-2 stages, which have none to state.
+// confluent-trust#132 AC5, qbp-architecture §I4 fix round confluent-trust#133):
+// environment is required except at the documentary TRL 1-2 stages, which
+// have none to state; environment:lab caps trl_criterion.level at 4 (a CI/lab
+// record never earns a higher TRL on its own); satisfies is a required
+// non-empty string (not a boolean — a bare yes/no has no argument to check).
 func TestTRLRecordShape(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -293,47 +302,65 @@ func TestTRLRecordShape(t *testing.T) {
 	}{
 		{
 			"TRL 1 documentary record has no environment (the boundary)",
-			anchorDoc(`,"trl":[{"trl_criterion":{"level":1,"text":"basic principles observed"},"satisfies":true,"fl_at_sha":"abc123"}]`),
+			anchorDoc(`,"trl":[{"trl_criterion":{"level":1,"text":"basic principles observed"},"satisfies":"literature-review confirms the principle","fl_at_sha":"abc123"}]`),
 			false,
 		},
 		{
 			"TRL 2 documentary record has no environment",
-			anchorDoc(`,"trl":[{"trl_criterion":{"level":2,"text":"concept formulated"},"satisfies":true,"fl_at_sha":"abc123"}]`),
+			anchorDoc(`,"trl":[{"trl_criterion":{"level":2,"text":"concept formulated"},"satisfies":"design doc states the concept","fl_at_sha":"abc123"}]`),
 			false,
 		},
 		{
 			"TRL 4 WITHOUT environment is rejected",
-			anchorDoc(`,"trl":[{"trl_criterion":{"level":4,"text":"component validated in lab"},"satisfies":true,"fl_at_sha":"abc123"}]`),
+			anchorDoc(`,"trl":[{"trl_criterion":{"level":4,"text":"component validated in lab"},"satisfies":"unit tests pass in CI","fl_at_sha":"abc123"}]`),
 			true,
 		},
 		{
-			"TRL 4 WITH environment is valid",
-			anchorDoc(`,"trl":[{"environment":"lab","trl_criterion":{"level":4,"text":"component validated in lab"},"satisfies":true,"fl_at_sha":"abc123"}]`),
+			"TRL 4 WITH environment:lab is valid",
+			anchorDoc(`,"trl":[{"environment":"lab","trl_criterion":{"level":4,"text":"component validated in lab"},"satisfies":"unit tests pass in CI","fl_at_sha":"abc123"}]`),
 			false,
 		},
-		{"missing required trl_criterion", anchorDoc(`,"trl":[{"satisfies":true,"fl_at_sha":"abc123"}]`), true},
-		{"bad environment enum", anchorDoc(`,"trl":[{"environment":"orbit","trl_criterion":{"level":9,"text":"flight proven"},"satisfies":true,"fl_at_sha":"abc123"}]`), true},
+		{
+			"environment:lab WITH level above 4 is rejected (lab cap)",
+			anchorDoc(`,"trl":[{"environment":"lab","trl_criterion":{"level":5,"text":"validated in relevant environment"},"satisfies":"ran against the real deployment","fl_at_sha":"abc123"}]`),
+			true,
+		},
+		{
+			"environment:relevant WITH level 5 is valid (cap only bites lab)",
+			anchorDoc(`,"trl":[{"environment":"relevant","trl_criterion":{"level":5,"text":"validated in relevant environment"},"satisfies":"ran against the real deployment","fl_at_sha":"abc123"}]`),
+			false,
+		},
+		{"missing required trl_criterion", anchorDoc(`,"trl":[{"satisfies":"x","fl_at_sha":"abc123"}]`), true},
+		{"bad environment enum", anchorDoc(`,"trl":[{"environment":"orbit","trl_criterion":{"level":9,"text":"flight proven"},"satisfies":"x","fl_at_sha":"abc123"}]`), true},
+		{"satisfies as boolean is rejected (must be a string)", anchorDoc(`,"trl":[{"trl_criterion":{"level":1,"text":"x"},"satisfies":true,"fl_at_sha":"abc123"}]`), true},
+		{"satisfies as empty string is rejected", anchorDoc(`,"trl":[{"trl_criterion":{"level":1,"text":"x"},"satisfies":"","fl_at_sha":"abc123"}]`), true},
 	}
 	runValidateCases(t, tests)
 }
 
 // TestRemediationBothShas exercises the v0.3.6 remediation[] field
-// (inter#238 R11.3'; confluent-trust#132 AC7): both the unfixed and fixed
-// references are required, and soak_ref is required only when fault_state
-// is not-reproduced.
+// (inter#238 R11.1'/R11.3'; confluent-trust#132 AC7, qbp-architecture §I4 fix
+// round confluent-trust#133): unfixed_ref, fixed_ref and scope_review_ref are
+// always required (a single sha proves nothing was compared); reproducible:
+// false requires soak_ref IN PLACE OF regression_test_ref (a hardware or
+// intermittent fault, e.g. the HIP 700s, that a deterministic regression test
+// can't exercise); otherwise regression_test_ref is required, as for an
+// ordinary fix.
 func TestRemediationBothShas(t *testing.T) {
-	base := `"unfixed_ref":"abc111","fixed_ref":"abc222","regression_test_ref":"TestFoo","scope_review_ref":"issuecomment-1"`
+	core := `"unfixed_ref":"abc111","fixed_ref":"abc222","scope_review_ref":"issuecomment-1"`
+	withRegr := core + `,"regression_test_ref":"TestFoo"`
 	tests := []struct {
 		name    string
 		data    string
 		wantErr bool
 	}{
-		{"both shas present, no fault_state: soak optional (the boundary)", anchorDoc(`,"remediation":[{` + base + `}]`), false},
+		{"reproducible unstated, regression_test_ref present (the boundary)", anchorDoc(`,"remediation":[{` + withRegr + `}]`), false},
+		{"reproducible unstated, regression_test_ref MISSING is rejected", anchorDoc(`,"remediation":[{` + core + `}]`), true},
+		{"reproducible:true, regression_test_ref MISSING is rejected", anchorDoc(`,"remediation":[{` + core + `,"reproducible":true}]`), true},
+		{"reproducible:false WITHOUT soak_ref is rejected", anchorDoc(`,"remediation":[{` + core + `,"reproducible":false}]`), true},
+		{"reproducible:false WITH soak_ref, no regression_test_ref, is valid", anchorDoc(`,"remediation":[{` + core + `,"reproducible":false,"soak_ref":"boxrun-log-1"}]`), false},
 		{"only unfixed_ref present is rejected (single sha)", anchorDoc(`,"remediation":[{"unfixed_ref":"abc111","regression_test_ref":"TestFoo","scope_review_ref":"issuecomment-1"}]`), true},
 		{"only fixed_ref present is rejected (single sha)", anchorDoc(`,"remediation":[{"fixed_ref":"abc222","regression_test_ref":"TestFoo","scope_review_ref":"issuecomment-1"}]`), true},
-		{"not-reproduced WITHOUT soak_ref is rejected", anchorDoc(`,"remediation":[{` + base + `,"fault_state":"not-reproduced"}]`), true},
-		{"not-reproduced WITH soak_ref is valid", anchorDoc(`,"remediation":[{` + base + `,"fault_state":"not-reproduced","soak_ref":"boxrun-log-1"}]`), false},
-		{"confirmed WITHOUT soak_ref is fine (cap only bites not-reproduced)", anchorDoc(`,"remediation":[{` + base + `,"fault_state":"confirmed"}]`), false},
 		{"missing required scope_review_ref", anchorDoc(`,"remediation":[{"unfixed_ref":"abc111","fixed_ref":"abc222","regression_test_ref":"TestFoo"}]`), true},
 	}
 	runValidateCases(t, tests)
