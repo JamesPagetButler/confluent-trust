@@ -352,7 +352,7 @@
     },
     "RemediationRecord": {
       "type": "object",
-      "description": "Closure record for a confirmed, fixed adverse finding (v0.3.6, inter#238 R11.1'/R11.3'; confluent-trust#132 AC7). Both the unfixed and fixed references are required — a single sha proves nothing was compared. reproducible:false (a hardware or intermittent fault, e.g. the HIP 700s) requires soak_ref IN PLACE OF regression_test_ref — the soak is the evidence there, since a deterministic regression test can't exercise an intermittent condition. Otherwise (reproducible:true or unstated) regression_test_ref is required, as for an ordinary fix. 'not-reproduced' is a finding state (R11.1') that never reaches this record at all — a fault that couldn't be reproduced isn't remediated, it's dismissed.",
+      "description": "Closure record for a confirmed, fixed adverse finding (v0.3.6, inter#238 R11.1'/R11.3'; confluent-trust#132 AC7). Both the unfixed and fixed references are required — a single sha proves nothing was compared. reproducible:false (a hardware or intermittent fault, e.g. the HIP 700s) requires soak_ref IN PLACE OF regression_test_ref — the soak is the evidence there, since a deterministic regression test can't exercise an intermittent condition. Otherwise (reproducible:true or unstated) regression_test_ref is required, as for an ordinary fix. 'not-reproduced' is a finding state (R11.1') that never reaches this record at all — it stays 'not-reproduced', which is not a dismissal and does not lift a safety hold.",
       "required": ["unfixed_ref", "fixed_ref", "scope_review_ref"],
       "properties": {
         "unfixed_ref":         { "type": "string", "minLength": 1, "description": "The pre-fix sha or release id." },
