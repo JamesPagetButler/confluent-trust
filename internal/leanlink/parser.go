@@ -15,9 +15,11 @@ import (
 
 // TheoremDecl captures one declaration found in a .lean file.
 type TheoremDecl struct {
-	// Name is the theorem / lemma / example / def identifier.
+	// Name is the theorem / lemma / example / def / abbrev / structure identifier.
 	Name string
-	// Kind is one of "theorem", "lemma", "example", or "def".
+	// Kind is one of "theorem", "lemma", "example", "def", "abbrev", or
+	// "structure". Only "theorem" and "lemma" count as an actual proof
+	// obligation (see isProofKind in reconcile.go, confluent-trust#130).
 	Kind string
 	// File is the path relative to the corpus root.
 	File string
@@ -32,12 +34,16 @@ type TheoremDecl struct {
 }
 
 var (
-	// reDeclStart matches the start of a theorem/lemma/example/def declaration.
-	// Group 1 = kind, group 2 = name. The name class uses \p{L}/\p{N} rather
-	// than ASCII ranges so Lean identifiers carrying Unicode subscripts
-	// (B₁, B₂, ...) or Greek letters parse as distinct names instead of
-	// truncating at the first non-ASCII rune (CTH #125).
-	reDeclStart = regexp.MustCompile(`(?m)^\s*(theorem|lemma|example|def)\s+([\p{L}_][\p{L}\p{N}_'.!?]*)`)
+	// reDeclStart matches the start of a theorem/lemma/example/def/abbrev/
+	// structure declaration. Group 1 = kind, group 2 = name. abbrev and
+	// structure were added (confluent-trust#130) so a statement declaration
+	// sharing a discharge anchor's name is visible to the reconciler and can
+	// be flagged as a provenance-kind mismatch, rather than silently
+	// invisible to WalkCorpus. The name class uses \p{L}/\p{N} rather than
+	// ASCII ranges so Lean identifiers carrying Unicode subscripts (B₁, B₂,
+	// ...) or Greek letters parse as distinct names instead of truncating at
+	// the first non-ASCII rune (CTH #125).
+	reDeclStart = regexp.MustCompile(`(?m)^\s*(theorem|lemma|example|def|abbrev|structure)\s+([\p{L}_][\p{L}\p{N}_'.!?]*)`)
 
 	// reSorry matches the sorry keyword as a whole word.
 	reSorry = regexp.MustCompile(`\bsorry\b`)

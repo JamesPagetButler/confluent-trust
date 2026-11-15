@@ -30,7 +30,47 @@ const (
 	// ClassPhantomTheorem: anchor declares theorem.status = "not_started" but
 	// theorem name DOES appear in proof_file (Invariant 5 violation, design §6).
 	ClassPhantomTheorem Class = "phantom-theorem"
+
+	// ClassAwaiting: a missing lean_theorem resolution on an anchor whose
+	// status is "untested" (confluent-trust#130, Harlequin/Gleipnir GL-014;
+	// cth-implementor steward ruling). An open-root discharge target names a
+	// theorem that doesn't exist yet, by design — that's not a stale
+	// reference, it's a target still awaiting its proof. Never counts toward
+	// --strict's default findings; always listed by name in the report so a
+	// new entry (e.g. a typo'd lean_theorem) is a visible diff, not a silent
+	// one (qbp-architecture §I4 condition 1).
+	ClassAwaiting Class = "awaiting"
+
+	// ClassDischargedWhileOpen: the anchor was awaiting (status "untested",
+	// lean_theorem unresolved) and WalkCorpus now resolves it to a real
+	// theorem/lemma. Reported loudly rather than silently folding into
+	// ClassProven — this is exactly the event Gleipnir's GL-014 tripwire
+	// wants surfaced. It still requires a human/CI act to flip status to
+	// verified; lean-link reports, it doesn't auto-promote.
+	ClassDischargedWhileOpen Class = "discharged-while-open"
+
+	// ClassProvenanceKindMismatch: an anchor with provenance_kind "proof"
+	// resolves its lean_theorem to a declaration whose kind is not theorem
+	// or lemma (def/abbrev/example/structure). This must never classify
+	// ClassProven nor propose a proof_state advance — a statement is not a
+	// proof of anything, however it happens to be named.
+	ClassProvenanceKindMismatch Class = "provenance-kind-mismatch"
+
+	// ClassVerificationRegression: against a supplied base inventory
+	// (DetectRegressions), an anchor's status flipped from something other
+	// than "untested" to "untested". A deleted or broken proof must never
+	// read the same as a theorem that was never written yet — this is its
+	// own loud line, never silently absorbed into ClassAwaiting
+	// (qbp-architecture §I4 condition 2).
+	ClassVerificationRegression Class = "verification-regression"
 )
+
+// isProofKind reports whether a parsed declaration's kind counts as an
+// actual proof obligation (theorem/lemma) rather than a statement
+// (def/abbrev/example/structure) that merely happens to share a name.
+func isProofKind(kind string) bool {
+	return kind == "theorem" || kind == "lemma"
+}
 
 // AnchorClassification records one anchor's reconciliation outcome.
 // Field order is arranged to minimise padding per govet fieldalignment.
@@ -128,6 +168,15 @@ func Reconcile(inv model.Inventory, theorems []TheoremDecl, spec ToolchainSpec) 
 		for _, ref := range refs {
 			found := findByName(fileTheorems, ref)
 			if found == nil {
+				if a.Status == model.StatusUntested {
+					r.Classifications = append(r.Classifications, AnchorClassification{
+						AnchorID:    a.ID,
+						Class:       ClassAwaiting,
+						TheoremName: ref,
+						Detail:      fmt.Sprintf("theorem %s not yet written (status: untested)", ref),
+					})
+					continue
+				}
 				r.Classifications = append(r.Classifications, AnchorClassification{
 					AnchorID:    a.ID,
 					Class:       ClassStaleRef,
@@ -149,6 +198,23 @@ func Reconcile(inv model.Inventory, theorems []TheoremDecl, spec ToolchainSpec) 
 					TheoremName: ref,
 					Detail: fmt.Sprintf("join-key module %q does not resolve to %s (theorem found in %s)",
 						module, moduleToPath(module), found.File),
+				})
+				continue
+			}
+
+			// No proof credit for a non-proof declaration (confluent-trust#130
+			// Ask 2; cth-implementor steward ruling, ruled stronger than
+			// Harlequin's minimum-bar warn). A def/abbrev/example/structure
+			// sharing a name with the discharge target is not a proof of
+			// anything — this must preempt the phantom/drift/proven checks
+			// below, all of which presuppose an actual proof obligation.
+			if a.ProvenanceKind == model.ProvenanceKindProof && !isProofKind(found.Kind) {
+				r.Classifications = append(r.Classifications, AnchorClassification{
+					AnchorID:    a.ID,
+					Class:       ClassProvenanceKindMismatch,
+					TheoremName: ref,
+					Detail: fmt.Sprintf("provenance_kind=proof but %s is a %s, not a theorem/lemma (in %s)",
+						ref, found.Kind, found.File),
 				})
 				continue
 			}
@@ -181,11 +247,20 @@ func Reconcile(inv model.Inventory, theorems []TheoremDecl, spec ToolchainSpec) 
 				continue
 			}
 
-			// Proven & wired.
+			// Proven & wired — or, if the anchor is still status:untested,
+			// discharged-while-open: the theorem now exists but the anchor
+			// hasn't been promoted yet. Reported as its own loud class
+			// rather than silently folding into ClassProven (confluent-
+			// trust#130 Ask 1; Gleipnir GL-014's tripwire). lean-link
+			// reports this; it never auto-promotes a.Status itself.
 			anyProven = true
+			class := ClassProven
+			if a.Status == model.StatusUntested {
+				class = ClassDischargedWhileOpen
+			}
 			r.Classifications = append(r.Classifications, AnchorClassification{
 				AnchorID:    a.ID,
-				Class:       ClassProven,
+				Class:       class,
 				TheoremName: ref,
 			})
 
@@ -324,7 +399,7 @@ func FormatReport(r Report) string {
 	fmt.Fprintf(&b, "**Generated:** %s\n\n", r.Generated)
 
 	// Summary counts.
-	proven, orphan, staleRef, drift, phantom := classCount(r)
+	proven, orphan, staleRef, drift, phantom, awaiting, discharged, kindMismatch, regression := classCount(r)
 	fmt.Fprintf(&b, "## Summary\n\n")
 	fmt.Fprintf(&b, "- Proof-bearing anchors examined: %d\n", r.AnchorCount)
 	fmt.Fprintf(&b, "- Theorems found in corpus: %d\n", r.ParsedTheorems)
@@ -333,6 +408,13 @@ func FormatReport(r Report) string {
 	fmt.Fprintf(&b, "- Stale references: %d\n", staleRef)
 	fmt.Fprintf(&b, "- Sorry-count drift: %d\n", drift)
 	fmt.Fprintf(&b, "- Phantom-theorem (Invariant 5 violations): %d\n", phantom)
+	// Awaiting is always listed by name, with a count, even at zero — a new
+	// entry (e.g. a typo'd lean_theorem) must be a visible diff, never a
+	// silent one (confluent-trust#130, qbp-architecture §I4 condition 1).
+	fmt.Fprintf(&b, "- Awaiting (status:untested, theorem not yet written): %d\n", awaiting)
+	fmt.Fprintf(&b, "- Discharged while open: %d\n", discharged)
+	fmt.Fprintf(&b, "- Provenance-kind mismatches: %d\n", kindMismatch)
+	fmt.Fprintf(&b, "- Verification regressions (against base): %d\n", regression)
 	fmt.Fprintf(&b, "- Proposed updates: %d\n\n", len(r.Updates))
 	_ = orphan // orphan count is len(r.Orphans) — already printed above
 
@@ -386,6 +468,54 @@ func FormatReport(r Report) string {
 		for _, cl := range r.Classifications {
 			if cl.Class == ClassPhantomTheorem {
 				fmt.Fprintf(&b, "| %s | %s | %s |\n", cl.AnchorID, cl.TheoremName, cl.Detail)
+			}
+		}
+		fmt.Fprint(&b, "\n")
+	}
+
+	if awaiting > 0 {
+		fmt.Fprint(&b, "## Awaiting (open-root discharge targets)\n\n")
+		fmt.Fprint(&b, "`status: untested` anchors whose theorem doesn't exist yet, by design. Does not count toward `--strict`'s default findings; see `--awaiting-max` / `--awaiting-allow` to bound it.\n\n")
+		fmt.Fprint(&b, "| Anchor ID | Theorem | Detail |\n|---|---|---|\n")
+		for _, cl := range r.Classifications {
+			if cl.Class == ClassAwaiting {
+				fmt.Fprintf(&b, "| %s | %s | %s |\n", cl.AnchorID, cl.TheoremName, cl.Detail)
+			}
+		}
+		fmt.Fprint(&b, "\n")
+	}
+
+	if discharged > 0 {
+		fmt.Fprint(&b, "## Discharged while open\n\n")
+		fmt.Fprint(&b, "A theorem now exists for an anchor still marked `status: untested` — the event Gleipnir's GL-014 tripwire watches for. lean-link reports this; it does not flip `status` itself.\n\n")
+		fmt.Fprint(&b, "| Anchor ID | Theorem | Detail |\n|---|---|---|\n")
+		for _, cl := range r.Classifications {
+			if cl.Class == ClassDischargedWhileOpen {
+				fmt.Fprintf(&b, "| %s | %s | %s |\n", cl.AnchorID, cl.TheoremName, cl.Detail)
+			}
+		}
+		fmt.Fprint(&b, "\n")
+	}
+
+	if kindMismatch > 0 {
+		fmt.Fprint(&b, "## Provenance-kind mismatches\n\n")
+		fmt.Fprint(&b, "`provenance_kind: proof` anchors whose resolved declaration is a def/abbrev/example/structure, not a theorem/lemma. No proof credit given.\n\n")
+		fmt.Fprint(&b, "| Anchor ID | Theorem | Detail |\n|---|---|---|\n")
+		for _, cl := range r.Classifications {
+			if cl.Class == ClassProvenanceKindMismatch {
+				fmt.Fprintf(&b, "| %s | %s | %s |\n", cl.AnchorID, cl.TheoremName, cl.Detail)
+			}
+		}
+		fmt.Fprint(&b, "\n")
+	}
+
+	if regression > 0 {
+		fmt.Fprint(&b, "## Verification regressions (against base)\n\n")
+		fmt.Fprint(&b, "An anchor's `status` flipped from something other than `untested` to `untested`, against the supplied base inventory. Demotion is allowed; it is never quiet.\n\n")
+		fmt.Fprint(&b, "| Anchor ID | Detail |\n|---|---|\n")
+		for _, cl := range r.Classifications {
+			if cl.Class == ClassVerificationRegression {
+				fmt.Fprintf(&b, "| %s | %s |\n", cl.AnchorID, cl.Detail)
 			}
 		}
 		fmt.Fprint(&b, "\n")
@@ -565,8 +695,8 @@ func findAnchorIndex(anchors []model.Anchor, id string) int {
 	return -1
 }
 
-// classCount returns per-class counts for the five classes.
-func classCount(r Report) (proven, orphan, staleRef, drift, phantom int) {
+// classCount returns per-class counts for the nine classes.
+func classCount(r Report) (proven, orphan, staleRef, drift, phantom, awaiting, discharged, kindMismatch, regression int) {
 	for _, cl := range r.Classifications {
 		switch cl.Class {
 		case ClassProven:
@@ -579,7 +709,46 @@ func classCount(r Report) (proven, orphan, staleRef, drift, phantom int) {
 			drift++
 		case ClassPhantomTheorem:
 			phantom++
+		case ClassAwaiting:
+			awaiting++
+		case ClassDischargedWhileOpen:
+			discharged++
+		case ClassProvenanceKindMismatch:
+			kindMismatch++
+		case ClassVerificationRegression:
+			regression++
 		}
 	}
-	return proven, orphan, staleRef, drift, phantom
+	return proven, orphan, staleRef, drift, phantom, awaiting, discharged, kindMismatch, regression
+}
+
+// DetectRegressions compares current against a base inventory and reports
+// any anchor whose status flipped from something other than "untested" to
+// "untested" — a deleted or broken proof must never read the same as a
+// theorem that was never written yet (confluent-trust#130 Ask 1, condition
+// 2; qbp-architecture §I4: "demotion is allowed, but it is never quiet,"
+// mirroring inter#238 R11). Anchors present in only one of the two
+// inventories are not compared — a regression needs the same anchor ID on
+// both sides.
+func DetectRegressions(base, current model.Inventory) []AnchorClassification {
+	baseByID := make(map[string]model.Status, len(base.Anchors))
+	for _, a := range base.Anchors {
+		baseByID[a.ID] = a.Status
+	}
+
+	var out []AnchorClassification
+	for _, a := range current.Anchors {
+		baseStatus, ok := baseByID[a.ID]
+		if !ok {
+			continue
+		}
+		if baseStatus != model.StatusUntested && a.Status == model.StatusUntested {
+			out = append(out, AnchorClassification{
+				AnchorID: a.ID,
+				Class:    ClassVerificationRegression,
+				Detail:   fmt.Sprintf("status flipped %s -> untested against base", baseStatus),
+			})
+		}
+	}
+	return out
 }

@@ -435,3 +435,288 @@ func TestReconcile_VerificationProposal(t *testing.T) {
 		t.Errorf("expected proof_state update proposal for PROOF-F, got %v", r.Updates)
 	}
 }
+
+// ---- confluent-trust#130: awaiting / discharged-while-open / provenance-kind
+// mismatch / verification regression ----
+
+// untestedAnchor returns a proof-bearing anchor like proofAnchor, but with
+// status:untested (the open-root discharge-target shape from #130's
+// problem statement).
+func untestedAnchor(id, proofFile string, theorems []model.TheoremRef) model.Anchor {
+	a := proofAnchor(id, proofFile, nil, theorems)
+	a.Status = model.StatusUntested
+	return a
+}
+
+// 11. Awaiting: status:untested anchor whose theorem doesn't exist yet is
+// awaiting, not stale.
+func TestReconcile_Awaiting(t *testing.T) {
+	t.Parallel()
+	anchor := untestedAnchor("PROOF-AWAIT", "Proofs/Open.lean",
+		[]model.TheoremRef{{Name: "not_yet_written", Status: model.TheoremStatusNotStarted}})
+	inv := makeInventory([]model.Anchor{anchor})
+
+	r := leanlink.Reconcile(inv, nil, leanlink.ToolchainSpec{})
+
+	var foundAwaiting, foundStale bool
+	for _, cl := range r.Classifications {
+		if cl.AnchorID != "PROOF-AWAIT" {
+			continue
+		}
+		switch cl.Class {
+		case leanlink.ClassAwaiting:
+			foundAwaiting = true
+		case leanlink.ClassStaleRef:
+			foundStale = true
+		}
+	}
+	if !foundAwaiting {
+		t.Errorf("expected ClassAwaiting for an untested anchor with no theorem yet, got %v", r.Classifications)
+	}
+	if foundStale {
+		t.Errorf("an untested anchor's missing theorem must not be ClassStaleRef, got %v", r.Classifications)
+	}
+}
+
+// 12. A coherent (non-untested) anchor with a missing theorem is still
+// stale, not awaiting — the awaiting bucket must not swallow real findings.
+func TestReconcile_CoherentMissingTheoremStillStale(t *testing.T) {
+	t.Parallel()
+	anchor := proofAnchor("PROOF-COHERENT-MISSING", "Proofs/Bar.lean", intPtr(0),
+		[]model.TheoremRef{{Name: "missing_theorem", Status: model.TheoremStatusWritten}})
+	inv := makeInventory([]model.Anchor{anchor})
+
+	r := leanlink.Reconcile(inv, nil, leanlink.ToolchainSpec{})
+
+	var foundAwaiting, foundStale bool
+	for _, cl := range r.Classifications {
+		if cl.AnchorID != "PROOF-COHERENT-MISSING" {
+			continue
+		}
+		switch cl.Class {
+		case leanlink.ClassAwaiting:
+			foundAwaiting = true
+		case leanlink.ClassStaleRef:
+			foundStale = true
+		}
+	}
+	if foundAwaiting {
+		t.Errorf("a coherent anchor's missing theorem must not be ClassAwaiting, got %v", r.Classifications)
+	}
+	if !foundStale {
+		t.Errorf("expected ClassStaleRef for a coherent anchor's missing theorem, got %v", r.Classifications)
+	}
+}
+
+// 13. Discharged-while-open: a status:untested anchor whose theorem now
+// resolves must be reported as discharged-while-open, never silently
+// folded into ClassProven.
+func TestReconcile_DischargedWhileOpen(t *testing.T) {
+	t.Parallel()
+	anchor := untestedAnchor("PROOF-DISCHARGE", "Proofs/Open.lean",
+		[]model.TheoremRef{{Name: "now_written", Status: model.TheoremStatusWritten}})
+	theorems := []leanlink.TheoremDecl{synthTheorem("now_written", "Proofs/Open.lean", 0)}
+	inv := makeInventory([]model.Anchor{anchor})
+
+	r := leanlink.Reconcile(inv, theorems, leanlink.ToolchainSpec{})
+
+	var foundDischarged, foundProven bool
+	for _, cl := range r.Classifications {
+		if cl.AnchorID != "PROOF-DISCHARGE" {
+			continue
+		}
+		switch cl.Class {
+		case leanlink.ClassDischargedWhileOpen:
+			foundDischarged = true
+		case leanlink.ClassProven:
+			foundProven = true
+		}
+	}
+	if !foundDischarged {
+		t.Errorf("expected ClassDischargedWhileOpen, got %v", r.Classifications)
+	}
+	if foundProven {
+		t.Errorf("a discharged-while-open theorem must not also classify ClassProven, got %v", r.Classifications)
+	}
+}
+
+// 14. Provenance-kind mismatch: a provenance_kind:proof anchor whose
+// discharge name resolves to a def must not get proof credit.
+func TestReconcile_ProvenanceKindMismatch_Def(t *testing.T) {
+	t.Parallel()
+	anchor := proofAnchor("PROOF-DEFMATCH", "Proofs/Named.lean", nil,
+		[]model.TheoremRef{{Name: "T_O", Status: model.TheoremStatusWritten}})
+	theorems := []leanlink.TheoremDecl{{Name: "T_O", Kind: "def", File: "Proofs/Named.lean", Line: 1}}
+	inv := makeInventory([]model.Anchor{anchor})
+
+	r := leanlink.Reconcile(inv, theorems, leanlink.ToolchainSpec{})
+
+	var foundMismatch, foundProven bool
+	for _, cl := range r.Classifications {
+		if cl.AnchorID != "PROOF-DEFMATCH" {
+			continue
+		}
+		switch cl.Class {
+		case leanlink.ClassProvenanceKindMismatch:
+			foundMismatch = true
+		case leanlink.ClassProven:
+			foundProven = true
+		}
+	}
+	if !foundMismatch {
+		t.Errorf("expected ClassProvenanceKindMismatch for a def match, got %v", r.Classifications)
+	}
+	if foundProven {
+		t.Errorf("a def match on a provenance_kind:proof anchor must not classify ClassProven, got %v", r.Classifications)
+	}
+	// No proof_state advance may be proposed for a non-proof match either.
+	for _, u := range r.Updates {
+		if u.AnchorID == "PROOF-DEFMATCH" && u.Field == "proof_state" {
+			t.Errorf("a def match must not propose a proof_state advance, got %v", r.Updates)
+		}
+	}
+}
+
+// 15. A theorem/lemma match on a provenance_kind:proof anchor is unaffected
+// by the kind-mismatch guard (it must still classify ClassProven).
+func TestReconcile_ProvenanceKindMismatch_TheoremStillProven(t *testing.T) {
+	t.Parallel()
+	anchor := proofAnchor("PROOF-REALTHM", "Proofs/Named.lean", intPtr(0),
+		[]model.TheoremRef{{Name: "real_theorem", Status: model.TheoremStatusWritten}})
+	theorems := []leanlink.TheoremDecl{synthTheorem("real_theorem", "Proofs/Named.lean", 0)}
+	inv := makeInventory([]model.Anchor{anchor})
+
+	r := leanlink.Reconcile(inv, theorems, leanlink.ToolchainSpec{})
+
+	foundProven := false
+	for _, cl := range r.Classifications {
+		if cl.AnchorID == "PROOF-REALTHM" && cl.Class == leanlink.ClassProven {
+			foundProven = true
+		}
+	}
+	if !foundProven {
+		t.Errorf("expected ClassProven for a real theorem match, got %v", r.Classifications)
+	}
+}
+
+// 16. Provenance-kind mismatch on a non-proof anchor (provenance_kind !=
+// proof) is out of scope — the guard only ever applies to provenance_kind:
+// proof anchors, so an anchor without that kind resolving to a def is just
+// an ordinary ClassProven (the guard must not over-fire).
+func TestReconcile_ProvenanceKindMismatch_NonProofAnchorUnaffected(t *testing.T) {
+	t.Parallel()
+	anchor := proofAnchor("PROOF-NONPROOF", "Proofs/Named.lean", nil,
+		[]model.TheoremRef{{Name: "some_def", Status: model.TheoremStatusWritten}})
+	anchor.ProvenanceKind = model.ProvenanceKindUnknown
+	theorems := []leanlink.TheoremDecl{{Name: "some_def", Kind: "def", File: "Proofs/Named.lean", Line: 1}}
+	inv := makeInventory([]model.Anchor{anchor})
+
+	r := leanlink.Reconcile(inv, theorems, leanlink.ToolchainSpec{})
+
+	var foundMismatch, foundProven bool
+	for _, cl := range r.Classifications {
+		if cl.AnchorID != "PROOF-NONPROOF" {
+			continue
+		}
+		switch cl.Class {
+		case leanlink.ClassProvenanceKindMismatch:
+			foundMismatch = true
+		case leanlink.ClassProven:
+			foundProven = true
+		}
+	}
+	if foundMismatch {
+		t.Errorf("the provenance-kind-mismatch guard must not fire on a non-proof anchor, got %v", r.Classifications)
+	}
+	if !foundProven {
+		t.Errorf("expected ClassProven for a non-proof anchor's def match, got %v", r.Classifications)
+	}
+}
+
+// 17. DetectRegressions: an anchor that flips from coherent to untested
+// against base is a verification regression.
+func TestDetectRegressions_CoherentToUntested(t *testing.T) {
+	t.Parallel()
+	base := makeInventory([]model.Anchor{proofAnchor("PROOF-REG", "Proofs/Foo.lean", intPtr(0), nil)})
+	current := makeInventory([]model.Anchor{untestedAnchor("PROOF-REG", "Proofs/Foo.lean", nil)})
+
+	regs := leanlink.DetectRegressions(base, current)
+
+	if len(regs) != 1 || regs[0].AnchorID != "PROOF-REG" || regs[0].Class != leanlink.ClassVerificationRegression {
+		t.Errorf("expected one ClassVerificationRegression for PROOF-REG, got %v", regs)
+	}
+}
+
+// 18. DetectRegressions: an anchor that was already untested in base, and
+// still is, is NOT a regression (no flip occurred).
+func TestDetectRegressions_AlreadyUntestedIsNotARegression(t *testing.T) {
+	t.Parallel()
+	base := makeInventory([]model.Anchor{untestedAnchor("PROOF-REG2", "Proofs/Foo.lean", nil)})
+	current := makeInventory([]model.Anchor{untestedAnchor("PROOF-REG2", "Proofs/Foo.lean", nil)})
+
+	regs := leanlink.DetectRegressions(base, current)
+
+	if len(regs) != 0 {
+		t.Errorf("expected no regressions when base was already untested, got %v", regs)
+	}
+}
+
+// 19. DetectRegressions: an anchor only present in current (new since base)
+// is not compared — no false regression from a brand-new anchor.
+func TestDetectRegressions_NewAnchorNotCompared(t *testing.T) {
+	t.Parallel()
+	base := makeInventory(nil)
+	current := makeInventory([]model.Anchor{untestedAnchor("PROOF-NEW", "Proofs/Foo.lean", nil)})
+
+	regs := leanlink.DetectRegressions(base, current)
+
+	if len(regs) != 0 {
+		t.Errorf("expected no regressions for an anchor absent from base, got %v", regs)
+	}
+}
+
+// 20. DetectRegressions: untested -> coherent (promotion, not demotion) is
+// not a regression — only a flip INTO untested counts.
+func TestDetectRegressions_PromotionIsNotARegression(t *testing.T) {
+	t.Parallel()
+	base := makeInventory([]model.Anchor{untestedAnchor("PROOF-REG3", "Proofs/Foo.lean", nil)})
+	current := makeInventory([]model.Anchor{proofAnchor("PROOF-REG3", "Proofs/Foo.lean", intPtr(0), nil)})
+
+	regs := leanlink.DetectRegressions(base, current)
+
+	if len(regs) != 0 {
+		t.Errorf("a promotion out of untested must not be a regression, got %v", regs)
+	}
+}
+
+// 21. A lemma match is also a real proof obligation — isProofKind must
+// accept "lemma", not just "theorem" (kills a mutant that drops the
+// lemma branch of the OR).
+func TestReconcile_ProvenanceKindMismatch_LemmaAlsoProven(t *testing.T) {
+	t.Parallel()
+	anchor := proofAnchor("PROOF-LEMMA", "Proofs/Named.lean", intPtr(0),
+		[]model.TheoremRef{{Name: "real_lemma", Status: model.TheoremStatusWritten}})
+	theorems := []leanlink.TheoremDecl{{Name: "real_lemma", Kind: "lemma", File: "Proofs/Named.lean", Line: 1}}
+	inv := makeInventory([]model.Anchor{anchor})
+
+	r := leanlink.Reconcile(inv, theorems, leanlink.ToolchainSpec{})
+
+	var foundProven, foundMismatch bool
+	for _, cl := range r.Classifications {
+		if cl.AnchorID != "PROOF-LEMMA" {
+			continue
+		}
+		switch cl.Class {
+		case leanlink.ClassProven:
+			foundProven = true
+		case leanlink.ClassProvenanceKindMismatch:
+			foundMismatch = true
+		}
+	}
+	if !foundProven {
+		t.Errorf("expected ClassProven for a lemma match, got %v", r.Classifications)
+	}
+	if foundMismatch {
+		t.Errorf("a lemma match must not be a provenance-kind mismatch, got %v", r.Classifications)
+	}
+}

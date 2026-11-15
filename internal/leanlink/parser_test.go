@@ -247,3 +247,30 @@ func TestWalkCorpus_SedenionHasOneSorry(t *testing.T) {
 	}
 	t.Error("sedenion_assoc not found in corpus")
 }
+
+// TestParseLeanFile_AbbrevAndStructureKinds exercises confluent-trust#130:
+// abbrev and structure must be recognized as declaration kinds (so a
+// provenance-kind mismatch against them is detectable at all), and must
+// never be confused with theorem/lemma.
+func TestParseLeanFile_AbbrevAndStructureKinds(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.lean")
+	src := "abbrev T_O := Nat\n\nstructure Foo where\n  x : Nat\n"
+	if err := os.WriteFile(path, []byte(src), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	decls, err := leanlink.ParseLeanFile(path, dir)
+	if err != nil {
+		t.Fatalf("ParseLeanFile: %v", err)
+	}
+	if len(decls) != 2 {
+		t.Fatalf("expected 2 decls, got %d: %v", len(decls), decls)
+	}
+	if decls[0].Name != "T_O" || decls[0].Kind != "abbrev" {
+		t.Errorf("decl 0: want T_O/abbrev, got %s/%s", decls[0].Name, decls[0].Kind)
+	}
+	if decls[1].Name != "Foo" || decls[1].Kind != "structure" {
+		t.Errorf("decl 1: want Foo/structure, got %s/%s", decls[1].Name, decls[1].Kind)
+	}
+}

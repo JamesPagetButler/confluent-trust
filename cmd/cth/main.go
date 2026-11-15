@@ -53,6 +53,9 @@ Usage:
   cth lean-link <inventory.json> <corpus-root> [-o out.md]       Lean↔PROOF-anchor cross-ref
   cth lean-link ... --update-inventory                           write resolved metadata back
   cth lean-link ... --strict                                     exit non-zero on any finding
+  cth lean-link ... --strict --awaiting-max <N>                  also fail if awaiting exceeds N
+  cth lean-link ... --strict --awaiting-allow <id1,id2>           also fail on any awaiting anchor not listed
+  cth lean-link ... --base <base-inventory.json>                 flag any verified→untested regression vs base
   cth resolve <inventory.json> <anchor-id> [-o out.json]         resolve one anchor by ID
 
 The library API (model + compute + store + report packages) is the
